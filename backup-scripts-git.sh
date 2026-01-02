@@ -23,6 +23,9 @@ cp /etc/fstab "$SNAPSHOT_DIR/fstab.txt"
 # Copy User Crontab
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt"
 
+# Copy firewall rules
+sudo ufw status numbered > "$SNAPSHOT_DIR/firewall_rules_list.txt"
+
 # Copy Root Crontab (Only works if script is run with sudo or user has NOPASSWD)
 # We add a check: if sudo fails, write a placeholder message.
 if sudo -n crontab -l > "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
