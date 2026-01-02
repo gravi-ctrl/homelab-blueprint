@@ -23,6 +23,9 @@ cp /etc/fstab "$SNAPSHOT_DIR/fstab.txt"
 # Copy User Crontab
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt"
 
+# This creates a list of all apt packages you installed
+apt-mark showmanual > "$SNAPSHOT_DIR/installed_packages.txt"
+
 # Copy Root Crontab (Only works if script is run with sudo or user has NOPASSWD)
 # We add a check: if sudo fails, write a placeholder message.
 if sudo -n crontab -l > "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
