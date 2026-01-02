@@ -1,0 +1,18 @@
+Status: active
+
+     To                         Action      From
+     --                         ------      ----
+[ 1] 80/tcp                     ALLOW IN    Anywhere                  
+[ 2] 443/tcp                    ALLOW IN    Anywhere                  
+[ 3] 443/udp                    ALLOW IN    Anywhere                  
+[ 4] Anywhere                   ALLOW IN    192.168.1.0/24            
+[ 5] Anywhere                   ALLOW IN    172.16.0.0/12             
+[ 6] 5335/udp                   ALLOW IN    172.16.0.0/12             
+[ 7] 22                         ALLOW IN    192.168.1.0/24            
+[ 8] 22                         ALLOW IN    172.16.0.0/12             
+[ 9] Anywhere on tailscale0     ALLOW IN    Anywhere                  
+[10] 80/tcp (v6)                ALLOW IN    Anywhere (v6)             
+[11] 443/tcp (v6)               ALLOW IN    Anywhere (v6)             
+[12] 443/udp (v6)               ALLOW IN    Anywhere (v6)             
+[13] Anywhere (v6) on tailscale0 ALLOW IN    Anywhere (v6)             
+
