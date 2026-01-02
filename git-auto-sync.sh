@@ -20,6 +20,10 @@ fi
 # If this fails, the script exits immediately (preventing accidental commits elsewhere)
 cd "$TARGET_DIR" || { echo "❌ Error: Could not cd to $TARGET_DIR"; exit 1; }
 
+# Download updates from GitHub before doing anything else.
+# If there is a conflict (same line edited in both places), this might fail, and will require a human fix.
+git pull origin main --no-edit
+
 # 3. Stage all changes
 git add .
 
