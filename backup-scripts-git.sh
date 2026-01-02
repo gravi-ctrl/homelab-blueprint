@@ -34,7 +34,7 @@ fi
 # --- 2. FORCE ADD SNAPSHOTS ---
 # We force add this specific folder to ensure .gitignore doesn't hide them
 cd "$TARGET_DIR" || exit
-git add -f "run once/system_configs/"
+git add -f "run_once/system_configs/"
 
 # --- 3. HANDOFF TO MASTER SCRIPT ---
 "$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
