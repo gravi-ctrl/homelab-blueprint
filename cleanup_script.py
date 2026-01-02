@@ -9,6 +9,7 @@ import sys # We need the 'sys' module to read arguments
 FILES_TO_KEEP = 2
 # --- END OF CONFIGURATION ---
 
+# Usage: /home/gravi-ctrl/scripts/cleanup_script.py /path/to/folder
 
 def clean_backup_folder(folder_path, num_to_keep):
     """
