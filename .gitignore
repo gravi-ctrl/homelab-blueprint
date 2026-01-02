@@ -1,0 +1,22 @@
+# --- 1. PYTHON GARBAGE ---
+**/venv/
+**/__pycache__/
+**/*.pyc
+
+# --- 2. HEAVY DATA / SECRETS ---
+# Ignore the 1GB encrypted vault
+**/vaults.hc
+# Ignore sensitive env files
+.env
+**/.env
+
+# --- 3. LOGS & TEMP ---
+**/_logs/
+**/*.log
+**/*.tmp
+**/*.bak
+**/status_dashboard.md
+**/status.json
+
+# --- 4. OS JUNK ---
+.DS_Store
