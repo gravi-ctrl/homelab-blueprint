@@ -43,7 +43,7 @@ sudo snap connect nextcloud:removable-media
 echo -e "${YELLOW}[4/6] Creating Directory Structure...${NC}"
 # Physical Data Paths
 sudo mkdir -p /srv/data/assets/torrents
-sudo mkdir -p /srv/data/assets/Media/{Movies,Shows,Music,Books}
+sudo mkdir -p /srv/data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /srv/data/assets/downloads
 # Mount Points
 sudo mkdir -p /mnt/assets
