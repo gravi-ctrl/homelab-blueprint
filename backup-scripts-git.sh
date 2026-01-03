@@ -15,29 +15,34 @@ SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
 MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.sh"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
+# Create folders
 mkdir -p "$SNAPSHOT_DIR"
+mkdir -p "$TARGET_DIR/run once/dotfiles" # New folder for shell configs
 
-# Copy fstab (Save as .txt so it isn't ignored by *.bak rule)
+# A. System Files
 cp /etc/fstab "$SNAPSHOT_DIR/fstab.txt"
-
-# Copy User Crontab
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt"
 
-# This creates a list of all apt packages you installed
-apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_packages.txt"
-
-# Copy Root Crontab (Only works if script is run with sudo or user has NOPASSWD)
-# We add a check: if sudo fails, write a placeholder message.
 if sudo -n crontab -l > "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
-    : # Success
+    : 
 else
-    echo "Root crontab skipped (Permission Denied)" > "$SNAPSHOT_DIR/root_crontab.txt"
+    echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
 fi
 
+# B. Installed Packages (The Shopping List)
+apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
+
+# C. Dotfiles (The "Home" Feel) --- NEW SECTION
+# We copy them here so they are version controlled on GitHub
+cp ~/.zshrc "$TARGET_DIR/run once/dotfiles/zshrc"
+cp ~/.p10k.zsh "$TARGET_DIR/run once/dotfiles/p10k.zsh"
+# If you have a custom nano config, grab that too
+# cp ~/.nanorc "$TARGET_DIR/run once/dotfiles/nanorc" 2>/dev/null
+
 # --- 2. FORCE ADD SNAPSHOTS ---
-# We force add this specific folder to ensure .gitignore doesn't hide them
 cd "$TARGET_DIR" || exit
-git add -f "run_once/system_configs/"
+git add -f "run once/system_configs/"
+git add -f "run once/dotfiles/"
 
 # --- 3. HANDOFF TO MASTER SCRIPT ---
 "$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
