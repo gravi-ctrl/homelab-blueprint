@@ -18,7 +18,7 @@ echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (BindFS/ACL/Inotify) + Shell tools (Zsh/FZF)
-sudo apt install -y curl git unzip acl bindfs inotify-tools python3-pip python3-venv fzf bat micro zsh
+sudo apt install -y curl dos2unix fail2ban htop mosh ncdu neofetch git unzip acl bindfs unbound veracrypt ufw inotify-tools ntfs-3g syncthing samba python3-pip python3-venv fzf bat micro zsh
 
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
