@@ -40,6 +40,7 @@ fonts-ubuntu-console
 fwupd
 fzf
 git
+git-filter-repo
 gnupg
 google-chrome-stable
 grep
