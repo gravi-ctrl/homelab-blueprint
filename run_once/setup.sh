@@ -55,7 +55,7 @@ echo -e "${YELLOW}[5/7] Applying Permission Fixes...${NC}"
 # Target: Assets (Physical Location)
 TARGET="/srv/data/assets"
 
-# A. Set Physical Ownership to Root (Satisfies Nextcloud Snap)
+# A. Set Physical Ownership
 sudo chown -R gravi-ctrl:gravi-ctrl "$TARGET"
 sudo chmod -R 775 "$TARGET"
 
@@ -65,7 +65,7 @@ sudo setfacl -R -m u:1000:rwx "$TARGET"
 # Grant rwx default inheritance for future files
 sudo setfacl -R -d -m u:1000:rwx "$TARGET"
 
-echo "Permissions fixed on $TARGET (Root Owner + ACL 1000)"
+echo "Permissions fixed on $TARGET"
 
 # 6. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[6/7] Installing Python Libs for Automation...${NC}"
