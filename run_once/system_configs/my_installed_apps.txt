@@ -71,7 +71,6 @@ lxd-installer
 mawk
 mdadm
 micro
-monit
 mosh
 motd-news-config
 mount
