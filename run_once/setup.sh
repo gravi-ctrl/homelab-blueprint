@@ -47,25 +47,27 @@ sudo mkdir -p /srv/data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /srv/data/assets/downloads
 # Mount Points
 sudo mkdir -p /mnt/assets
-sudo mkdir -p /mnt/nextcloud_data
+sudo mkdir -p /mnt/nextcloud_data/data/not-admin/files
 
 # 5. PERMISSIONS (The Hybrid Setup)
 echo -e "${YELLOW}[5/7] Applying Permission Fixes...${NC}"
 
 # Target: Assets (Physical Location)
 TARGET="/srv/data/assets"
+TARGET2="/mnt/nextcloud_data"
 
 # A. Set Physical Ownership
 sudo chown -R gravi-ctrl:gravi-ctrl "$TARGET"
+sudo chown -R root:root "$TARGET2"
 sudo chmod -R 775 "$TARGET"
 
 # B. Apply ACLs (The Side Door for User 1000/Docker)
 # Grant rwx to user 1000 for current files
-sudo setfacl -R -m u:1000:rwx "$TARGET"
+sudo setfacl -R -m u:1000:rwx "$TARGET2"
 # Grant rwx default inheritance for future files
-sudo setfacl -R -d -m u:1000:rwx "$TARGET"
+sudo setfacl -R -d -m u:1000:rwx "$TARGET2"
 
-echo "Permissions fixed on $TARGET"
+echo "Permissions fixed on $TARGET2"
 
 # 6. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[6/7] Installing Python Libs for Automation...${NC}"
