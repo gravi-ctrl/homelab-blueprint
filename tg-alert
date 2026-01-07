@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # cp the script to /usr/local/bin (which should be in $PATH)
-# make it executable chmod +x tg-alert
+# make it executable sudo chmod +x /usr/local/bin/tg-alert
+# sudo chown root:root /usr/local/bin/tg-alert
 
 set -e
 set -o pipefail
