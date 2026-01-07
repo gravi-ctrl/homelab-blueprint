@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# cp the script to /usr/local/bin (which should be in $PATH)
+# make it executable chmod +x tg-alert
+
 set -e
 set -o pipefail
 
