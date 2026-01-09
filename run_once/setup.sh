@@ -45,6 +45,7 @@ echo -e "${YELLOW}[4/7] Creating Directory Structure...${NC}"
 sudo mkdir -p /srv/data/assets/torrents
 sudo mkdir -p /srv/data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /srv/data/assets/downloads
+sudo mkdir -p /srv/data/assets/romm/{library,resources}
 # Mount Points
 sudo mkdir -p /mnt/assets
 sudo mkdir -p /mnt/nextcloud_data/data/not-admin/files
