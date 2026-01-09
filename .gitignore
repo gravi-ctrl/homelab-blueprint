@@ -17,6 +17,8 @@
 **/*.bak
 **/status_dashboard.md
 **/status.json
+**/vaults/
+**/2fa/
 
 # --- 4. OS JUNK ---
 .DS_Store
