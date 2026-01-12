@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Creates a human-readable .MD file of the crontabs
-# @FREQUENCY: Daily 5am (`backup-scripts-git.sh` runs it)
+# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 import os
 from cron_descriptor import get_description, Options
 
