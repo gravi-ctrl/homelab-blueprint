@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# @DESCRIPTION: Creates a human-readable .MD file of the crontabs
+# @FREQUENCY: Daily 5am (`backup-scripts-git.sh` runs it)
 import os
 from cron_descriptor import get_description, Options
 
@@ -91,7 +93,7 @@ def parse_crontab(filename, title):
                     task_name = f"**{last_comment}**" if last_comment else ""
                     
                     # Escape pipes '|' in command so they don't break the markdown table
-                    safe_command = command.replace("|", "\|")
+                    safe_command = command.replace("|", "\\|")
                     
                     # Truncate extremely long commands for readability (Optional)
                     if len(safe_command) > 120:

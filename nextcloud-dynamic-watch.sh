@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# @DESCRIPTION: Watches `/srv/data/assets` + `/mnt`, scans Nextcloud, fixes Permissions
+# @FREQUENCY: Service (Always)
 # ==============================================================================
 # NEXTCLOUD DYNAMIC WATCHER (Scan Only - BindFS Edition)
 # ==============================================================================
