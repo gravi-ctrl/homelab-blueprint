@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Creates a human-readable file of every script and its function
-# @FREQUENCY: Daily 5am (`backup-scripts-git.sh` runs it)
+# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 import os
 from pathlib import Path
 
