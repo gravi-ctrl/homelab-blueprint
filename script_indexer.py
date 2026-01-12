@@ -43,8 +43,8 @@ def generate_inventory():
         for file in files:
             file_path = Path(root) / file
             
-            # Skip itself and non-scripts
-            if file_path.name == "script_indexer.py" or file_path.suffix not in EXTENSIONS:
+            # Skip non-scripts
+            if file_path.suffix == not in EXTENSIONS:
                 continue
                 
             desc, freq = get_metadata(file_path)
