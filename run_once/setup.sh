@@ -20,6 +20,8 @@ sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (BindFS/ACL/Inotify) + Shell tools (Zsh/FZF)
 sudo apt install -y curl dos2unix fail2ban htop mosh ncdu neofetch git unzip acl bindfs unbound veracrypt ufw inotify-tools ntfs-3g syncthing samba python3-pip python3-venv fzf bat micro zsh
 
+pip3 install cron-descriptor --break-system-packages
+
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
     echo -e "${YELLOW}[2/7] Installing Docker...${NC}"
