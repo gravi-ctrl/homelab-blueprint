@@ -6,9 +6,9 @@ from cron_descriptor import get_description, Options
 SOURCE_DIR = "/home/gravi-ctrl/scripts/run_once/system_configs"
 OUTPUT_FILE = "/home/gravi-ctrl/scripts/run_once/system_configs/CRON_SCHEDULE.md"
 
-# Options to make it sound natural
+# Options for the translator
 opts = Options()
-opts.use_24hour_time_format = False 
+opts.use_24hour_time_format = True 
 
 def parse_crontab(filename, title):
     content = []
@@ -18,42 +18,95 @@ def parse_crontab(filename, title):
         return []
 
     content.append(f"## {title}")
-    content.append("| Frequency (Human Readable) | Command | Raw Schedule |")
+    # Define table headers clearly
+    content.append("| Task Name / Description | Frequency | Command |")
     content.append("| :--- | :--- | :--- |")
 
     with open(file_path, 'r') as f:
         lines = f.readlines()
 
     has_entries = False
+    last_comment = ""
+
     for line in lines:
         line = line.strip()
-        # Skip comments and empty lines
-        if not line or line.startswith("#"):
+        
+        # 1. Skip Empty Lines (and reset comment)
+        if not line:
+            last_comment = ""
             continue
         
-        # Check if it looks like a cron line (starts with digit, *, or @)
+        # 2. Capture Comments (The "Task Name")
+        if line.startswith("#"):
+            last_comment = line.lstrip("#").strip()
+            continue
+        
+        # 3. Detect Cron Jobs
+        # Standard Cron lines start with a number (0-9) or a star (*)
+        # Special Cron lines start with @ (@reboot)
         if line[0].isdigit() or line[0] == '*' or line.startswith("@"):
-            parts = line.split(maxsplit=5)
             
-            # Handle standard 5-part cron
-            if len(parts) >= 6:
-                raw_schedule = " ".join(parts[:5])
-                command = parts[5]
-                try:
-                    # Translate to English
-                    human_desc = get_description(raw_schedule, opts)
-                except:
-                    human_desc = "⚠️ Could not parse"
-                
-                content.append(f"| **{human_desc}** | `{command}` | `{raw_schedule}` |")
-                has_entries = True
-            
-            # Handle @reboot, @daily, etc.
-            elif line.startswith("@"):
-                parts = line.split(maxsplit=1)
-                if len(parts) == 2:
-                    content.append(f"| **On System Event** | `{parts[1]}` | `{parts[0]}` |")
+            raw_schedule = ""
+            command = ""
+            human_desc = ""
+
+            try:
+                # SCENARIO A: Special (@reboot command)
+                if line.startswith("@"):
+                    parts = line.split(maxsplit=1)
+                    if len(parts) == 2:
+                        raw_schedule = parts[0] # @reboot
+                        command = parts[1]      # /script.sh
+                        human_desc = "On System Event"
+                    else:
+                        # Fallback for weird lines
+                        command = line
+                        human_desc = "Unknown"
+
+                # SCENARIO B: Standard (30 5 * * 1 command)
+                else:
+                    # Split into exactly 6 pieces: 5 time slots + 1 command chunk
+                    parts = line.split(maxsplit=5)
+                    
+                    if len(parts) >= 6:
+                        # Rejoin the first 5 parts to make the cron schedule string
+                        raw_schedule = " ".join(parts[:5]) 
+                        # The 6th part is the entire command
+                        command = parts[5]
+                        
+                        try:
+                            # Try to translate "30 5 * * 1" to English
+                            human_desc = get_description(raw_schedule, opts)
+                        except:
+                            # If translation fails, just show the raw numbers
+                            human_desc = f"`{raw_schedule}`"
+                    else:
+                        # If the line is malformed (too short), dump it safely
+                        command = line
+                        human_desc = "⚠️ Invalid Format"
+
+                # 4. Format the Table Row
+                if command:
+                    # Clean up the task name
+                    task_name = f"**{last_comment}**" if last_comment else ""
+                    
+                    # Escape pipes '|' in command so they don't break the markdown table
+                    safe_command = command.replace("|", "\|")
+                    
+                    # Truncate extremely long commands for readability (Optional)
+                    if len(safe_command) > 120:
+                        safe_command = safe_command[:117] + "..."
+
+                    # Write the row
+                    content.append(f"| {task_name} | {human_desc} | `{safe_command}` |")
                     has_entries = True
+                    
+                    # Clear comment used
+                    last_comment = ""
+
+            except Exception as e:
+                # If Python crashes on a specific line, catch it and log it safely instead of breaking the script
+                content.append(f"| ⚠️ Error | Could not parse | `{line}` |")
 
     if not has_entries:
         content.append("*No active jobs found.*")
@@ -62,12 +115,21 @@ def parse_crontab(filename, title):
     return content
 
 # --- MAIN EXECUTION ---
-final_md = ["# 📅 System Automation Schedule", f"Generated on: {os.popen('date').read().strip()}", ""]
+final_md = [
+    "# 📅 System Automation Schedule",
+    f"Generated on: {os.popen('date').read().strip()}",
+    "",
+    "> This file is auto-generated based on the active system crontabs.",
+    ""
+]
 
+# Process User Crontab
 final_md.extend(parse_crontab("user_crontab.txt", "👤 User Cron (gravi-ctrl)"))
+
+# Process Root Crontab
 final_md.extend(parse_crontab("root_crontab.txt", "⚡ Root Cron"))
 
-# Write to file
+# Save File
 with open(OUTPUT_FILE, 'w') as f:
     f.write("\n".join(final_md))
 
