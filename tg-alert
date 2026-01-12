@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# @DESCRIPTION: A Telegram alert gets sent when any job in crontab fails
+# @FREQUENCY: On Failure
 # cp the script to /usr/local/bin (which should be in $PATH)
 # make it executable sudo chmod +x /usr/local/bin/tg-alert
 # sudo chown root:root /usr/local/bin/tg-alert
