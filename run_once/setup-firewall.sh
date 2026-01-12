@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# @DESCRIPTION: Bootstrap: Resets UFW and applies correct rules
+# @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ UFW FIREWALL RESTORATION SCRIPT
 # Based on saved configuration.

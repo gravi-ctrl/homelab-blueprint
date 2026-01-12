@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# @DESCRIPTION: Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub
+# @FREQUENCY: Daily 5am
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================
@@ -24,11 +25,18 @@ else
     echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
 fi
 
-# --- NEW: GENERATE HUMAN READABLE SCHEDULE ---
+# --- GENERATE HUMAN READABLE SCHEDULE ---
 # This reads the txt files we just created and makes the Markdown dashboard
 if [ -f "$TRANSLATOR_SCRIPT" ]; then
     python3 "$TRANSLATOR_SCRIPT"
 fi
+
+# --- GENERATE SCRIPT INVENTORY ---
+if [ -f "$TARGET_DIR/script_indexer.py" ]; then
+    echo "Indexing Scripts..."
+    python3 "$TARGET_DIR/script_indexer.py"
+fi
+
 # ---------------------------------------------
 
 # B. Installed Packages

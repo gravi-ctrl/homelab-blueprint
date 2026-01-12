@@ -1,5 +1,6 @@
 #!/bin/bash
-# fix-cpu-thermals.sh
+# @DESCRIPTION: Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade
+# @FREQUENCY: On Demand
 # Restores CPU max frequency and restarts TLP after an OS upgrade
 
 # Set CPU max frequency to 1.6 GHz on all cores
