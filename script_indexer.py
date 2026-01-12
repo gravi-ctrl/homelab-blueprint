@@ -44,7 +44,7 @@ def generate_inventory():
             file_path = Path(root) / file
             
             # Skip non-scripts
-            if file_path.suffix == not in EXTENSIONS:
+            if file_path.suffix not in EXTENSIONS:
                 continue
                 
             desc, freq = get_metadata(file_path)

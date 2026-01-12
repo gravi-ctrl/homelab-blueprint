@@ -1,5 +1,5 @@
 # 📂 Script Inventory
-> Auto-generated on Tue Jan 13 01:35:56 AM EET 2026
+> Auto-generated on Tue Jan 13 01:42:55 AM EET 2026
 
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
@@ -12,5 +12,6 @@
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | On Demand |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Bootstrap: Installs all apt/snap requirements and fixes permissions | Run Once |
+| `script_indexer.py` | Creates a human-readable file of every script and its function | Daily 5am (`backup-scripts-git.sh` runs it) |
 | `wifi_robot/guest_wifi.py` | Selenium bot to toggle Guest WiFi via TP-Link Router. | On Demand (Telegram) |
 | `wifi_robot/guest_wifi.sh` | Triggers the `guest_wifi.py` script | On Demand (Telegram) |
