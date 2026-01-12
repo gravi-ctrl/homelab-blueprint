@@ -1,8 +1,7 @@
 #!/bin/bash
-
-# --- THIS IS THE FIX ---
+# @DESCRIPTION: Triggers the `guest_wifi.py` script
+# @FREQUENCY: On Demand (Telegram)
 # Define the absolute path to your project directory.
-# This is more robust when using sudo.
 PROJECT_DIR="/home/gravi-ctrl/scripts/wifi_robot"
 
 # The rest of your script.

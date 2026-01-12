@@ -1,5 +1,5 @@
 # 📂 Script Inventory
-> Auto-generated on Tue Jan 13 01:33:20 AM EET 2026
+> Auto-generated on Tue Jan 13 01:35:56 AM EET 2026
 
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
@@ -13,4 +13,4 @@
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Bootstrap: Installs all apt/snap requirements and fixes permissions | Run Once |
 | `wifi_robot/guest_wifi.py` | Selenium bot to toggle Guest WiFi via TP-Link Router. | On Demand (Telegram) |
-| `wifi_robot/guest_wifi.sh` | No description provided. | On Demand |
+| `wifi_robot/guest_wifi.sh` | Triggers the `guest_wifi.py` script | On Demand (Telegram) |
