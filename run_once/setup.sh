@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Bootstrap: Installs all apt/snap requirements and fixes permissions
+# @DESCRIPTION: Installs dependencies, configures Docker, Snap, Permissions, Python, and Shell
 # @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL (Complete Edition)
