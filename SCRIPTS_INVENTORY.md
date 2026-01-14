@@ -4,7 +4,7 @@
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub using `git-auto-sync.sh` | Daily 5am |
-| `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5 minutes |
+| `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m |
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Every 15m |
