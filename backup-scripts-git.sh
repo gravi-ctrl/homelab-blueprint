@@ -9,7 +9,7 @@
 TARGET_DIR="/home/gravi-ctrl/scripts"
 SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
 MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.sh"
-TRANSLATOR_SCRIPT="$TARGET_DIR/cron_translator.py" # <--- NEW
+TRANSLATOR_SCRIPT="$TARGET_DIR/cron_translator.py"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
