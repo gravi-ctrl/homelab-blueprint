@@ -2,13 +2,17 @@
 **/venv/
 **/__pycache__/
 **/*.pyc
+# Created by master_automation.py during --dry-run
+**/_dry_run_output/
 
 # --- 2. HEAVY DATA / SECRETS ---
-# Ignore the 1GB encrypted vault
+# Ignore the encrypted vault
 **/vaults.hc
 # Ignore sensitive env files
 .env
 **/.env
+# Created by run.sh during the "Handoff" phase
+.temp_env_handoff
 
 # --- 3. LOGS & TEMP ---
 **/_logs/
@@ -17,8 +21,10 @@
 **/*.bak
 **/status_dashboard.md
 **/status.json
+# Ignore ALL symlinks to the vault
 **/vaults/
 **/2fa/
+**/backups/
 
 # --- 4. OS JUNK ---
 .DS_Store
