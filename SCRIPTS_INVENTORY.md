@@ -8,7 +8,7 @@
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
-| `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Every 15m |
+| `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Varies |
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, takes a Nexcloud snapshot, and backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + `/mnt`, scans Nextcloud, fixes Permissions | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |

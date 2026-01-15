@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Master logic to push/pull Git repos (Docs, Stacks)
-# @FREQUENCY: Every 15m
+# @FREQUENCY: Varies
 # ==============================================================================
 # GENERIC GIT AUTO-SYNC SCRIPT
 # Usage: ./git-auto-sync.sh "/path/to/repo" "Commit Label"
