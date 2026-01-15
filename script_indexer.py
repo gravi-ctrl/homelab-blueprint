@@ -7,20 +7,40 @@ from pathlib import Path
 # --- CONFIG ---
 ROOT_DIR = "/home/gravi-ctrl/scripts"
 OUTPUT_FILE = "/home/gravi-ctrl/scripts/SCRIPTS_INVENTORY.md"
-IGNORE_DIRS = [".git", "venv", "__pycache__", "ctrl_s_master"] # Skip these folders
+IGNORE_DIRS = [".git", "venv", "__pycache__", "ctrl_s_master"] 
 EXTENSIONS = {".sh", ".py"}
+
+def is_script_file(file_path):
+    """
+    Returns True if file matches extension OR if it has no extension 
+    but starts with a shebang (#!).
+    """
+    # 1. Check Extension
+    if file_path.suffix in EXTENSIONS:
+        return True
+    
+    # 2. Check for Shebang (executable scripts without extension)
+    if file_path.suffix == "":
+        try:
+            # Read just the first 2 bytes to see if it starts with #!
+            with open(file_path, 'rb') as f:
+                return f.read(2) == b'#!'
+        except:
+            return False
+            
+    return False
 
 def get_metadata(file_path):
     desc = "No description provided."
     freq = "On Demand"
-    
+
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            # Read first 20 lines only (Metadata should be at top)
+            # Read first 20 lines only
             for _ in range(20):
                 line = f.readline().strip()
                 if not line: continue
-                
+
                 # Look for magic tags (case insensitive)
                 upper_line = line.upper()
                 if "@DESCRIPTION:" in upper_line:
@@ -29,29 +49,26 @@ def get_metadata(file_path):
                     freq = line.split(":", 1)[1].strip()
     except:
         pass
-        
+
     return desc, freq
 
 def generate_inventory():
     inventory = []
-    
-    # Walk through all folders
+
     for root, dirs, files in os.walk(ROOT_DIR):
         # Filter ignored directories
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-        
+
         for file in files:
             file_path = Path(root) / file
-            
-            # Skip non-scripts
-            if file_path.suffix not in EXTENSIONS:
+
+            # Check if it's a script (Extension or Shebang)
+            if not is_script_file(file_path):
                 continue
-                
+
             desc, freq = get_metadata(file_path)
-            
-            # Make path relative for cleaner display (e.g., "wifi_robot/main.py")
             rel_path = file_path.relative_to(ROOT_DIR)
-            
+
             inventory.append({
                 "script": str(rel_path),
                 "desc": desc,
@@ -60,7 +77,7 @@ def generate_inventory():
 
     # Sort alphabetically
     inventory.sort(key=lambda x: x['script'])
-    
+
     # Build Markdown
     md = [
         "# 📂 Script Inventory",
@@ -69,14 +86,13 @@ def generate_inventory():
         "| Script File | Purpose | Frequency |",
         "| :--- | :--- | :--- |"
     ]
-    
+
     for item in inventory:
-        # Link to the file in GitHub (assuming repo structure matches)
         md.append(f"| `{item['script']}` | {item['desc']} | {item['freq']} |")
-        
+
     with open(OUTPUT_FILE, 'w') as f:
         f.write("\n".join(md))
-        
+
     print(f"Inventory generated: {OUTPUT_FILE}")
 
 if __name__ == "__main__":

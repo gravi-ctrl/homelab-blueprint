@@ -5,6 +5,7 @@
 | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m |
+| `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am |
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Every 15m |
@@ -14,5 +15,6 @@
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, Snap, Permissions, Python, and Shell | Run Once |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |
+| `tg-alert` | A Telegram alert gets sent when any job in crontab fails | On Failure |
 | `wifi_robot/guest_wifi.py` | Selenium bot to toggle Guest WiFi via TP-Link Router. | On Demand (Telegram) |
 | `wifi_robot/guest_wifi.sh` | Triggers the `guest_wifi.py` script | On Demand (Telegram) |
