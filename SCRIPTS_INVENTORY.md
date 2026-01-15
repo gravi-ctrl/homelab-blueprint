@@ -10,7 +10,6 @@
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Every 15m |
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, takes a Nexcloud snapshot, and backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) |
 | `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + `/mnt`, scans Nextcloud, fixes Permissions | Service (Always) |
-| `nextcloud_cont-cal_backup.sh` | Backs up all contacts (via Auth) and the personal calendar (via Public Link) to .vcf and .ics files. | Daily 4am |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, Snap, Permissions, Python, and Shell | Run Once |
