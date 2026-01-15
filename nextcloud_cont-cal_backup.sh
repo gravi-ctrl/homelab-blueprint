@@ -20,7 +20,7 @@ wget -q --auth-no-challenge --user="$NC_USER" --password="$NC_PASS" \
 -O "$BACKUP_DIR/contacts-backup/contacts_$CURRENT_DATE.vcf"
 
 # DOWNLOAD CALENDAR
-# For calendar only The URL is /public-calendars/TOKEN | Create a public url of the calendar, and copy the token to the .nc_backup_env
+# For calendar only, the URL is /public-calendars/TOKEN | Create a public url of the calendar, and copy the token to the .nc_backup_env
 echo "Downloading Calendar (Public Mode)..."
 wget -q "$NC_URL/remote.php/dav/public-calendars/$CALENDAR_TOKEN/?export" \
 -O "$BACKUP_DIR/calendar-backup/calendar_$CURRENT_DATE.ics"
