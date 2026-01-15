@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Takes a backup from my contacts and my calendar
-# @FREQUENCY: Daily at 4am
+# @FREQUENCY: Daily 4am
 # 1. Load variables
 if [ -f "$HOME/scripts/.nc_backup_env" ]; then
     source "$HOME/scripts/.nc_backup_env"
