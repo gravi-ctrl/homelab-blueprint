@@ -1,9 +1,13 @@
 #!/bin/bash
 # @DESCRIPTION: A Telegram alert gets sent when any job in crontab fails
 # @FREQUENCY: On Failure
-# cp the script to /usr/local/bin (which should be in $PATH)
-# make it executable sudo chmod +x /usr/local/bin/tg-alert
-# sudo chown root:root /usr/local/bin/tg-alert
+
+# INSTALL
+# -------
+# sudo cp tg-alert /usr/local/bin
+# sudo chmod +x /usr/local/bin/tg-alert
+# USAGE: At the end of any job in crontab, we can add something like '|| /usr/local/bin/tg-alert "message_here"'
+# So if command X fails send a telegram message saying 'CRON FAILURE: message_here'
 
 set -e
 set -o pipefail
