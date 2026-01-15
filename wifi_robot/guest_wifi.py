@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Selenium bot to toggle Guest WiFi via TP-Link Router.
-# @FREQUENCY: On Demand (Telegram)
+# @FREQUENCY: On Demand (Telegram - through n8n)
 import os
 from flask import Flask, jsonify
 import time

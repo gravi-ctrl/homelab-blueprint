@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Triggers the `guest_wifi.py` script
-# @FREQUENCY: On Demand (Telegram)
+# @FREQUENCY: On Demand (Telegram - through n8n)
 # Define the absolute path to your project directory.
 PROJECT_DIR="/home/gravi-ctrl/scripts/wifi_robot"
 
