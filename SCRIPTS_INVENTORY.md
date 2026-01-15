@@ -4,12 +4,12 @@
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub using `git-auto-sync.sh` | Daily 5am |
-| `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m |
-| `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am |
+| `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m (root crontab) |
+| `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Every 15m |
-| `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, takes a Nexcloud snapshot, and backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) |
+| `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, takes a Nexcloud snapshot, and backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + `/mnt`, scans Nextcloud, fixes Permissions | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
