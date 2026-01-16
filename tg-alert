@@ -7,7 +7,7 @@
 # sudo cp tg-alert /usr/local/bin
 # sudo chmod +x /usr/local/bin/tg-alert
 # USAGE: At the end of any job in crontab, we can add something like '|| /usr/local/bin/tg-alert "message_here"'
-# So if command X fails send a telegram message saying 'CRON FAILURE: message_here'
+# So if command X fails, it sends a telegram message saying 'CRON FAILURE: message_here'
 
 set -e
 set -o pipefail
