@@ -19,7 +19,7 @@ echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (BindFS/ACL/Inotify) + Shell tools (Zsh/FZF)
-sudo apt install -y curl dos2unix fail2ban htop mosh ncdu neofetch git unzip acl bindfs unbound veracrypt ufw inotify-tools ntfs-3g syncthing samba python3-pip python3-venv fzf bat micro zsh
+sudo apt install -y curl dos2unix fail2ban unbound  htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g syncthing samba python3-pip python3-venv fzf bat micro zsh
 
 pip3 install cron-descriptor --break-system-packages
 
@@ -102,12 +102,13 @@ fi
 
 # D. Restore Config Files (From your Git Backup)
 # We assume the repo is already cloned to ~/scripts
-DOTFILES_DIR="$HOME/scripts/run once/dotfiles"
+DOTFILES_DIR="$HOME/scripts/run_once/dotfiles"
 
 if [ -d "$DOTFILES_DIR" ]; then
-    echo "Restoring .zshrc and .p10k.zsh from backup..."
+    echo "Restoring .zshrc, .p10k.zsh and .nanorc from backup..."
     cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
+    cp "$DOTFILES_DIR/nanorc" "$HOME/.nanorc"
 else
     echo -e "${RED}Warning: Dotfiles backup not found in scripts folder. Skipping restore.${NC}"
 fi
@@ -123,7 +124,7 @@ echo -e "${GREEN}=== BOOTSTRAP COMPLETE ===${NC}"
 echo -e "${YELLOW}⚠️  NEXT STEPS (Restoration Phase):${NC}"
 echo "1. Restore Docker Configs:"
 echo "   git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks"
-echo "2. Restore System Configs (Reference 'scripts/run once/system_configs/'):"
+echo "2. Restore System Configs (Reference 'scripts/run_once/system_configs/'):"
 echo "   - Copy the BindFS lines from 'fstab.txt' into '/etc/fstab' (Keep new UUIDs!)."
 echo "   - Restore Cronjobs: cat user_crontab.txt | crontab -"
 echo "3. Run 'sudo visudo' and add: gravi-ctrl ALL=(root) NOPASSWD: /usr/bin/crontab -l"
