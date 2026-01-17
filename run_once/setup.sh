@@ -71,7 +71,7 @@ sudo setfacl -R -m u:1000:rwx "$TARGET2"
 # Grant rwx default inheritance for future files
 sudo setfacl -R -d -m u:1000:rwx "$TARGET2"
 
-echo "Permissions fixed on $TARGET2"
+echo "Permissions fixed on $TARGET and $TARGET2"
 
 # 6. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[6/7] Installing Python Libs for Automation...${NC}"
