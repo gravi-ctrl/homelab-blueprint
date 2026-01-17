@@ -207,7 +207,7 @@ extract () {
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
 
-# Git auto-commit warning
+# Git auto-commit alert
 typeset -A _visited_zones
 
 chpwd() {
