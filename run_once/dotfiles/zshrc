@@ -206,3 +206,29 @@ extract () {
 # This turns on Ctrl+R (History) and Ctrl+T (File Search)
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
+
+# Git auto-commit warning
+typeset -A _visited_zones
+
+chpwd() {
+    # 1. Check if warning file exists
+    if [ -f .commit-warning ]; then
+        
+        # 2. Check if we have ALREADY seen this specific folder in this session
+        if [ -z "${_visited_zones[$PWD]}" ]; then
+            
+            echo ""
+            echo -e "\033[1;41;37m ⚠️  GIT AUTO-COMMIT ZONE ⚠️ \033[0m"
+            echo -e "\033[1;31m" 
+            
+            # Print the warning (ignoring comments and empty lines)
+            grep -Ev "^#|^\s*$" .commit-warning
+            
+            echo -e "\033[0m"
+            echo ""
+
+            # 3. Mark this folder as 'visited' so it doesn't show again this session
+            _visited_zones[$PWD]=1
+        fi
+    fi
+}
