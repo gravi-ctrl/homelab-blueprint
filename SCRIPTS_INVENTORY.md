@@ -7,6 +7,7 @@
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m (root crontab) |
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
+| `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Varies |
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, takes a Nexcloud snapshot, and backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
@@ -15,6 +16,5 @@
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, Snap, Permissions, Python, and Shell | Run Once |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |
-| `tg-alert` | A Telegram alert gets sent when any job in crontab fails | On Failure |
 | `wifi_robot/guest_wifi.py` | Selenium bot to toggle Guest WiFi via TP-Link Router. | On Demand (Telegram - through n8n) |
 | `wifi_robot/guest_wifi.sh` | Triggers the `guest_wifi.py` script | On Demand (Telegram - through n8n) |
