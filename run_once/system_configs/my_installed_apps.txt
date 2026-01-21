@@ -110,7 +110,6 @@ software-properties-common
 sosreport
 sqlite3
 sudo
-syncthing
 systemd
 systemd-resolved
 systemd-sysv
