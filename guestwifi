@@ -1,0 +1,24 @@
+#!/bin/bash
+# @DESCRIPTION: Triggers the running wifi_robot container via HTTP
+# @FREQUENCY: On Demand
+
+# INSTALLTION: This depends on the wifi_robot docker container
+
+# USAGE: sudo cp guestwifi /usr/local/bin/guestwifi
+# sudo chmod +x /usr/local/bin/guestwifi
+# guestwifi on (to turn Guest Wi-Fi ON) guestwifi off (to turn it OFF)
+
+# -------------------
+
+if [ -z "$1" ]; then
+    echo "Error: Please specify 'on' or 'off'."
+    echo "Usage: guestwifi on"
+    exit 1
+fi
+
+echo "Sending signal '$1' to Wi-Fi Robot..."
+
+curl -s "http://localhost:5050/$1"
+
+
+
