@@ -8,7 +8,7 @@
 #
 # USAGE: cron-guard "NAME OF JOB" command_to_run
 # For multiple commands involving '&&' or '|', use sh -c then wrap the whole command between '...'
-# Example: /usr/local/bin/cron-guard "Test" sh -c 'cd /path/of/the/file && cp file'
+# Example: /usr/local/bin/cron-guard "Test" sh -c 'cd /path/of/the/file && rm file'
 
 # ------
 
