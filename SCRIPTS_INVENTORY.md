@@ -16,5 +16,3 @@
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, Snap, Permissions, Python, and Shell | Run Once |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |
-| `wifi_robot/guest_wifi.py` | Selenium bot to toggle Guest WiFi via TP-Link Router. | On Demand (Telegram - through n8n) |
-| `wifi_robot/guest_wifi.sh` | Triggers the `guest_wifi.py` script | On Demand (Telegram - through n8n) |
