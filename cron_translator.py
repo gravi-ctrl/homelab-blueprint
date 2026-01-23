@@ -2,6 +2,7 @@
 # @DESCRIPTION: Creates a human-readable .MD file of the crontabs
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 import os
+import re # <--- ADDED THIS
 from cron_descriptor import get_description, Options
 
 # --- CONFIG ---
@@ -10,17 +11,16 @@ OUTPUT_FILE = "/home/gravi-ctrl/scripts/run_once/system_configs/CRON_SCHEDULE.md
 
 # Options for the translator
 opts = Options()
-opts.use_24hour_time_format = True 
+opts.use_24hour_time_format = True
 
 def parse_crontab(filename, title):
     content = []
     file_path = os.path.join(SOURCE_DIR, filename)
-    
+
     if not os.path.exists(file_path):
         return []
 
     content.append(f"## {title}")
-    # Define table headers clearly
     content.append("| Task Name / Description | Frequency | Command |")
     content.append("| :--- | :--- | :--- |")
 
@@ -30,106 +30,112 @@ def parse_crontab(filename, title):
     has_entries = False
     last_comment = ""
 
+    # Mapping for %u (1=Mon ... 7=Sun)
+    week_map = {
+        '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', 
+        '4': 'Thursday', '5': 'Friday', '6': 'Saturday', '7': 'Sunday'
+    }
+
     for line in lines:
         line = line.strip()
-        
-        # 1. Skip Empty Lines (and reset comment)
+
+        # 1. Skip Empty Lines
         if not line:
             last_comment = ""
             continue
-        
-        # 2. Capture Comments (The "Task Name")
+
+        # 2. Capture Comments
         if line.startswith("#"):
             last_comment = line.lstrip("#").strip()
             continue
-        
+
         # 3. Detect Cron Jobs
-        # Standard Cron lines start with a number (0-9) or a star (*)
-        # Special Cron lines start with @ (@reboot)
         if line[0].isdigit() or line[0] == '*' or line.startswith("@"):
-            
             raw_schedule = ""
             command = ""
             human_desc = ""
 
             try:
-                # SCENARIO A: Special (@reboot command)
+                # SCENARIO A: Special (@reboot)
                 if line.startswith("@"):
                     parts = line.split(maxsplit=1)
                     if len(parts) == 2:
-                        raw_schedule = parts[0] # @reboot
-                        command = parts[1]      # /script.sh
+                        raw_schedule = parts[0]
+                        command = parts[1]
                         human_desc = "On System Event"
                     else:
-                        # Fallback for weird lines
                         command = line
                         human_desc = "Unknown"
 
-                # SCENARIO B: Standard (30 5 * * 1 command)
+                # SCENARIO B: Standard
                 else:
-                    # Split into exactly 6 pieces: 5 time slots + 1 command chunk
                     parts = line.split(maxsplit=5)
-                    
                     if len(parts) >= 6:
-                        # Rejoin the first 5 parts to make the cron schedule string
-                        raw_schedule = " ".join(parts[:5]) 
-                        # The 6th part is the entire command
+                        raw_schedule = " ".join(parts[:5])
                         command = parts[5]
-                        
+
                         try:
-                            # Try to translate "30 5 * * 1" to English
                             human_desc = get_description(raw_schedule, opts)
                         except:
-                            # If translation fails, just show the raw numbers
                             human_desc = f"`{raw_schedule}`"
                     else:
-                        # If the line is malformed (too short), dump it safely
                         command = line
                         human_desc = "⚠️ Invalid Format"
 
+                # -----------------------------------------------------------
+                # ### CUSTOM LOGIC: Detect Bash Date Conditionals ###
+                # Detects: [ "$(date +\%u)" = 5 ] && command
+                # -----------------------------------------------------------
+                if command:
+                    # Regex looks for: [ "$(date +\%u)" = X ]
+                    # It handles spaces, different quotes, and the escaped %
+                    match = re.match(r'^\[\s*"\$\(date \+\\%u\)"\s*=\s*([1-7])\s*\]\s*&&\s*(.*)', command)
+                    
+                    if match:
+                        day_num = match.group(1)   # The number (e.g., "5")
+                        real_cmd = match.group(2)  # The rest of the command
+                        
+                        day_name = week_map.get(day_num, "Unknown Day")
+                        
+                        # Update the Human Description
+                        human_desc += f" <br>**(⚠️ Condition: Only on {day_name}s)**"
+                        
+                        # Optional: Clean the command in the table to show the REAL script
+                        # or keep the full logic. Below keeps the logic but makes it code.
+                        # If you want to show ONLY the script, uncomment the next line:
+                        # command = real_cmd 
+
                 # 4. Format the Table Row
                 if command:
-                    # Clean up the task name
                     task_name = f"**{last_comment}**" if last_comment else ""
-                    
-                    # Escape pipes '|' in command so they don't break the markdown table
                     safe_command = command.replace("|", "\\|")
                     
-                    # Truncate extremely long commands for readability (Optional)
                     if len(safe_command) > 120:
                         safe_command = safe_command[:117] + "..."
 
-                    # Write the row
                     content.append(f"| {task_name} | {human_desc} | `{safe_command}` |")
                     has_entries = True
-                    
-                    # Clear comment used
                     last_comment = ""
 
             except Exception as e:
-                # If Python crashes on a specific line, catch it and log it safely instead of breaking the script
                 content.append(f"| ⚠️ Error | Could not parse | `{line}` |")
 
     if not has_entries:
         content.append("*No active jobs found.*")
-    
+
     content.append("\n")
     return content
 
 # --- MAIN EXECUTION ---
 final_md = [
     "# 📅 System Automation Schedule",
-    "> 🤖 Auto-generated by `cron_translator.py`"
+    "> 🤖 Auto-generated by `cron_translator.py`",
     ""
 ]
 
-# Process User Crontab
 final_md.extend(parse_crontab("user_crontab.txt", "👤 User Cron (gravi-ctrl)"))
-
-# Process Root Crontab
 final_md.extend(parse_crontab("root_crontab.txt", "⚡ Root Cron"))
 
-# Save File
 with open(OUTPUT_FILE, 'w') as f:
     f.write("\n".join(final_md))
 
