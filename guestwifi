@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Triggers the running wifi_robot container via HTTP
+# @DESCRIPTION: Triggers the running wifi_robot container via HTTP (needs to be copied to /usr/local/bin/)
 # @FREQUENCY: On Demand
 
 # INSTALLTION: This depends on the wifi_robot docker container

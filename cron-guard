@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Runs a command, captures output, and Telegrams on failure with logs
+# @DESCRIPTION: Runs a command, captures output, and Telegrams on failure with logs (needs to be copied to /usr/local/bin/)
 # @FREQUENCY: On Failure
 
 # INSTALL

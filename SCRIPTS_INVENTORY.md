@@ -5,14 +5,14 @@
 | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m (root crontab) |
-| `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |
+| `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars (needs to be copied to /usr/local/bin/) | Daily 4am (root crontab) |
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
-| `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs | On Failure |
+| `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs (needs to be copied to /usr/local/bin/) | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Varies |
-| `guestwifi` | Triggers the running wifi_robot container via HTTP | On Demand |
-| `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, takes a Nexcloud snapshot, and backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
-| `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + `/mnt`, scans Nextcloud, fixes Permissions | Service (Always) |
+| `guestwifi` | Triggers the running wifi_robot container via HTTP (needs to be copied to /usr/local/bin/) | On Demand |
+| `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
+| `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, Snap, Permissions, Python, and Shell | Run Once |

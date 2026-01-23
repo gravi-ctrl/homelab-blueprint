@@ -40,7 +40,8 @@ Nextcloud data folders are huge. Default Linux limits are too low, which causes 
     ```ini
     [Unit]
     Description=Nextcloud Dynamic Filesystem Watcher
-    After=network.target snap.nextcloud.apache.service
+    After=network.target docker.service 
+    Requires=docker.service
 
     [Service]
     User=root

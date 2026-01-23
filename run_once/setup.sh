@@ -19,7 +19,7 @@ echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (BindFS/ACL/Inotify) + Shell tools (Zsh/FZF)
-sudo apt install -y curl dos2unix fail2ban unbound htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
+sudo apt install -y curl dos2unix fail2ban unbound mariadb-client htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
 
 pip3 install cron-descriptor --break-system-packages
 
@@ -34,52 +34,39 @@ else
     echo -e "${GREEN}[2/7] Docker already installed.${NC}"
 fi
 
-# 3. NEXTCLOUD SNAP
-echo -e "${YELLOW}[3/7] Configuring Nextcloud Snap...${NC}"
-if ! snap list | grep -q nextcloud; then
-    sudo snap install nextcloud
-fi
-# Connect the interface allowing Snap to see /mnt
-sudo snap connect nextcloud:removable-media
-
-# 4. DIRECTORY SKELETON
+# 3. DIRECTORY SKELETON
 echo -e "${YELLOW}[4/7] Creating Directory Structure...${NC}"
 # Physical Data Paths
 sudo mkdir -p /srv/data/assets/torrents
 sudo mkdir -p /srv/data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /srv/data/assets/downloads
 sudo mkdir -p /srv/data/assets/romm/{library,resources}
-# Mount Points
-sudo mkdir -p /mnt/assets
-sudo mkdir -p /mnt/nextcloud_data/data/not-admin/files
+sudo mkdir -p /srv/data/assets/nextcloud_data
 
-# 5. PERMISSIONS (The Hybrid Setup)
+# 4. PERMISSIONS (The Hybrid Setup)
 echo -e "${YELLOW}[5/7] Applying Permission Fixes...${NC}"
 
 # Target: Assets (Physical Location)
 TARGET="/srv/data/assets"
-TARGET2="/mnt/nextcloud_data"
 
 # A. Set Physical Ownership
-sudo chown -R gravi-ctrl:gravi-ctrl "$TARGET"
-sudo chown -R root:root "$TARGET2"
 sudo chmod -R 775 "$TARGET"
 
-# B. Apply ACLs (The Side Door for User 1000/Docker)
-# Grant rwx to user 1000 for current files
-sudo setfacl -R -m u:1000:rwx "$TARGET2"
-# Grant rwx default inheritance for future files
-sudo setfacl -R -d -m u:1000:rwx "$TARGET2"
+# B. Apply ACLs (The Side Door for User 33/Docker)
+# Grant rwx (Read/Write/Execute) to user 33 recursively
+sudo setfacl -R -m u:33:rwx "$TARGET"
+# Set the "Default" ACL so any NEW files created there also get these permissions
+sudo setfacl -R -d -m u:33:rwx "$TARGET"
 
 echo "Permissions fixed on $TARGET and $TARGET2"
 
-# 6. PYTHON REQUIREMENTS
+# 5. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[6/7] Installing Python Libs for Automation...${NC}"
 # For wifi_robot and other scripts
 # Note: Using --break-system-packages is standard for user scripts on Ubuntu 24.04+
 pip3 install python-dotenv selenium flask --break-system-packages
 
-# 7. SHELL ENVIRONMENT (ZSH + P10K)
+# 6. SHELL ENVIRONMENT (ZSH + P10K)
 echo -e "${YELLOW}[7/7] Configuring Zsh Environment...${NC}"
 
 # A. Install Oh-My-Zsh (Unattended)
