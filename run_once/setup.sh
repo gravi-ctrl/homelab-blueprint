@@ -48,9 +48,12 @@ echo -e "${YELLOW}[5/7] Applying Permission Fixes...${NC}"
 
 # Target: Assets (Physical Location)
 TARGET="/srv/data/assets"
+TARGET2="/srv/data/assets/nextcloud_data"
 
 # A. Set Physical Ownership
+sudo chown -R gravi-ctrl:gravi-ctrl "$TARGET"
 sudo chmod -R 775 "$TARGET"
+sudo chown -R 33:33 "$TARGET2"
 
 # B. Apply ACLs (The Side Door for User 33/Docker)
 # Grant rwx (Read/Write/Execute) to user 33 recursively
