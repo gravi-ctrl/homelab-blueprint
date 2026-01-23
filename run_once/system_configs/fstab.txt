@@ -15,6 +15,5 @@
 
 UUID=e8e2dfc0-81fa-4b62-8929-2d1876819878    /srv/data    ext4    defaults,errors=remount-ro   0   2
 
-# Binds mounts for data directories
 UUID=BF58-1168  /boot/efi       vfat    defaults      0       1
 
