@@ -2,7 +2,7 @@
 # @DESCRIPTION: Triggers the running wifi_robot container via HTTP (needs to be copied to /usr/local/bin/)
 # @FREQUENCY: On Demand
 
-# INSTALLTION: This depends on the wifi_robot docker container
+# INSTALL: This depends on the wifi_robot docker container
 # sudo cp guestwifi /usr/local/bin/guestwifi
 # sudo chmod +x /usr/local/bin/guestwifi
 
