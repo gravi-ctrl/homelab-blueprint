@@ -18,7 +18,7 @@ echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 sudo apt update && sudo apt upgrade -y
-# Core tools + File System tools (BindFS/ACL/Inotify) + Shell tools (Zsh/FZF)
+# Core tools + File System tools (ACL/Inotify) + Shell tools (Zsh/FZF)
 sudo apt install -y curl dos2unix fail2ban unbound mariadb-client htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
 
 pip3 install cron-descriptor --break-system-packages
