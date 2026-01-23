@@ -16,6 +16,5 @@
 UUID=e8e2dfc0-81fa-4b62-8929-2d1876819878    /srv/data    ext4    defaults,errors=remount-ro   0   2
 
 # Binds mounts for data directories
-/srv/data/mnt    /mnt    none  bind   0   0
 UUID=BF58-1168  /boot/efi       vfat    defaults      0       1
-/srv/data/assets /mnt/assets fuse.bindfs force-user=root,force-group=root,create-for-user=1000,create-for-group=1000,perms=0775 0 0
+

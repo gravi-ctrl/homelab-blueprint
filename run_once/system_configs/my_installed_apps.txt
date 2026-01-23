@@ -69,6 +69,7 @@ lsb-release
 lvm2
 lxd-agent-loader
 lxd-installer
+mariadb-client
 mawk
 mdadm
 micro

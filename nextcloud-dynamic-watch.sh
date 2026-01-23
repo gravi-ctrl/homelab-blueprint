@@ -1,23 +1,28 @@
 #!/bin/bash
-# @DESCRIPTION: Watches `/srv/data/assets` + `/mnt`, scans Nextcloud, fixes Permissions
+# @DESCRIPTION: Watches `/srv/data/assets` + Internal Data, scans Nextcloud via Docker
 # @FREQUENCY: Service (Always)
 # ==============================================================================
-# NEXTCLOUD DYNAMIC WATCHER (Scan Only - BindFS Edition)
+# NEXTCLOUD DYNAMIC WATCHER (Docker Edition)
 # ==============================================================================
 
 # --- CONFIGURATION -----------------------------------------------------------
 NC_USER="not-admin"
-NC_MOUNT_NAME="assets" # Match your Nextcloud folder name
+# This must match the name you gave the folder in 'External Storage' settings exactly:
+NC_MOUNT_NAME="assets"
 REAL_ASSETS_DIR="/srv/data/assets"
-NC_MAIN_DIR="/mnt/nextcloud_data/data/${NC_USER}/files"
-WATCH_LIST="${NC_MAIN_DIR} ${REAL_ASSETS_DIR}"
+HOST_DATA_DIR="/srv/data/assets/nextcloud_data"
+# Path to your docker-compose file:
+COMPOSE_FILE="/opt/stacks/nextcloud/docker-compose.yml"
+
+WATCH_LIST="${HOST_DATA_DIR}/${NC_USER}/files ${REAL_ASSETS_DIR}"
 QUEUE_FILE="/tmp/nextcloud_events.log"
 
 trap "pkill -P $$; exit" SIGINT SIGTERM
 
-echo "Starting Nextcloud Watcher..."
+echo "Starting Nextcloud Docker Watcher..."
 
 # 1. START LISTENER
+# We watch the host directories directly
 inotifywait -m -r -e close_write -e moved_to -e delete \
     --format '%w' \
     --exclude '/\.' \
@@ -36,24 +41,30 @@ while true; do
         for DIR_PATH in $TARGETS; do
             SCAN_PATH=""
 
-            # CASE A: External Assets
+            # CASE A: External Assets (/srv/data/assets -> /not-admin/files/Assets)
             if [[ "$DIR_PATH" == "$REAL_ASSETS_DIR"* ]]; then
+                # Strip the host path
                 RELATIVE=$(echo "$DIR_PATH" | sed "s|^$REAL_ASSETS_DIR||")
+                # Map to Nextcloud internal path
                 SCAN_PATH="${NC_USER}/files/${NC_MOUNT_NAME}${RELATIVE}"
 
-            # CASE B: Internal Storage
-            elif [[ "$DIR_PATH" == "$NC_MAIN_DIR"* ]]; then
-                RELATIVE=$(echo "$DIR_PATH" | sed "s|^$NC_MAIN_DIR||")
-                SCAN_PATH="${NC_USER}/files${RELATIVE}"
+            # CASE B: Internal Storage (/srv/data/assets/nextcloud_data -> /not-admin/files)
+            elif [[ "$DIR_PATH" == "$HOST_DATA_DIR"* ]]; then
+                # Strip the host data path
+                RELATIVE=$(echo "$DIR_PATH" | sed "s|^$HOST_DATA_DIR||")
+                # Map to Nextcloud internal path
+                SCAN_PATH="${RELATIVE}" 
             fi
 
             # Clean trailing slash
             SCAN_PATH=${SCAN_PATH%/}
 
-            # EXECUTE SCAN (No Permission Fixes needed!)
+            # EXECUTE SCAN VIA DOCKER
             if [ ! -z "$SCAN_PATH" ]; then
                 echo "[$(date '+%H:%M:%S')] Scanning: $SCAN_PATH"
-                nice -n 19 /snap/bin/nextcloud.occ files:scan --path="$SCAN_PATH"
+                # -T disables pseudo-tty (required for background scripts)
+                # -u 33 ensures we run as www-data
+                docker compose -f "$COMPOSE_FILE" exec -T -u 33 app php occ files:scan --path="$SCAN_PATH"
             fi
         done
         unset IFS
