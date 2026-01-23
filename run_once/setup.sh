@@ -21,8 +21,6 @@ sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (ACL/Inotify) + Shell tools (Zsh/FZF)
 sudo apt install -y curl dos2unix fail2ban unbound mariadb-client htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
 
-pip3 install cron-descriptor --break-system-packages
-
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
     echo -e "${YELLOW}[2/7] Installing Docker...${NC}"
@@ -67,7 +65,7 @@ echo "Permissions fixed on $TARGET and $TARGET2"
 echo -e "${YELLOW}[6/7] Installing Python Libs for Automation...${NC}"
 # For wifi_robot and other scripts
 # Note: Using --break-system-packages is standard for user scripts on Ubuntu 24.04+
-pip3 install python-dotenv selenium flask --break-system-packages
+pip3 install python-dotenv cron-descriptor selenium flask --break-system-packages
 
 # 6. SHELL ENVIRONMENT (ZSH + P10K)
 echo -e "${YELLOW}[7/7] Configuring Zsh Environment...${NC}"
