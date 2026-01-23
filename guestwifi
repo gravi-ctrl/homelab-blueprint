@@ -3,10 +3,10 @@
 # @FREQUENCY: On Demand
 
 # INSTALLTION: This depends on the wifi_robot docker container
-
-# USAGE: sudo cp guestwifi /usr/local/bin/guestwifi
+# sudo cp guestwifi /usr/local/bin/guestwifi
 # sudo chmod +x /usr/local/bin/guestwifi
-# guestwifi on (to turn Guest Wi-Fi ON) guestwifi off (to turn it OFF)
+
+# USAGE: guestwifi on (to turn Guest Wi-Fi ON) guestwifi off (to turn it OFF)
 
 # -------------------
 
