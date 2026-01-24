@@ -207,28 +207,31 @@ extract () {
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
 
-# Git auto-commit alert
-typeset -A _visited_zones
+# Git auto-commit alert (with subdirectory support)
+typeset -A _commit_zones_seen
+
+# Walk up the directory tree to find .commit-warning
+_find_commit_zone() {
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        [[ -f "$dir/.commit-warning" ]] && { echo "$dir"; return 0; }
+        dir="${dir:h}"
+    done
+    return 1
+}
 
 chpwd() {
-    # 1. Check if warning file exists
-    if [ -f .commit-warning ]; then
-        
-        # 2. Check if we have ALREADY seen this specific folder in this session
-        if [ -z "${_visited_zones[$PWD]}" ]; then
-            
-            echo ""
-            echo -e "\033[1;41;37m ⚠️  GIT AUTO-COMMIT ZONE ⚠️ \033[0m"
-            echo -e "\033[1;31m" 
-            
-            # Print the warning (ignoring comments and empty lines)
-            grep -Ev "^#|^\s*$" .commit-warning
-            
-            echo -e "\033[0m"
-            echo ""
-
-            # 3. Mark this folder as 'visited' so it doesn't show again this session
-            _visited_zones[$PWD]=1
-        fi
-    fi
+    local zone
+    zone=$(_find_commit_zone) || return
+    
+    # Skip if already shown this session
+    [[ -n "${_commit_zones_seen[$zone]}" ]] && return
+    _commit_zones_seen[$zone]=1
+    
+    # Compact warning
+    echo
+    echo -e "\033[1;31m⚠️ GIT AUTO-COMMIT\033[0m \033[90m$zone\033[0m"
+    grep -Ev '^#|^\s*$' "$zone/.commit-warning" | while read -r line; do
+        echo -e "  \033[31m↳ $line\033[0m"
+    done
 }
