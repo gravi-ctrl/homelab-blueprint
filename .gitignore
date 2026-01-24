@@ -11,6 +11,7 @@
 # Ignore sensitive env files
 .env
 **/.env
+dockcheck.config
 # Created by run.sh during the "Handoff" phase
 .temp_env_handoff
 
