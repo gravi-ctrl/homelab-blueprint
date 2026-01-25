@@ -235,3 +235,6 @@ chpwd() {
         echo -e "  \033[31m↳ $line\033[0m"
     done
 }
+
+# Dockcheck alias
+alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -y -i -p -x 10'
