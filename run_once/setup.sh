@@ -65,7 +65,7 @@ echo "Permissions fixed on $TARGET and $TARGET2"
 echo -e "${YELLOW}[6/7] Installing Python Libs for Automation...${NC}"
 # For wifi_robot and other scripts
 # Note: Using --break-system-packages is standard for user scripts on Ubuntu 24.04+
-pip3 install python-dotenv cron-descriptor selenium flask --break-system-packages
+pip3 install python-dotenv cron-descriptor python-telegram-bot selenium flask --break-system-packages
 
 # 6. SHELL ENVIRONMENT (ZSH + P10K)
 echo -e "${YELLOW}[7/7] Configuring Zsh Environment...${NC}"
