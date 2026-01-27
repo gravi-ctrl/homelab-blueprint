@@ -17,35 +17,6 @@
 <h5 align="center">For Podman - see the fork <a href="https://github.com/sudo-kraken/podcheck">sudo-kraken/podcheck</a>!</h4>
 
 ___
-## Changelog
-
-- **v0.7.5**:
-    - Added new option **BackupForDays**; `-b N` and `-B`:
-      - Backup an image before pulling a new version for easy rollback in case of breakage.
-      - Removes backed up images older than *N* days.
-      - List currently backed up images with `-B`.
-    - Fixes:
-      - Bugfix for `-s` *Stopped* to not recreate stopped containers after update.
-- **v0.7.4**:
-    - Added new option `-R`:
-      - Will skip container recreation after pulling images.
-      - Allows for more control and possible pipeline integration.
-    - Fixes:
-      - Bugfix for *value too great* error due to leading zeroes - solved with base10 conversion.
-      - Clean up of some legacy readme sections.
-- **v0.7.3**: Bugfix - unquoted variable in printf list caused occasional issues.
-- **v0.7.2**:
-    - Label rework:
-      - Moved up label logic to work globally on the current run.
-      - Only iterating on labeled containers when used with `-l` option, not listing others.
-      - Clarified messaging and readme/help texts.
-    - List reformatting for "available updates" numbering to easier highlight and copy:
-      - Padded with zero, changed `)` to `-`, example: `02 - homer`
-      - Can be selected by writing `2,3,4` or `02,03,04`.
-___
-
-
-![](extras/example.gif)
 
 ## `dockcheck.sh`
 ```
