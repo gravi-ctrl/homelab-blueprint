@@ -1,20 +1,5 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/bash-4.3-green?style=flat-square&logo=gnubash" alt="bash">
-  <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/license-GPLv3-red?style=flat-square" alt="GPLv3"></a>
-  <img src="https://img.shields.io/github/v/tag/mag37/dockcheck?style=flat-square&label=release" alt="release">
-  <br>
-  <a href="https://ko-fi.com/mag37"><img src="https://img.shields.io/badge/-Ko--fi-grey?style=flat-square&logo=Ko-fi" alt="Buy me a Coffee"></a>
-  <a href="https://liberapay.com/user-bin-rob/donate"><img src="https://img.shields.io/badge/-LiberaPay-grey?style=flat-square&logo=liberapay" alt="LiberaPay"></a>
-  <a href="https://github.com/sponsors/mag37"><img src="https://img.shields.io/badge/-Sponsor-grey?style=flat-square&logo=github" alt="Github Sponsor"></a>
-  <a href="https://www.paypal.com/donate/?business=P2V5MCWRGCNBG&no_recurring=0&currency_code=SEK"><img src="https://img.shields.io/badge/-PayPal-grey?style=flat-square&logo=paypal" alt="PayPal donation"></a>
-</p>
-
 <h2 align="center">CLI tool to automate docker image updates or notifying when updates are available.</h2>
 <h3 align="center">selective updates, include/exclude containers, image backups, custom labels, notification plugins, prune when done etc.</h3>
-
-<h4 align="center">:whale: Docker Hub pull limit :chart_with_downwards_trend: not an issue for checks only for actual pulls - <a href="#whale-docker-hub-pull-limit-chart_with_downwards_trend-not-an-issue-for-checks-but-for-actual-pulls">read more</a></h4>
-
-<h5 align="center">For Podman - see the fork <a href="https://github.com/sudo-kraken/podcheck">sudo-kraken/podcheck</a>!</h4>
 
 ___
 
@@ -328,22 +313,3 @@ Using the `-r` option together with eg. `-i` and `-n` to just check for updates 
 If you hit issues, you could check the output of the `extras/errorCheck.sh` script for clues.
 Another option is to run the main script with debugging in a subshell `bash -x dockcheck.sh` - if there's a particular container/image that's causing issues you can filter for just that through `bash -x dockcheck.sh nginx`.
 
-## License
-dockcheck is created and released under the [GNU GPL v3.0](https://www.gnu.org/licenses/gpl-3.0-standalone.html) license.
-
-## Sponsorlist
-
-:small_orange_diamond: [avegy](https://github.com/avegy)
-:small_orange_diamond: [eichhorn](https://github.com/eichhorn)
-:small_orange_diamond: [stepdg](https://github.com/stepdg)
-:small_orange_diamond: [acer2220](https://github.com/acer2220)
-:small_orange_diamond: [shgew](https://github.com/shgew)
-:small_orange_diamond: [jonas3456](https://github.com/jonas3456)
-:small_orange_diamond: [4ndreasH](https://github.com/4ndreasH)
-:small_orange_diamond: [markoe01](https://github.com/markoe01)
-:small_orange_diamond: [mushrowan](https://github.com/mushrowan)
-:small_orange_diamond:
-
-___
-
-### The [story](https://mag37.org/posts/project_dockcheck/) behind it. 1 year in retrospect.
