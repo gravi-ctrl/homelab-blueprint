@@ -10,9 +10,6 @@
 | `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
 | `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs (needs to be copied to /usr/local/bin/) | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
-| `dockcheck/dockcheck.sh` | No description provided. | On Demand |
-| `dockcheck/notify_templates/notify_telegram.sh` | No description provided. | On Demand |
-| `dockcheck/notify_templates/notify_v2.sh` | No description provided. | On Demand |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Varies |
 | `guestwifi` | Triggers the running wifi_robot container via HTTP (needs to be copied to /usr/local/bin/) | On Demand |
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
