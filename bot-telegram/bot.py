@@ -13,7 +13,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 load_dotenv()
 
-TOKEN = os.getenv('BOT_TOKEN')
+TOKEN = os.getenv('VERGIL_BOT_TOKEN')
 ALLOWED_ID = int(os.getenv('ALLOWED_USER_ID'))
 
 COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}
@@ -61,7 +61,7 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     if not TOKEN or not ALLOWED_ID:
-        print("Error: Missing BOT_TOKEN or ALLOWED_USER_ID in .env")
+        print("Error: Missing VERGIL_BOT_TOKEN or ALLOWED_USER_ID in .env")
         exit(1)
 
     app = ApplicationBuilder().token(TOKEN).build()
