@@ -237,4 +237,4 @@ chpwd() {
 }
 
 # Dockcheck alias
-alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -x 10'
+alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -miIx 10'
