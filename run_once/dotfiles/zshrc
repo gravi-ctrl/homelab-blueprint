@@ -221,8 +221,9 @@ extract() {
     fi
 }
 
-# Git Auto-Commit Alert (Context-aware warnings when entering directories)
+# Git auto-commit alert (with subdirectory support)
 typeset -A _commit_zones_seen
+
 _find_commit_zone() {
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
@@ -233,11 +234,14 @@ _find_commit_zone() {
 }
 
 chpwd() {
-    local zone=$(_find_commit_zone) || return
+    local zone
+    zone=$(_find_commit_zone) || return
+
     [[ -n "${_commit_zones_seen[$zone]}" ]] && return
     _commit_zones_seen[$zone]=1
 
-    echo -e "\n\033[1;31m⚠️ GIT AUTO-COMMIT\033[0m \033[90m$zone\033[0m"
+    echo
+    echo -e "\033[1;31m⚠️ GIT AUTO-COMMIT\033[0m \033[90m$zone\033[0m"
     grep -Ev '^#|^\s*$' "$zone/.commit-warning" | while read -r line; do
         echo -e "  \033[31m↳ $line\033[0m"
     done
