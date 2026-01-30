@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT_DIR = "/home/gravi-ctrl/scripts"
 OUTPUT_FILE = "/home/gravi-ctrl/scripts/SCRIPTS_INVENTORY.md"
+IGNORE_DIRS = [".git", "venv", "__pycache__", "ctrl_s_master"]
 EXTENSIONS = {".sh", ".py"}
 
 def is_script_file(file_path):
@@ -44,7 +45,9 @@ def get_metadata(file_path):
 def generate_inventory():
     inventory = []
 
-    for root, _, files in os.walk(ROOT_DIR):
+    for root, dirs, files in os.walk(ROOT_DIR):
+        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+
         for file in files:
             file_path = Path(root) / file
 
