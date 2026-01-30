@@ -3,6 +3,7 @@ adduser
 apparmor
 apport
 apt
+apt-transport-https
 apt-utils
 base-files
 bash
