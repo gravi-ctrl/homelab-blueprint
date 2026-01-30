@@ -1,3 +1,23 @@
+# ==============================================================================
+# 0. PERSISTENT WELCOME MESSAGE
+# (Must stay ABOVE the Powerlevel10k instant prompt block)
+# ==============================================================================
+if [[ -n "$SSH_CONNECTION" ]]; then
+    echo -e "\n\e[1;34m🚀 TERMINAL READY\e[0m"
+    echo -e "\e[90m--------------------------------------------------\e[0m"
+    echo -e "\e[1mQuick Aliases:\e[0m"
+    echo -e "  \e[32mdc\e[0m        -> Containers update check"
+    echo -e "  \e[32mextract\e[0m   -> Extract any archive (zip, tar, etc.)"
+    echo -e "\e[1mFuzzy Find (FZF):\e[0m"
+    echo -e "  \e[33mCtrl+R\e[0m    -> Search History"
+    echo -e "  \e[33mCtrl+T\e[0m    -> Paste File/Folder path"
+    echo -e "  \e[33mAlt+C\e[0m     -> Jump 'cd' to Folder"
+    echo -e "\e[1mAutosuggestions:\e[0m"
+    echo -e "  \e[33m→ / End\e[0m   -> Accept Suggestion"
+    echo -e "  \e[33mCtrl+Spc\e[0m  -> \e[1;31mEXECUTE\e[0m Suggestion"
+    echo -e "\e[90m--------------------------------------------------\e[0m\n"
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -113,104 +133,96 @@ source $ZSH/oh-my-zsh.sh
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-# --- SMART HISTORY CONFIG ---
-
-# 1. Size: Keep a lot, but not infinity
-HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
-
-# 2. No Duplicates (The Fix for your main complaint)
-# If you run 'docker ps' today, it deletes the entry from yesterday.
-# You only ever see the command ONCE in your list (the most recent time).
-setopt HIST_IGNORE_ALL_DUPS
-setopt HIST_SAVE_NO_DUPS
-setopt HIST_FIND_NO_DUPS
-setopt EXTENDED_HISTORY
-setopt HIST_EXPIRE_DUPS_FIRST
-
-# 3. Ignore "Junk" Commands automatically
-# This stops 'ls', 'cd', 'pwd', and 'exit' from cluttering your history.
-# You can add more separated by |
-HISTORY_IGNORE="(ls|ll|cd|pwd|exit|clear|reboot|history)"
-
-# 4. The "Spy Mode" (Ignore Space)
-# If you type a SPACE before a command, it will NOT be saved.
-# Example: " <space> echo my_password" -> Won't appear in history.
-setopt HIST_IGNORE_SPACE
-
-# 5. Share history instantly
-# If you have two terminals open, they share history immediately.
-setopt SHARE_HISTORY
-
-# To access the data folder with $assets
+# ==============================================================================
+# 1. ENVIRONMENT & PATHS
+# ==============================================================================
 export assets="/srv/data/assets"
+export HISTFILE=~/.zsh_history
+export HISTSIZE=10000
+export SAVEHIST=10000
 
-# --- CTRL+BACKSPACE FIX ---
+# ==============================================================================
+# 2. SMART HISTORY MANAGEMENT
+# ==============================================================================
+# Deduplication Logic
+setopt HIST_IGNORE_ALL_DUPS    # Overwrite old duplicate with the new one
+setopt HIST_SAVE_NO_DUPS       # Never write duplicates to the history file
+setopt HIST_FIND_NO_DUPS       # Don't show duplicates when searching
+setopt HIST_EXPIRE_DUPS_FIRST  # Clear duplicates first when history is full
+setopt EXTENDED_HISTORY        # Record timestamps
+setopt SHARE_HISTORY           # Sync history across all open terminals
+setopt HIST_IGNORE_SPACE       # LEADING SPACE = NOT SAVED (Use for passwords/typos)
 
-# 1. Set "Word Style" to Bash
-# This tells Zsh that only letters/numbers are words.
-# Everything else (/ . -) is a separator.
-autoload -U select-word-style
-select-word-style bash
+# Junk Command Filter (Prevents these from cluttering history)
+HISTORY_IGNORE="(ls|ll|cd|pwd|exit|clear|reboot|history|zsh|htop|top)"
 
-# 2. Bind the Key
-# '^H' is the standard code sent by terminals for Ctrl+Backspace
-bindkey '^H' backward-kill-word
-
-# 3. Alternative code (Some terminals send this instead)
-bindkey '^[[3;5~' backward-kill-word
-
-# --- INTELLIGENT UP/DOWN SEARCH ---
-
-# 1. Load the required functions
-autoload -U up-line-or-beginning-search
-autoload -U down-line-or-beginning-search
-zle -N up-line-or-beginning-search
-zle -N down-line-or-beginning-search
-
-# 2. Bind the Arrow Keys
-# This maps "Up Arrow" to the search function
-bindkey "^[[A" up-line-or-beginning-search
-bindkey "^[[B" down-line-or-beginning-search
-
-# 3. Alternative Codes (For Termux/different terminals)
-# If the above doesn't work, one of these usually covers the rest:
-bindkey '^[[OA' up-line-or-beginning-search
-bindkey '^[[OB' down-line-or-beginning-search
-
-# Universal Extract Function
-extract () {
-  if [ -f $1 ] ; then
-    case $1 in
-      *.tar.bz2)   tar xjf $1     ;;
-      *.tar.gz)    tar xzf $1     ;;
-      *.bz2)       bunzip2 $1     ;;
-      *.rar)       unrar e $1     ;;
-      *.gz)        gunzip $1      ;;
-      *.tar)       tar xf $1      ;;
-      *.tbz2)      tar xjf $1     ;;
-      *.tgz)       tar xzf $1     ;;
-      *.zip)       unzip $1       ;;
-      *.Z)         uncompress $1  ;;
-      *.7z)        7z x $1        ;;
-      *.tar.xz)    tar xJf $1     ;;  # <--- The one we used for your backups
-      *)           echo "'$1' cannot be extracted via extract()" ;;
-    esac
-  else
-    echo "'$1' is not a valid file"
-  fi
+zshaddhistory() {
+    local cmd="${1%%$'\n'}" # Strip trailing newline
+    # If command is in junk list, return 1 to reject it
+    if [[ "$cmd" =~ ^($HISTORY_IGNORE)([[:space:]].*|$) ]]; then
+        return 1
+    fi
+    return 0
 }
 
-# Enable FZF (Fuzzy Finder) Keybindings
-# This turns on Ctrl+R (History) and Ctrl+T (File Search)
+# ==============================================================================
+# 3. INPUT BEHAVIOR & KEYBINDINGS
+# ==============================================================================
+# Word Style: Only letters/numbers are "words" (Stops backspace at / or -)
+autoload -U select-word-style && select-word-style bash
+
+# Keybindings: Ctrl+Backspace
+bindkey '^H'      backward-kill-word
+bindkey '^[[3;5~' backward-kill-word
+
+# Keybindings: Intelligent Search (Up/Down arrow searches by prefix)
+autoload -U up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey "^[[A"  up-line-or-beginning-search
+bindkey "^[[B"  down-line-or-beginning-search
+bindkey "^[[OA" up-line-or-beginning-search # Support for Termux/Alternative codes
+bindkey "^[[OB" down-line-or-beginning-search
+
+# ==============================================================================
+# 4. EXTERNAL TOOLS & ALIASES
+# ==============================================================================
+alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 7'
+
+# Fuzzy Finder (FZF) Keybindings & Completion
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
 
-# Git auto-commit alert (with subdirectory support)
-typeset -A _commit_zones_seen
+# 'Ctrl + Space' accepts and executes the suggestion immediately
+bindkey '^ ' autosuggest-execute
 
-# Walk up the directory tree to find .commit-warning
+# ==============================================================================
+# 5. CUSTOM FUNCTIONS
+# ==============================================================================
+
+# Universal Archive Extractor
+extract() {
+    if [[ -f "$1" ]]; then
+        case "$1" in
+            *.tar.bz2|*.tbz2) tar xjf "$1" ;;
+            *.tar.gz|*.tgz)   tar xzf "$1" ;;
+            *.tar.xz)         tar xJf "$1" ;;
+            *.tar)            tar xf "$1"  ;;
+            *.bz2)            bunzip2 "$1" ;;
+            *.rar)            unrar e "$1" ;;
+            *.gz)             gunzip "$1"  ;;
+            *.zip)            unzip "$1"   ;;
+            *.Z)              uncompress "$1" ;;
+            *.7z)             7z x "$1"    ;;
+            *)                echo "Error: '$1' cannot be extracted via extract()" ;;
+        esac
+    else
+        echo "Error: '$1' is not a valid file"
+    fi
+}
+
+# Git Auto-Commit Alert (Context-aware warnings when entering directories)
+typeset -A _commit_zones_seen
 _find_commit_zone() {
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
@@ -221,20 +233,12 @@ _find_commit_zone() {
 }
 
 chpwd() {
-    local zone
-    zone=$(_find_commit_zone) || return
-    
-    # Skip if already shown this session
+    local zone=$(_find_commit_zone) || return
     [[ -n "${_commit_zones_seen[$zone]}" ]] && return
     _commit_zones_seen[$zone]=1
-    
-    # Compact warning
-    echo
-    echo -e "\033[1;31m⚠️ GIT AUTO-COMMIT\033[0m \033[90m$zone\033[0m"
+
+    echo -e "\n\033[1;31m⚠️ GIT AUTO-COMMIT\033[0m \033[90m$zone\033[0m"
     grep -Ev '^#|^\s*$' "$zone/.commit-warning" | while read -r line; do
         echo -e "  \033[31m↳ $line\033[0m"
     done
 }
-
-# Dockcheck alias
-alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 7'

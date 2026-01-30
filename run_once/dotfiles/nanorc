@@ -1,1 +1,5 @@
+set mouse
+set zap
 bind ^H chopwordleft main
+set softwrap
+set selectedcolor white,blue
