@@ -19,7 +19,7 @@ echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (ACL/Inotify) + Shell tools (Zsh/FZF)
-sudo apt install -y curl dos2unix fail2ban unbound mariadb-client htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
+sudo apt install -y curl dos2unix fail2ban unbound moreutils mariadb-client htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
 
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
