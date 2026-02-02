@@ -9,7 +9,7 @@
 | **Obsidian Personal Notes Sync** | Every 15 minutes | `cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backu...` |
 | **Obsidian Work Notes Sync** | Every 15 minutes | `cron-guard "Obsidian Work Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/ob...` |
 | **Server Stacks Backup** | Every 30 minutes | `cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
-| **Cleanup Script** | At 01:00 and 13:00 | `cron-guard "Cleanup Job" /usr/bin/python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backu...` |
+| **Cleanup Script** | At 01:00 and 13:00 | `cron-guard "Cleanup Job" python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contact...` |
 | **Audiobookshelf Backup** | At 01:30 | `cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/B...` |
 | **JDownloader Link Grabber Cleanup** | At 04:00 | `cron-guard "JDownloader Link Grabber Cleanup" sh -c 'cd /srv/data/assets/downloads/watch && find . -mindepth 1 -delete'` |
 | **Paperless Auto Renamer** | At 04:00 | `cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
@@ -23,7 +23,7 @@
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
 | **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `/home/gravi-ctrl/scripts/battery_monitor.sh > /dev/null 2>&1` |
-| **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `cron-guard "Nextcloud Cal/Card Backup" sh -c '/usr/local/bin/calcardbackup /opt/stacks/nextcloud/html -o /srv/data/as...` |
+| **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `cron-guard "Nextcloud Cal/Card Backup" sh -c 'calcardbackup /opt/stacks/nextcloud/html -o /srv/data/assets/syncthing/...` |
 | **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `cron-guard "Docker Container Backup" /home/gravi-ctrl/scripts/local-opt-backup.sh` |
 | **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && cron-guard "ctrl_s_master" /home/gravi-ctrl/scripts/ctrl_s_master/run.sh` |
 
