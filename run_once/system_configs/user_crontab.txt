@@ -25,10 +25,10 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Healthchecks.io Server/Internet status
-*/5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL"
+*/5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1
 
 # NextDNS IP Update
-*/5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL"
+*/5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1
 
 # Obsidian Personal Notes Sync
 */15 * * * * cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/personal" "Obsidian Personal"

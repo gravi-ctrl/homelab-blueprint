@@ -4,8 +4,8 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Healthchecks.io Server/Internet status** | Every 5 minutes | `. /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL"` |
-| **NextDNS IP Update** | Every 5 minutes | `. /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL"` |
+| **Healthchecks.io Server/Internet status** | Every 5 minutes | `. /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1` |
+| **NextDNS IP Update** | Every 5 minutes | `. /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1` |
 | **Obsidian Personal Notes Sync** | Every 15 minutes | `cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backu...` |
 | **Obsidian Work Notes Sync** | Every 15 minutes | `cron-guard "Obsidian Work Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/ob...` |
 | **Server Stacks Backup** | Every 30 minutes | `cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
@@ -21,7 +21,7 @@
 ## ⚡ Root Cron
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `/home/gravi-ctrl/scripts/battery_monitor.sh` |
+| **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `/home/gravi-ctrl/scripts/battery_monitor.sh > /dev/null 2>&1` |
 | **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `cron-guard "Nextcloud Cal/Card Backup" sh -c '/usr/local/bin/calcardbackup /opt/stacks/nextcloud/html -o /srv/data/as...` |
 | **mmotti Pihole Regex Update** | At 02:30, only on Monday | `cron-guard "mmotti Pi-hole Regex Update" docker exec pihole /bin/sh -c "apk add --no-cache python3 curl >/dev/null 2>...` |
 | **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `cron-guard /home/gravi-ctrl/scripts/local-opt-backup.sh` |

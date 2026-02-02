@@ -25,7 +25,7 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Battery Monitor - Shuts down the laptop if battery is under 20%
-*/5 * * * * /home/gravi-ctrl/scripts/battery_monitor.sh
+*/5 * * * * /home/gravi-ctrl/scripts/battery_monitor.sh > /dev/null 2>&1
 
 # Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions
 0 4 * * * cron-guard "Nextcloud Cal/Card Backup" sh -c '/usr/local/bin/calcardbackup /opt/stacks/nextcloud/html -o /srv/data/assets/syncthing/Backup/contacts-calendars_backup -oe -oc "docker compose -f /opt/stacks/nextcloud/docker-compose.yml exec -T -u 33 app php occ" && chown -R gravi-ctrl:gravi-ctrl /srv/data/assets/syncthing/Backup/contacts-calendars_backup'
