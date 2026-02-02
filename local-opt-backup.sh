@@ -91,8 +91,8 @@ sleep 20
 echo "Running initial stack convergence..."
 find "$STACKS_ROOT" -name "docker-compose.yml" -execdir docker compose up -d \;
 
-echo "Waiting 300 seconds for HDD I/O to settle..."
-sleep 300
+echo "Waiting 60 seconds for HDD I/O to settle..."
+sleep 60
 
 # Find containers that are not running or are unhealthy
 STUCK_CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E "restarting|exited|unhealthy" | awk '{print $1}')
