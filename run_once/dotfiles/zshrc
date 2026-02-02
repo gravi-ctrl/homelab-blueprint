@@ -8,6 +8,7 @@ if [[ -n "$SSH_CONNECTION" ]]; then
     echo -e "\e[1mQuick Aliases:\e[0m"
     echo -e "  \e[32mdc\e[0m        -> Containers update check"
     echo -e "  \e[32mextract\e[0m   -> Extract any archive (zip, tar, etc.)"
+    echo -e "  \e[32mstamp\e[0m     -> Adds a timestamp to your commands"
     echo -e "\e[1mFuzzy Find (FZF):\e[0m"
     echo -e "  \e[33mCtrl+R\e[0m    -> Search History"
     echo -e "  \e[33mCtrl+T\e[0m    -> Paste File/Folder path"
@@ -189,6 +190,12 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 7'
 
+# Timestamp your terminal
+stamp() {
+  # Usage: timestamp <command>
+  "$@" | ts  # Pipes the command's output to ts with ISO format
+}
+
 # Fuzzy Finder (FZF) Keybindings & Completion
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
@@ -246,3 +253,6 @@ chpwd() {
         echo -e "  \033[31m↳ $line\033[0m"
     done
 }
+
+# Time stamp to each line/command
+RPROMPT="[%D{%f/%m/%y} | %D{%L:%M:%S}]"

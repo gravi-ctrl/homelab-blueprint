@@ -74,6 +74,7 @@ mariadb-client
 mawk
 mdadm
 micro
+moreutils
 mosh
 motd-news-config
 mount
