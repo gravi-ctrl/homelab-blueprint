@@ -14,44 +14,44 @@
 
 set -o pipefail
 
-# --- CONFIG ---
-TOKEN="TELEGRAM_BOT_TOKEN"
-CHAT_ID="YOUR_CHAT_ID"
-# --------------
+# --- 1. CONFIG LOADER ---
+ENV_FILE="/home/gravi-ctrl/scripts/.env"
 
-# 1. Extract the Job Name (First Argument)
+if [ -f "$ENV_FILE" ]; then
+    set -a
+    source "$ENV_FILE"
+    set +a
+fi
+
+# --- 2. VARIABLE MAPPING ---
+TOKEN="${TELEGRAM_DANTE_BOT_TOKEN:-YOUR_HARDCODED_TOKEN_HERE}"
+CHAT_ID="${TELEGRAM_CHAT_ID:-YOUR_HARDCODED_CHAT_ID_HERE}"
+
+# --- 3. SAFETY CHECK ---
+if [[ "$TOKEN" == "YOUR_HARDCODED_*" ]] || [ -z "$TOKEN" ]; then
+    "$@"
+    exit $?
+fi
+
+# --- 4. EXECUTION ---
 JOB_NAME="$1"
-shift 1 # Remove the name, leaving only the command to run
+shift 1 
 
-# 2. Run the command, capture standard output AND errors
-# We capture the output into a variable
 OUTPUT=$("$@" 2>&1)
 EXIT_CODE=$?
 
-# 3. If the command failed (Exit code is not 0)
+# --- 5. FAILURE HANDLING ---
 if [ $EXIT_CODE -ne 0 ]; then
-
-    # Get current date
     DATE_TIME=$(date "+%Y-%m-%d %H:%M:%S")
-
-    # Grab the last 10 lines of the log (to keep telegram msg short)
     LOG_TAIL=$(echo "$OUTPUT" | tail -n 10)
 
-    # If log is empty, put a placeholder
-    if [ -z "$LOG_TAIL" ]; then
-        LOG_TAIL="No output generated."
-    fi
+    TEXT=$(printf "🚨 *CRON FAILURE*\n\n📂 *Job:* %s\n⏰ *Time:* %s\n🔢 *Exit Code:* %s\n\n📜 *Log:*\n\`\`\`\n%s\n\`\`\`" \
+    "$JOB_NAME" "$DATE_TIME" "$EXIT_CODE" "${LOG_TAIL:-No output.}")
 
-    # Prepare the message using Markdown
-    TEXT=$(printf "🚨 *CRON FAILURE*\n\n📂 *Job:* %s\n⏰ *Time:* %s\n🔢 *Exit Code:* %s\n\n📜 *Error Log (Last lines):*\n\`\`\`\n%s\n\`\`\`" \
-    "$JOB_NAME" "$DATE_TIME" "$EXIT_CODE" "$LOG_TAIL")
-
-    # Send to Telegram
     curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
         -d chat_id="$CHAT_ID" \
         -d parse_mode="Markdown" \
         --data-urlencode "text=$TEXT" > /dev/null 2>&1
 fi
 
-# Pass the exit code back to Cron (so Cron knows it failed too)
 exit $EXIT_CODE
