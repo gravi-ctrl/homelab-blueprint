@@ -16,6 +16,7 @@
 | **Pi-hole Daily Gravity Update** | At 04:00 | `cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g` |
 | **Scripts & System Configs - Calls the wrapper, which takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh` |
 | **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mniIx 10 -d 7` |
+| **mmotti Pihole Regex Update** | At 02:30, only on Monday | `cron-guard "Pi-hole Regex" docker exec pihole /bin/sh -c "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-r...` |
 
 
 ## ⚡ Root Cron
@@ -23,7 +24,6 @@
 | :--- | :--- | :--- |
 | **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `/home/gravi-ctrl/scripts/battery_monitor.sh > /dev/null 2>&1` |
 | **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `cron-guard "Nextcloud Cal/Card Backup" sh -c '/usr/local/bin/calcardbackup /opt/stacks/nextcloud/html -o /srv/data/as...` |
-| **mmotti Pihole Regex Update** | At 02:30, only on Monday | `cron-guard "mmotti Pi-hole Regex Update" docker exec pihole /bin/sh -c "apk add --no-cache python3 curl >/dev/null 2>...` |
 | **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `cron-guard /home/gravi-ctrl/scripts/local-opt-backup.sh` |
 | **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && cron-guard "ctrl_s_master" /home/gravi-ctrl/scripts/ctrl_s_master/run.sh` |
 
