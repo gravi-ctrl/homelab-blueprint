@@ -24,6 +24,6 @@
 | :--- | :--- | :--- |
 | **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `/home/gravi-ctrl/scripts/battery_monitor.sh > /dev/null 2>&1` |
 | **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `cron-guard "Nextcloud Cal/Card Backup" sh -c 'calcardbackup /opt/stacks/nextcloud/html -o /srv/data/assets/syncthing/...` |
-| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `cron-guard "Docker Container Backup" /home/gravi-ctrl/scripts/local-opt-backup.sh` |
+| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `cron-guard "Docker Stacks Backup" /home/gravi-ctrl/scripts/local-opt-backup.sh` |
 | **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && cron-guard "ctrl_s_master" /home/gravi-ctrl/scripts/ctrl_s_master/run.sh` |
 

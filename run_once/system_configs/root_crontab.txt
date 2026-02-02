@@ -31,7 +31,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 0 4 * * * cron-guard "Nextcloud Cal/Card Backup" sh -c 'calcardbackup /opt/stacks/nextcloud/html -o /srv/data/assets/syncthing/Backup/contacts-calendars_backup -oe -oc "docker compose -f /opt/stacks/nextcloud/docker-compose.yml exec -T -u 33 app php occ" && chown -R gravi-ctrl:gravi-ctrl /srv/data/assets/syncthing/Backup/contacts-calendars_backup'
 
 # Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes
-30 5 * * 1 cron-guard "Docker Container Backup" /home/gravi-ctrl/scripts/local-opt-backup.sh
+30 5 * * 1 cron-guard "Docker Stacks Backup" /home/gravi-ctrl/scripts/local-opt-backup.sh
 
 # ctrl_s_master Project
 0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard "ctrl_s_master" /home/gravi-ctrl/scripts/ctrl_s_master/run.sh
