@@ -59,3 +59,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # dockcheck - Send a TG notification with the available container updates
 0 9 * * * cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mniIx 10 -d 7
+
+# mmotti Pihole Regex Update
+30 2 * * 1 cron-guard "Pi-hole Regex" docker exec pihole /bin/sh -c "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && /usr/local/bin/pihole -g"
