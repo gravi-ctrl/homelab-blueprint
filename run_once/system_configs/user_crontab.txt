@@ -21,6 +21,8 @@
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Healthchecks.io Server/Internet status
 */5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL"
@@ -29,31 +31,31 @@
 */5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL"
 
 # Obsidian Personal Notes Sync
-*/15 * * * * /usr/local/bin/cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/personal" "Obsidian Personal"
+*/15 * * * * cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/personal" "Obsidian Personal"
 
 # Obsidian Work Notes Sync
-*/15 * * * * /usr/local/bin/cron-guard "Obsidian Work Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/work" "Obsidian Work"
+*/15 * * * * cron-guard "Obsidian Work Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/work" "Obsidian Work"
 
 # Server Stacks Backup
-*/30 * * * * /usr/local/bin/cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"
+*/30 * * * * cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"
 
 # Cleanup Script
-0 1,13 * * * /usr/local/bin/cron-guard "Cleanup Job" /usr/bin/python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contacts-calendars_backup /srv/data/assets/syncthing/Backup/tasks /srv/data/assets/syncthing/Backup/antennapod
+0 1,13 * * * cron-guard "Cleanup Job" /usr/bin/python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contacts-calendars_backup /srv/data/assets/syncthing/Backup/tasks /srv/data/assets/syncthing/Backup/antennapod
 
 # Audiobookshelf Backup
-30 1 * * * /usr/local/bin/cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/Backup/audiobookshelf/
+30 1 * * * cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/Backup/audiobookshelf/
 
 # JDownloader Link Grabber Cleanup
-0 4 * * * /usr/local/bin/cron-guard "JDownloader Link Grabber Cleanup" sh -c 'cd /srv/data/assets/downloads/watch && find . -mindepth 1 -delete'
+0 4 * * * cron-guard "JDownloader Link Grabber Cleanup" sh -c 'cd /srv/data/assets/downloads/watch && find . -mindepth 1 -delete'
 
 # Paperless Auto Renamer
-0 4 * * * /usr/local/bin/cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer
+0 4 * * * cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer
 
 # Pi-hole Daily Gravity Update
-0 4 * * * /usr/local/bin/cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g
+0 4 * * * cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g
 
 # Scripts & System Configs - Calls the wrapper, which takes a snapshot of configs then calls git-auto-sync
-0 5 * * * /usr/local/bin/cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh
+0 5 * * * cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh
 
 # dockcheck - Send a TG notification with the available container updates
-0 9 * * * /usr/local/bin/cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mniIx 10 -d 7
+0 9 * * * cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mniIx 10 -d 7
