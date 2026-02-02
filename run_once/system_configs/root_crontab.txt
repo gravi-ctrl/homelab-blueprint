@@ -1,0 +1,38 @@
+# Edit this file to introduce tasks to be run by cron.
+# 
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+# 
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+# 
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+# 
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+# 
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+# 
+# For more information see the manual pages of crontab(5) and cron(8)
+# 
+# m h  dom mon dow   command
+
+# Battery Monitor - Shuts down the laptop if battery is under 20%
+*/5 * * * * /home/gravi-ctrl/scripts/battery_monitor.sh
+
+# Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions
+0 4 * * * /usr/local/bin/cron-guard "Nextcloud Cal/Card Backup" sh -c '/usr/local/bin/calcardbackup /opt/stacks/nextcloud/html -o /srv/data/assets/syncthing/Backup/contacts-calendars_backup -oe -oc "docker compose -f /opt/stacks/nextcloud/docker-compose.yml exec -T -u 33 app php occ" && chown -R gravi-ctrl:gravi-ctrl /srv/data/assets/syncthing/Backup/contacts-calendars_backup'
+
+# mmotti Pihole Regex Update
+30 2 * * 1 /usr/local/bin/cron-guard "mmotti Pi-hole Regex Update" docker exec pihole /bin/sh -c "apk add --no-cache python3 curl >/dev/null 2>&1; curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g"
+
+# Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes
+30 5 * * 1 /usr/local/bin/cron-guard /home/gravi-ctrl/scripts/local-opt-backup.sh
+
+# ctrl_s_master Project
+0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && /usr/local/bin/cron-guard "ctrl_s_master" /home/gravi-ctrl/scripts/ctrl_s_master/run.sh
