@@ -57,6 +57,10 @@ If the server is wiped, follow this order to restore functionality.
         ```bash
         sudo tar -xJf docker-stacks-DATE.tar.xz -C / --wildcards 'opt/stacks/*/.env'
         ```
+    *   **Option C (.env.example):**
+        *   Get the secrets from your PWM
+        *   `cp .env.example .env`
+        *   Fill in the `.env` files with your secrets
 3.  **Launch:**
     ```bash
     cd /opt/stacks/dockge
