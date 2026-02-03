@@ -21,7 +21,7 @@ echo "--- Applying Rules ---"
 # 1. LOCAL LAN TRUST
 # Allows your home devices to access ALL ports (SSH, Web 80/443, SMB, etc)
 # This replaces the need for specific Port 22 or 80 rules for your PC.
-sudo ufw allow from 192.168.1.0/24 comment 'Trust Local LAN'
+sudo ufw allow from 192.168.0.0/16 comment 'Trust Local LAN'
 
 # 2. TAILSCALE VPN TRUST
 # Allow all traffic coming through the VPN tunnel
