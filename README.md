@@ -59,7 +59,10 @@ If the server is wiped, follow this order to restore functionality.
         ```
     *   **Option C (.env.example):**
         *   Get the secrets from your PWM
-        *   `cp .env.example .env`
+        *   Copy every `.env.example` in every stack to `.env` using
+        ```bash
+        for d in /opt/stacks/*/; do cp -n "$d.env.example" "$d.env"; done 
+        ```
         *   Fill in the `.env` files with your secrets
 3.  **Launch:**
     ```bash
