@@ -44,7 +44,7 @@ If the server is wiped, follow this order to restore functionality.
 1.  **Clone the Docker Repo:**
     ```bash
     sudo mkdir -p /opt/stacks
-    sudo chown -R 1000:1000 /opt/stacks
+    sudo chown -R $(id -u):$(id -g) /opt/stacks
     git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
     ```
 2.  **Restore Identity & Secrets:**
@@ -67,6 +67,3 @@ If the server is wiped, follow this order to restore functionality.
 ### Phase 4: Finalize
 *   **Activating Scripts:** Most of the scripts are working through crontabs, but check on the scripts and read their instructions on top (if there are any) to restore/activate them — if needed. 
 *   **Reboot**
----
-
-*   **IMPORTANT NOTE:** Make sure that the current user ID is 1000 by running `id` or `id $USER`. 
