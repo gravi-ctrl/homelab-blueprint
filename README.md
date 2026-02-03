@@ -1,0 +1,72 @@
+# 🛠️ Server Scripts & Automation Blueprint
+
+This repository contains the "Brain" of the homelab: automation scripts, system configurations, and recovery tools.
+
+**Location on Server:** `/home/gravi-ctrl/scripts`
+
+---
+
+## 🚨 Disaster Recovery Protocol (Day 0)
+
+If the server is wiped, follow this order to restore functionality.
+
+(For the `git clone..` to work, you need to restore the github keys first, which are included in the `docker-stacks-DATE.tar.xz` backup)
+
+### Phase 1: Bootstrap System
+1.  **Clone this Repo:**
+    ```bash
+    git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
+    chmod +x ~/scripts/*.sh
+    ```
+2.  **Run the Installer:**
+    This installs Docker, ACLs, BindFS, Nextcloud Snap, Python envs, and creates the directory skeleton.
+    ```bash
+    ~/scripts/setup.sh
+    ```
+
+### Phase 2: Restore System Configs
+*Reference files are located in:* `run_once/system_configs/`
+
+1.  **Fstab (Mounts):**
+    *   Open `/etc/fstab`.
+    *   **CRITICAL:** Update UUIDs for your new hard drives (check with `blkid`).
+    *   Copy the **BindFS** line for Nextcloud assets from `fstab.txt`.
+2.  **Sudo Permissions:**
+    *   Run `sudo visudo`.
+    *   Add: `gravi-ctrl ALL=(root) NOPASSWD: /usr/bin/crontab -l`
+3.  **Cron Jobs:**
+    *   Restore User: `cat "run_once/system_configs/user_crontab.txt" | crontab -`
+    *   Restore Root: `cat "run_once/system_configs/root_crontab.txt" | sudo crontab -`
+4.  **Firewall Rules:**
+    *   Run the script: `run_once/setup-firewall.sh`
+
+### Phase 3: Restore Docker Stacks
+1.  **Clone the Docker Repo:**
+    ```bash
+    sudo mkdir -p /opt/stacks
+    sudo chown -R 1000:1000 /opt/stacks
+    git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
+    ```
+2.  **Restore Identity & Secrets:**
+    *   *Source:* The weekly `docker-stacks-DATE.tar.xz` backup.
+    *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys.
+        ```bash
+        sudo tar -xJf docker-stacks-DATE.tar.xz -C /
+        ```
+    *   **Option B (Just Envs):**
+        ```bash
+        sudo tar -xJf docker-stacks-DATE.tar.xz -C / --wildcards 'opt/stacks/*/.env'
+        ```
+3.  **Launch:**
+    ```bash
+    cd /opt/stacks/dockge
+    docker compose up -d
+    # Then deploy remaining stacks via Dockge Web UI
+    ```
+
+### Phase 4: Finalize
+*   **Activating Scripts:** Most of the scripts are working through crontabs, but check on the scripts and read their instructions on top (if there are any) to restore/activate them — if needed. 
+*   **Reboot**
+---
+
+*   **IMPORTANT NOTE:** Make sure that the current user ID is 1000 by running `id` or `id $USER`. 
