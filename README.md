@@ -23,7 +23,7 @@ If the server is wiped, follow this order to restore functionality.
     chmod +x ~/scripts/*.sh
     ```
 2.  **Run the Installer:**
-    This installs Docker, ACLs, BindFS, Nextcloud Snap, Python envs, and creates the directory skeleton.
+    This installs Docker, ACLs, BindFS, Nextcloud Snap, Python envs, and creates the directory skeleton
     ```bash
     ~/scripts/setup.sh
     ```
@@ -33,8 +33,8 @@ If the server is wiped, follow this order to restore functionality.
 
 1.  **Fstab (Mounts):**
     *   Open `/etc/fstab`.
-    *   **CRITICAL:** Update UUIDs for your new hard drives (check with `blkid`).
-    *   Copy the **BindFS** line for Nextcloud assets from `fstab.txt`.
+    *   **CRITICAL:** Update UUIDs for your new hard drives (check with `blkid`)
+    *   Copy the **BindFS** line for Nextcloud assets from `fstab.txt`
 2.  **Sudo Permissions:**
     *   Run `sudo visudo`.
     *   Add: `gravi-ctrl ALL=(root) NOPASSWD: /usr/bin/crontab -l`
@@ -52,8 +52,8 @@ If the server is wiped, follow this order to restore functionality.
     git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
     ```
 2.  **Restore Identity & Secrets:**
-    *   *Source:* The weekly `docker-stacks-DATE.tar.xz` backup.
-    *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys.
+    *   *Source:* The weekly `docker-stacks-DATE.tar.xz` backup
+    *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys
         ```bash
         sudo tar -xJf docker-stacks-DATE.tar.xz -C /
         ```
@@ -76,5 +76,5 @@ If the server is wiped, follow this order to restore functionality.
     ```
 
 ### Phase 4: Finalize
-*   **Activating Scripts:** Most of the scripts are working through crontabs, but check on the scripts and read their instructions on top (if there are any) to restore/activate them — if needed. 
+*   **Activating Scripts:** Most of the scripts are working through crontabs, but check on the scripts and read their instructions on top (if there are any) to restore/activate them — if needed 
 *   **Reboot**
