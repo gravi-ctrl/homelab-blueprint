@@ -6,7 +6,7 @@
 # sudo cp cron-guard /usr/local/bin/
 # sudo chmod +x /usr/local/bin/cron-guard
 #
-# USAGE: cron-guard "NAME OF JOB" command_to_run
+# USAGE: While it's already in crontabs, but in case if new ones, add it like: cron-guard "NAME OF JOB" command_to_run
 # For multiple commands involving '&&' or '|', use sh -c then wrap the whole command between '...'
 # Example: /usr/local/bin/cron-guard "Test" sh -c 'cd /path/of/the/file && rm file'
 
