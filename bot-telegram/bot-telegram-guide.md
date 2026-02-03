@@ -37,7 +37,7 @@ pip3 install python-telegram-bot python-dotenv
    CMD_copy="cd /path/to/file && cp file /path/to/destination"
    ```
 
-## 4. Test the script
+## 3. Test the script
 Run the script manually to verify it picks up your commands.
 ```bash
 python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
@@ -45,7 +45,7 @@ python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
 *Output should say:*
 > Registered command: /copy
 
-## 5. System Service (Run Forever)
+## 4. System Service (Run Forever)
 
 1. Create the service file:
    ```bash
