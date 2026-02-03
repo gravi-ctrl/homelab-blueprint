@@ -10,7 +10,11 @@ This repository contains the "Brain" of the homelab: automation scripts, system 
 
 If the server is wiped, follow this order to restore functionality.
 
-(For the `git clone..` to work, you need to restore the github keys first, which are included in the `docker-stacks-DATE.tar.xz` backup)
+*   For the `git clone..` to work, you need to restore the github keys first, which are included in the `docker-stacks-DATE.tar.xz` backup
+*   After restoring the keys, make sure to do the following: 
+    *   `chmod 700 ~/.ssh`
+    *   `chmod 600 ~/.ssh/id_*`
+    *   `chmod 644 ~/.ssh/id_*.pub`
 
 ### Phase 1: Bootstrap System
 1.  **Clone this Repo:**
