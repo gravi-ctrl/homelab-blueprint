@@ -188,7 +188,7 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 # 4. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
-alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 7'
+alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
