@@ -63,7 +63,7 @@ If the server is wiped, follow this order to restore functionality.
         ```bash
         for d in /opt/stacks/*/; do cp -n "$d.env.example" "$d.env"; done 
         ```
-        *   Fill in the `.env` files with your secrets
+        *   Fill in the `.env` files with your secrets either through terminal, or Dockge
 3.  **Launch:**
     ```bash
     cd /opt/stacks/dockge
