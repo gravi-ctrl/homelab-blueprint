@@ -39,19 +39,36 @@ else
     # (in case a previous push failed but commit succeeded)
 fi
 
-# 5. Push changes
-# Try a standard push first
-if git push 2>/dev/null; then
-    : # Success, do nothing
-else
-    # If standard push fails, it might be a new branch needing upstream
-    echo "⚠️ Standard push failed. Attempting to set upstream..."
-    
-    # "origin HEAD" automatically pushes the current branch name to origin
-    if git push -u origin HEAD; then
-        echo "✅ Upstream set and pushed successfully."
-    else
-        echo "❌ Push Failed."
-        exit 1 # Triggers tg-alert
+# 5. Push changes with Retry Logic
+# We try up to 3 times to account for network blips
+MAX_RETRIES=3
+COUNT=0
+SUCCESS=0
+
+while [ $COUNT -lt $MAX_RETRIES ]; do
+    # Try standard push
+    if git push 2>/dev/null; then
+        SUCCESS=1
+        break
     fi
+
+    # Check if the failure was just a missing upstream (First run only)
+    if [ $COUNT -eq 0 ]; then
+        if git push -u origin HEAD 2>/dev/null; then
+            echo "✅ Upstream set and pushed successfully."
+            SUCCESS=1
+            break
+        fi
+    fi
+
+    echo "⚠️ Push failed (Attempt $((COUNT+1))/$MAX_RETRIES). Retrying in 10s..."
+    sleep 10
+    COUNT=$((COUNT+1))
+done
+
+if [ $SUCCESS -eq 0 ]; then
+    echo "❌ Push Failed after $MAX_RETRIES attempts."
+    # Ensure we print the actual error on the final attempt so you can see it in logs
+    git push
+    exit 1
 fi
