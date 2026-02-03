@@ -7,7 +7,7 @@
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m (root crontab) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars (needs to be copied to /usr/local/bin/) | Daily 4am (root crontab) |
-| `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 10am |
+| `cleanup_script.py` | Cleans folders, keeping the 2 most recent files | Daily 1am and 1pm |
 | `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs (needs to be copied to /usr/local/bin/) | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos (Docs, Stacks) | Varies |

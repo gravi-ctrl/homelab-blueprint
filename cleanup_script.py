@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Cleans folders, keeping the 2 most recent files
-# @FREQUENCY: Daily 10am
+# @FREQUENCY: Daily 1am and 1pm
 import os
 import glob
 import sys
