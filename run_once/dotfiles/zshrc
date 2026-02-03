@@ -6,16 +6,16 @@ if [[ -n "$SSH_CONNECTION" ]]; then
     echo -e "\n\e[1;34m🚀 REMINDER\e[0m"
     echo -e "\e[90m--------------------------------------------------\e[0m"
     echo -e "\e[1mQuick Aliases:\e[0m"
-    echo -e "  \e[32mdc\e[0m        -> Containers update check"
-    echo -e "  \e[32mextract\e[0m   -> Extract any archive (zip, tar, etc.)"
-    echo -e "  \e[32mstamp\e[0m     -> Adds a timestamp to your commands"
+    echo -e "  \e[32mdc\e[0m       -> Containers update check"
+    echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
+    echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
     echo -e "\e[1mFuzzy Find (FZF):\e[0m"
-    echo -e "  \e[33mCtrl+R\e[0m    -> Search History"
-    echo -e "  \e[33mCtrl+T\e[0m    -> Paste File/Folder path"
-    echo -e "  \e[33mAlt+C\e[0m     -> Jump 'cd' to Folder"
+    echo -e "  \e[33mCtrl+R\e[0m   -> Search History"
+    echo -e "  \e[33mCtrl+T\e[0m   -> Paste File/Folder path"
+    echo -e "  \e[33mAlt+C\e[0m    -> Jump 'cd' to Folder"
     echo -e "\e[1mAutosuggestions:\e[0m"
-    echo -e "  \e[33m→ / End\e[0m   -> Accept Suggestion"
-    echo -e "  \e[33mCtrl+Spc\e[0m  -> \e[1;31mEXECUTE\e[0m Suggestion"
+    echo -e "  \e[33m→ / End\e[0m  -> Accepts Suggestion"
+    echo -e "  \e[33mCtrl+Spc\e[0m -> \e[1;31mEXECUTES\e[0m Suggestion"
     echo -e "\e[90m--------------------------------------------------\e[0m\n"
 fi
 
@@ -190,10 +190,9 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 7'
 
-# Timestamp your terminal
+# Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
-  # Usage: timestamp <command>
-  "$@" | ts  # Pipes the command's output to ts with ISO format
+  "$@" | ts
 }
 
 # Fuzzy Finder (FZF) Keybindings & Completion
