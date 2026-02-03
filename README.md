@@ -61,7 +61,7 @@ If the server is wiped, follow this order to restore functionality.
         *   Get the secrets from your PWM
         *   Copy every `.env.example` in every stack to `.env` using
         ```bash
-        for d in /opt/stacks/*/; do cp -n "$d.env.example" "$d.env"; done 
+        for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
         ```
         *   Fill in the `.env` files with your secrets either through terminal, or Dockge
 3.  **Launch:**
