@@ -53,7 +53,7 @@ If the server is wiped, follow this order to restore functionality.
     ```
 2.  **Restore Identity & Secrets:**
     *   *Source:* The weekly `docker-stacks-DATE.tar.xz` backup.
-    *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys.
+    *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys:
         ```bash
         sudo tar -xJf docker-stacks-DATE.tar.xz -C /
         ```
