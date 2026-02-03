@@ -49,7 +49,7 @@ TARGET="/srv/data/assets"
 TARGET2="/srv/data/assets/nextcloud_data"
 
 # A. Set Physical Ownership
-sudo chown -R gravi-ctrl:gravi-ctrl "$TARGET"
+sudo chown -R $(id -u):$(id -g) "$TARGET"
 sudo chmod -R 775 "$TARGET"
 sudo chown -R 33:33 "$TARGET2"
 
