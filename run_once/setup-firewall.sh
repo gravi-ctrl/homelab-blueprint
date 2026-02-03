@@ -1,53 +1,40 @@
 #!/bin/bash
-# @DESCRIPTION: Bootstrap: Resets UFW and applies correct rules
+# @DESCRIPTION: Bootstrap: Resets UFW and applies correct rules (Private Server Mode)
 # @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ UFW FIREWALL RESTORATION SCRIPT
-# Based on saved configuration.
+# Strategy: Block Internet, Trust LAN, Trust VPN, Trust Docker.
 # ==============================================================================
 
 echo "--- Resetting Firewall to Defaults ---"
-# Disable first to prevent lockout
-sudo ufw disable
-# Reset rules to blank state
-echo "y" | sudo ufw reset
+# Reset rules to blank state without confirmation prompt
+sudo ufw --force reset
+
 # Default Policies
+# Deny incoming (Block the internet)
 sudo ufw default deny incoming
+# Allow outgoing (Allow updates/pings)
 sudo ufw default allow outgoing
 
 echo "--- Applying Rules ---"
 
-# 1. SSH ACCESS (Restricted to LAN & Docker)
-# Prevents public internet SSH access
-sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp comment 'SSH from LAN'
-sudo ufw allow from 172.16.0.0/12 to any port 22 proto tcp comment 'SSH from Docker'
-
-# 2. WEB TRAFFIC (Nginx Proxy Manager / Nextcloud)
-# 80/443 TCP is standard web. 443 UDP is for HTTP/3 (QUIC).
-sudo ufw allow 80/tcp comment 'HTTP'
-sudo ufw allow 443/tcp comment 'HTTPS'
-sudo ufw allow 443/udp comment 'HTTPS/3 QUIC'
-
-# 3. LOCAL LAN TRUST
-# Allows your home devices to access all ports (SMB, etc)
+# 1. LOCAL LAN TRUST
+# Allows your home devices to access ALL ports (SSH, Web 80/443, SMB, etc)
+# This replaces the need for specific Port 22 or 80 rules for your PC.
 sudo ufw allow from 192.168.1.0/24 comment 'Trust Local LAN'
 
-# 4. DOCKER NETWORK TRUST
-# This 172.16.0.0/12 range covers 172.16.x.x through 172.31.x.x
-# This ensures containers can talk to the host (including Unbound at 172.19.0.1)
-sudo ufw allow from 172.16.0.0/12 comment 'Trust Docker Containers'
-
-# 5. SPECIFIC UNBOUND DNS (Redundant but Safe)
-# Explicitly allowing UDP 5335 from Docker networks
-sudo ufw allow from 172.16.0.0/12 to any port 5335 proto udp comment 'Unbound DNS from Docker'
-
-# 6. TAILSCALE VPN
+# 2. TAILSCALE VPN TRUST
 # Allow all traffic coming through the VPN tunnel
+# This allows you to SSH/Web browse via VPN from anywhere.
 sudo ufw allow in on tailscale0 comment 'Trust Tailscale VPN'
 
+# 3. DOCKER NETWORK TRUST
+# This 172.16.0.0/12 range covers 172.16.x.x through 172.31.x.x
+sudo ufw allow from 172.16.0.0/12 comment 'Trust Docker Containers'
+
 echo "--- Enabling Firewall ---"
-# Enable without asking for confirmation ('y')
-echo "y" | sudo ufw enable
+# Enable without asking for confirmation
+sudo ufw --force enable
 
 echo "--- Status Check ---"
 sudo ufw status verbose
