@@ -46,6 +46,7 @@ apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
 cp ~/.p10k.zsh "$TARGET_DIR/run_once/dotfiles/p10k.zsh"
 cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
+cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
 
 # --- 2. FORCE ADD SNAPSHOTS ---
 cd "$TARGET_DIR" || exit
