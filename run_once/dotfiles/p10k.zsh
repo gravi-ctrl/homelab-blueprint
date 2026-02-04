@@ -85,7 +85,7 @@
     gcloud                  # google cloud cli account and project (https://cloud.google.com/)
     google_app_cred         # google application credentials (https://cloud.google.com/docs/authentication/production)
     toolbox                 # toolbox name (https://github.com/containers/toolbox)
-    context                 # user@hostname
+    # context                 # user@hostname
     nordvpn                 # nordvpn connection status, linux only (https://nordvpn.com/)
     ranger                  # ranger shell (https://github.com/ranger/ranger)
     nnn                     # nnn shell (https://github.com/jarun/nnn)
@@ -213,7 +213,7 @@
 
   ##################################[ dir: current directory ]##################################
   # Current directory background color.
-  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#9244E4'
+  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#8a0303'
   # Default current directory foreground color.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=254
   # If directory is too long, shorten some of its segments to the shortest possible unique
@@ -352,11 +352,12 @@
 
   #####################################[ vcs: git status ]######################################
   # Version control system colors.
-  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND='#FF6BC6'
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND='#FF6B80'
-  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND='#FF6BC6'
-  typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND='#FF6B80'
-  typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND='#FAB5EC'
+  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND='#d6d6d6'
+  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND='#000000'
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND='#FFD700'
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND='#555555'
+  typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND='#FF4500'
+  typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND='#8a0303'
 
   # Branch icon. Set this parameter to '\uF126 ' for the popular Powerline branch icon.
   typeset -g POWERLEVEL9K_VCS_BRANCH_ICON='\uF126 '

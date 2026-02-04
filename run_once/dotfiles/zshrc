@@ -141,6 +141,7 @@ function actual_show_welcome_msg() {
     echo -e "  \e[32mdc\e[0m       -> dockcheck for containers update check"
     echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
     echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
+    echo -e "  \e[32mcht\e[0m      -> Get command examples (usage: cht ls)"
     echo -e "\e[1mFuzzy Find (FZF):\e[0m"
     echo -e "  \e[33mCtrl+R\e[0m   -> Search History"
     echo -e "  \e[33mCtrl+T\e[0m   -> Paste File/Folder path"
@@ -206,6 +207,11 @@ bindkey "^[[OB" down-line-or-beginning-search
 # 4. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
 alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
+
+# a TLDR alternative
+cht() {
+  curl "cheat.sh/${(j:+:)@}"
+}
 
 # Welcome message alias
 alias welcome='actual_show_welcome_msg'
