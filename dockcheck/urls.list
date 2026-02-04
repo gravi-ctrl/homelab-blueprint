@@ -75,7 +75,7 @@ romm https://github.com/rommapp/romm/releases
 romm-redis https://hub.docker.com/_/redis/tags
 roundcubemail https://github.com/roundcube/roundcubemail/releases
 sabnzbd https://github.com/linuxserver/docker-sabnzbd/releases
-scrutiny https://github.com/AnalogJ/scrutiny/releases
+scrutiny https://github.com/starosdev/scrutiny/releases
 sftpgo https://github.com/drakkan/sftpgo/releases
 slskd https://github.com/slskd/slskd/releases
 snappymail https://github.com/the-djmaze/snappymail/releases
