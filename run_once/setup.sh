@@ -96,11 +96,14 @@ fi
 DOTFILES_DIR="$HOME/scripts/run_once/dotfiles"
 
 if [ -d "$DOTFILES_DIR" ]; then
-    echo "Restoring .zshrc, .p10k.zsh, .hushlogin and .nanorc from backup..."
+    echo "Restoring .zshrc, .p10k.zsh, .hushlogin, .nanorc and fastfetch's config from backup..."
     cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
     cp "$DOTFILES_DIR/nanorc" "$HOME/.nanorc"
     cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
+    mkdir -p "$HOME/.config/fastfetch"
+    cp "$DOTFILES_DIR/.config/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+
 else
     echo -e "${RED}Warning: Dotfiles backup not found in scripts folder. Skipping restore.${NC}"
 fi
