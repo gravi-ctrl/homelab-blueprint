@@ -1,11 +1,11 @@
-# ==============================================================================
-# 0. PERSISTENT WELCOME MESSAGE
-# (Must stay ABOVE the Powerlevel10k instant prompt block)
-# ==============================================================================
-if [[ -n "$SSH_CONNECTION" ]]; then
-    echo -e "\n\e[1;34m🚀 REMINDER\e[0m"
+# -------------------------------------------------------------------------
+# 0. WELCOME MESSAGE
+# -------------------------------------------------------------------------
+function show_welcome_msg() {
+    echo -e "\n\e[1;35m🚀System Briefing for\e[0m \e[1;31m$USER\e[0m"
     echo -e "\e[90m--------------------------------------------------\e[0m"
     echo -e "\e[1mQuick Aliases:\e[0m"
+    echo -e "  \e[32mwelcome\e[0m  -> Show this message again"
     echo -e "  \e[32mdc\e[0m       -> Containers update check"
     echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
     echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
@@ -17,6 +17,11 @@ if [[ -n "$SSH_CONNECTION" ]]; then
     echo -e "  \e[33m→ / End\e[0m  -> Accepts Suggestion"
     echo -e "  \e[33mCtrl+Spc\e[0m -> \e[1;31mEXECUTES\e[0m Suggestion"
     echo -e "\e[90m--------------------------------------------------\e[0m\n"
+}
+
+# Run welcome message on ssh connection
+if [[ -n "$SSH_CONNECTION" ]]; then
+    show_welcome_msg
 fi
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
@@ -189,6 +194,9 @@ bindkey "^[[OB" down-line-or-beginning-search
 # 4. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
 alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
+
+# Welcome message alias
+alias welcome='show_welcome_msg'
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
