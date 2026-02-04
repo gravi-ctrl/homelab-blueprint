@@ -15,7 +15,7 @@
 | **Paperless Auto Renamer** | At 04:00 | `cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
 | **Pi-hole Daily Gravity Update** | At 04:00 | `cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g` |
 | **Scripts & System Configs - Calls the wrapper, which takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh` |
-| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mniIx 10 -d 5` |
+| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mMniIx 10 -d 5` |
 | **mmotti Pihole Regex Update** | At 02:30, only on Monday | `cron-guard "Pi-hole Regex" docker exec pihole /bin/sh -c "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-r...` |
 
 
