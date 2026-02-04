@@ -36,6 +36,7 @@ e2fsprogs
 efibootmgr
 eject
 fail2ban
+fastfetch
 findutils
 fonts-ubuntu-console
 fwupd

@@ -17,9 +17,12 @@ echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
+# Adding any needed custom repos
+sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
+# Updating and upgrading
 sudo apt update && sudo apt upgrade -y
 # Core tools + File System tools (ACL/Inotify) + Shell tools (Zsh/FZF)
-sudo apt install -y curl dos2unix fail2ban unbound moreutils mariadb-client htop mosh ncdu neofetch git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
+sudo apt install -y curl dos2unix fastfetch fail2ban unbound moreutils mariadb-client htop mosh ncdu git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat micro zsh
 
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
@@ -93,10 +96,11 @@ fi
 DOTFILES_DIR="$HOME/scripts/run_once/dotfiles"
 
 if [ -d "$DOTFILES_DIR" ]; then
-    echo "Restoring .zshrc, .p10k.zsh and .nanorc from backup..."
+    echo "Restoring .zshrc, .p10k.zsh, .hushlogin and .nanorc from backup..."
     cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
     cp "$DOTFILES_DIR/nanorc" "$HOME/.nanorc"
+    cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
 else
     echo -e "${RED}Warning: Dotfiles backup not found in scripts folder. Skipping restore.${NC}"
 fi
