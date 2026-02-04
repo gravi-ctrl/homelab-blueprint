@@ -57,6 +57,7 @@ n8n https://github.com/n8n-io/n8n/releases
 newt https://github.com/fosrl/newt/releases
 nextcloud-app-1 https://github.com/nextcloud/docker/releases
 nextcloud-aio-mastercontainer https://github.com/nextcloud/all-in-one/releases
+ngrok https://hub.docker.com/r/ngrok/ngrok/tags
 npm_app_1 https://github.com/NginxProxyManager/nginx-proxy-manager/releases
 paperless-ngx https://github.com/paperless-ngx/paperless-ngx/releases
 owncast https://github.com/owncast/owncast/releases
