@@ -1,14 +1,16 @@
 # -------------------------------------------------------------------------
 # 0. WELCOME MESSAGE
 # -------------------------------------------------------------------------
+
+# fastfetch welcome message
+# Proper fastfetch size on phone screen but regular on bigger screen
 if [ "$(tput cols)" -lt 80 ]; then
-    # Small logo, but we force the text to sit 1 character away from it
-    # and reduce the 'container' width to prevent the gap.
-    fastfetch --logo-type small --logo-width 1 --logo-padding 1
+    fastfetch --logo-position right --logo-type small --logo-width 1 --logo-padding 1
 else
     fastfetch
 fi
 
+# Define custom welcome message
 function show_welcome_msg() {
     echo -e "\n\e[1;32m✓ System Online.\e[0m \e[3mEverything looks good.\e[0m"
     echo -e "💡 \e[90mTip: Lost? Type \e[1;33mwelcome\e[90m to view commands.\e[0m\n"
@@ -18,6 +20,8 @@ function show_welcome_msg() {
 if [[ -n "$SSH_CONNECTION" ]]; then
     show_welcome_msg
 fi
+
+# -------------------------------------------------------------------------
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
