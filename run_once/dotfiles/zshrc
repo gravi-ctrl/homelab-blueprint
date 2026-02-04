@@ -278,7 +278,7 @@ chpwd() {
     echo
     echo -e "\033[1;31m⚠️ GIT AUTO-COMMIT\033[0m \033[90m$zone\033[0m"
     grep -Ev '^#|^\s*$' "$zone/.commit-warning" | while read -r line; do
-        echo -e "  ↻\033[3;97m$line\033[0m"
+        echo -e "  ↻ \033[3;97m$line\033[0m"
     done
 }
 
