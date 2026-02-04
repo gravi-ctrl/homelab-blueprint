@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------
 # 0. WELCOME MESSAGE
 # -------------------------------------------------------------------------
-fastfetch --structure Title:Separator:OS:Host:Kernel:Uptime:Packages:Shell:CPU:CPUUsage:Memory:Swap:Disk:LocalIP:DateTime:Users:Battery
+fastfetch
 echo ""
 
 function show_welcome_msg() {
