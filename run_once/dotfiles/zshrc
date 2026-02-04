@@ -5,21 +5,8 @@ fastfetch
 echo ""
 
 function show_welcome_msg() {
-    echo -e "\n\e[1;35m🚀System Briefing for\e[0m \e[1;31m$USER\e[0m"
-    echo -e "\e[90m--------------------------------------------------\e[0m"
-    echo -e "\e[1mQuick Aliases:\e[0m"
-    echo -e "  \e[32mwelcome\e[0m  -> Show this message again"
-    echo -e "  \e[32mdc\e[0m       -> Containers update check"
-    echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
-    echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
-    echo -e "\e[1mFuzzy Find (FZF):\e[0m"
-    echo -e "  \e[33mCtrl+R\e[0m   -> Search History"
-    echo -e "  \e[33mCtrl+T\e[0m   -> Paste File/Folder path"
-    echo -e "  \e[33mAlt+C\e[0m    -> Jump 'cd' to Folder"
-    echo -e "\e[1mAutosuggestions:\e[0m"
-    echo -e "  \e[33m→ / End\e[0m  -> Accepts Suggestion"
-    echo -e "  \e[33mCtrl+Spc\e[0m -> \e[1;31mEXECUTES\e[0m Suggestion"
-    echo -e "\e[90m--------------------------------------------------\e[0m\n"
+    echo -e "\n\e[1;32m✓ System Online.\e[0m \e[3mEverything looks good.\e[0m"
+    echo -e "💡 \e[90mTip: Lost? Type \e[1;33mwelcome\e[90m to view commands.\e[0m\n"
 }
 
 # Run welcome message on ssh connection
@@ -143,6 +130,27 @@ source $ZSH/oh-my-zsh.sh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # ==============================================================================
+# WELCOME MESSAGE (Function)
+# ==============================================================================
+function actual_show_welcome_msg() {
+    echo -e "\n\e[1;35m🚀System Briefing for\e[0m \e[1;31m$USER\e[0m"
+    echo -e "\e[90m--------------------------------------------------\e[0m"
+    echo -e "\e[1mQuick Aliases:\e[0m"
+    echo -e "  \e[32mwelcome\e[0m  -> Show this message again"
+    echo -e "  \e[32mdc\e[0m       -> Containers update check"
+    echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
+    echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
+    echo -e "\e[1mFuzzy Find (FZF):\e[0m"
+    echo -e "  \e[33mCtrl+R\e[0m   -> Search History"
+    echo -e "  \e[33mCtrl+T\e[0m   -> Paste File/Folder path"
+    echo -e "  \e[33mAlt+C\e[0m    -> Jump 'cd' to Folder"
+    echo -e "\e[1mAutosuggestions:\e[0m"
+    echo -e "  \e[33m→ / End\e[0m  -> Accepts Suggestion"
+    echo -e "  \e[33mCtrl+Spc\e[0m -> \e[1;31mEXECUTES\e[0m Suggestion"
+    echo -e "\e[90m--------------------------------------------------\e[0m\n"
+}
+
+# ==============================================================================
 # 1. ENVIRONMENT & PATHS
 # ==============================================================================
 export assets="/srv/data/assets"
@@ -199,7 +207,7 @@ bindkey "^[[OB" down-line-or-beginning-search
 alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
 
 # Welcome message alias
-alias welcome='show_welcome_msg'
+alias welcome='actual_show_welcome_msg'
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
