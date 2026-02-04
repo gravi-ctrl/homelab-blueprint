@@ -137,7 +137,8 @@ function actual_show_welcome_msg() {
     echo -e "\e[90m--------------------------------------------------\e[0m"
     echo -e "\e[1mQuick Aliases:\e[0m"
     echo -e "  \e[32mwelcome\e[0m  -> Show this message again"
-    echo -e "  \e[32mdc\e[0m       -> Containers update check"
+    echo -e "  \e[32mdps\e[0m      -> Clean docker process table"
+    echo -e "  \e[32mdc\e[0m       -> dockcheck for containers update check"
     echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
     echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
     echo -e "\e[1mFuzzy Find (FZF):\e[0m"
@@ -208,6 +209,9 @@ alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
 
 # Welcome message alias
 alias welcome='actual_show_welcome_msg'
+
+# Readable Docker Status
+alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
