@@ -60,6 +60,8 @@ nextcloud-aio-mastercontainer https://github.com/nextcloud/all-in-one/releases
 ngrok https://hub.docker.com/r/ngrok/ngrok/tags
 npm_app_1 https://github.com/NginxProxyManager/nginx-proxy-manager/releases
 paperless-ngx https://github.com/paperless-ngx/paperless-ngx/releases
+paperless-db https://hub.docker.com/_/postgres/tags
+paperless-redis https://hub.docker.com/_/redis/tags
 owncast https://github.com/owncast/owncast/releases
 pangolin https://github.com/fosrl/pangolin/releases
 pihole https://github.com/pi-hole/pi-hole/releases
