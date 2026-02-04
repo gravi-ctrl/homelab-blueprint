@@ -184,7 +184,7 @@
   #################################[ os_icon: os identifier ]##################################
   # OS identifier color.
   typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=232
-  typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=7
+  typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=179
   # Custom icon.
   # typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION='⭐'
 
@@ -213,7 +213,7 @@
 
   ##################################[ dir: current directory ]##################################
   # Current directory background color.
-  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#8a0303'
+  typeset -g POWERLEVEL9K_DIR_BACKGROUND=88
   # Default current directory foreground color.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=254
   # If directory is too long, shorten some of its segments to the shortest possible unique
@@ -352,8 +352,8 @@
 
   #####################################[ vcs: git status ]######################################
   # Version control system colors.
-  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND='#d6d6d6'
-  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND='#000000'
+  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=15
+  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=232
   typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND='#FFD700'
   typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND='#555555'
   typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND='#FF4500'

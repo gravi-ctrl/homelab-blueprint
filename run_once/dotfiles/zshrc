@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------
 # 0. WELCOME MESSAGE
 # -------------------------------------------------------------------------
-fastfetch
+fastfetch --structure Title:Separator:OS:Host:Kernel:Uptime:Packages:Shell:CPU:CPUUsage:Memory:Swap:Disk:LocalIP:DateTime:Users:Battery
 echo ""
 
 function show_welcome_msg() {
@@ -130,7 +130,7 @@ source $ZSH/oh-my-zsh.sh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # ==============================================================================
-# WELCOME MESSAGE (Function)
+# 0. WELCOME MESSAGE (Function)
 # ==============================================================================
 function actual_show_welcome_msg() {
     echo -e "\n\e[1;35m🚀System Briefing for\e[0m \e[1;31m$USER\e[0m"
@@ -208,7 +208,7 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
 
-# a TLDR alternative
+# cheat.sh - a TLDR alternative
 cht() {
   curl "cheat.sh/${(j:+:)@}"
 }
