@@ -47,7 +47,7 @@ cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
 cp ~/.p10k.zsh "$TARGET_DIR/run_once/dotfiles/p10k.zsh"
 cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
 cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
-cp ~/.config/fastfetch/config.jsonc "$TARGET_DIR/run_once/dotfiles/config/fastfetch/config.jsonc"
+cp -r ~/.config "$TARGET_DIR/run_once/dotfiles/config"
 
 # --- 2. FORCE ADD SNAPSHOTS ---
 cd "$TARGET_DIR" || exit
