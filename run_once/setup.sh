@@ -102,7 +102,7 @@ if [ -d "$DOTFILES_DIR" ]; then
     cp "$DOTFILES_DIR/nanorc" "$HOME/.nanorc"
     cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
     mkdir -p "$HOME/.config"
-    cp -r "$DOTFILES_DIR/config" "$HOME/.config"
+    cp -r "$DOTFILES_DIR/config/." "$HOME/.config"
 
 else
     echo -e "${RED}Warning: Dotfiles backup not found in scripts folder. Skipping restore.${NC}"
