@@ -5,9 +5,9 @@
 # fastfetch welcome message
 # Proper fastfetch size on phone screen but regular on bigger screen
 if [ "$(tput cols)" -lt 80 ]; then
-    fastfetch --logo-position right --logo-type small --logo-width 1 --logo-padding 1
+    fastfetch --logo-position right --logo "linux_small" --logo-width 1 --logo-padding 1
 else
-    fastfetch
+    fastfetch --logo "locos" --logo-width 5 --logo-padding 10
 fi
 
 # Define custom welcome message

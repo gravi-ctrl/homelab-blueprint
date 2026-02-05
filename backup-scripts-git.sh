@@ -11,6 +11,10 @@ SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
 MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.sh"
 TRANSLATOR_SCRIPT="$TARGET_DIR/cron_translator.py"
 
+# Load TOOLS from .env
+ENV_VAL=$(grep '^TOOLS=' "$(dirname "$(readlink -f "$0")")/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+TOOLS=(${ENV_VAL})
+
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
 mkdir -p "$TARGET_DIR/run_once/dotfiles"
@@ -20,13 +24,12 @@ cp /etc/fstab "$SNAPSHOT_DIR/fstab.txt"
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt"
 
 if sudo -n crontab -l > "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
-    : 
+    :
 else
     echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
 fi
 
 # --- GENERATE HUMAN READABLE SCHEDULE ---
-# This reads the txt files we just created and makes the Markdown dashboard
 if [ -f "$TRANSLATOR_SCRIPT" ]; then
     python3 "$TRANSLATOR_SCRIPT"
 fi
@@ -49,7 +52,6 @@ cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
 cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
 
 # Mirror specific .config folders
-TOOLS=("btop" "fastfetch")
 CONFIG_DEST="$TARGET_DIR/run_once/dotfiles/config"
 mkdir -p "$CONFIG_DEST"
 
