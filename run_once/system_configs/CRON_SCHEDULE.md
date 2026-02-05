@@ -11,7 +11,6 @@
 | **Server Stacks Backup** | Every 30 minutes | `cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
 | **Cleanup Script** | At 01:00 and 13:00 | `cron-guard "Cleanup Job" python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contact...` |
 | **Audiobookshelf Backup** | At 01:30 | `cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/B...` |
-| **JDownloader Link Grabber Cleanup** | At 04:00 | `cron-guard "JDownloader Link Grabber Cleanup" sh -c 'cd /srv/data/assets/downloads/watch && find . -mindepth 1 -delete'` |
 | **Paperless Auto Renamer** | At 04:00 | `cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
 | **Pi-hole Daily Gravity Update** | At 04:00 | `cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g` |
 | **Scripts & System Configs - Calls the wrapper, which takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh` |
