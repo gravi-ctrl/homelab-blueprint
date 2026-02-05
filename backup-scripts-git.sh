@@ -49,7 +49,7 @@ cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
 cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
 
 # Mirror specific .config folders
-TOOLS=("btop" "fastfetch" "htop")
+TOOLS=("btop" "fastfetch")
 CONFIG_DEST="$TARGET_DIR/run_once/dotfiles/config"
 mkdir -p "$CONFIG_DEST"
 
