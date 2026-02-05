@@ -31,12 +31,12 @@
             "keyColor": "green"
         },
         {
-            "type": "memory",
+            "type": "disk",
             "key": "│ ├󰍛",
             "keyColor": "green"
         },
         {
-            "type": "disk",
+            "type": "memory",
             "key": "└ └",
             "keyColor": "green"
         },

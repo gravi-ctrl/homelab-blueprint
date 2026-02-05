@@ -140,5 +140,6 @@ wget
 whiptail
 wpasupplicant
 xfsprogs
+zip
 zram-tools
 zsh
