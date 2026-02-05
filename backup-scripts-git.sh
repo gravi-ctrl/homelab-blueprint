@@ -48,12 +48,19 @@ cp ~/.p10k.zsh "$TARGET_DIR/run_once/dotfiles/p10k.zsh"
 cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
 cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
 
-# Backup important tools .config dir
-TOOLS=("btop" "fastfetch")
+# Mirror specific .config folders
+TOOLS=("btop" "fastfetch" "htop")
+CONFIG_DEST="$TARGET_DIR/run_once/dotfiles/config"
+mkdir -p "$CONFIG_DEST"
 
 for tool in "${TOOLS[@]}"; do
-    # -R = recursive, -u = update (only copy if newer)
-    cp -Ru "$HOME/.config/$tool" "$TARGET_DIR/run_once/dotfiles/config/" 2>/dev/null
+    SOURCE_PATH="$HOME/.config/$tool"
+    DEST_PATH="$CONFIG_DEST/$tool"
+
+    if [ -d "$SOURCE_PATH" ]; then
+        mkdir -p "$DEST_PATH"
+        rsync -av --delete "$SOURCE_PATH/" "$DEST_PATH/"
+    fi
 done
 
 # --- 2. FORCE ADD SNAPSHOTS ---
