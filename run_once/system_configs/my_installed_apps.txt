@@ -85,7 +85,6 @@ ncdu
 ncurses-base
 ncurses-bin
 needrestart
-neofetch
 netbase
 netcat-openbsd
 netplan.io
