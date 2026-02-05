@@ -40,13 +40,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 */30 * * * * cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"
 
 # Cleanup Script
-0 1,13 * * * cron-guard "Cleanup Job" python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contacts-calendars_backup /srv/data/assets/syncthing/Backup/tasks /srv/data/assets/syncthing/Backup/antennapod
+0 1,13 * * * cron-guard "Cleanup Job" python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contacts-calendars_backup /srv/data/assets/syncthing/Backup/tasks /srv/data/assets/syncthing/Backup/antennapod /srv/data/assets/downloads/watch::DELETE_ALL
 
 # Audiobookshelf Backup
 30 1 * * * cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/Backup/audiobookshelf/
-
-# JDownloader Link Grabber Cleanup
-0 4 * * * cron-guard "JDownloader Link Grabber Cleanup" sh -c 'cd /srv/data/assets/downloads/watch && find . -mindepth 1 -delete'
 
 # Paperless Auto Renamer
 0 4 * * * cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer
