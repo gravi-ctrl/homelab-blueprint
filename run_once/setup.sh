@@ -3,6 +3,7 @@
 # @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
+# Run this after cloning the repo to ~/scripts on a fresh OS.
 # ==============================================================================
 
 # Colors
