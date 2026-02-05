@@ -7,14 +7,12 @@
 | **Healthchecks.io Server/Internet status** | Every 5 minutes | `. $S/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1` |
 | **NextDNS IP Update** | Every 5 minutes | `. $S/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1` |
 | **Grouped Obsidian Sync (Personal & Work)** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
+| **Pi-hole Gravity and mmotti Regex Update** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & Regex" docker exec pihole "curl -sSL https://raw.githubusercontent.com/mmotti/pihole...` |
 | **Cleanup Script** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/B...` |
-| **Audiobookshelf Backup** | At 01:30 | `$S/cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ $A/syncthing/Backup/audio...` |
 | **Paperless Auto Renamer** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
-| **Pi-hole Daily Gravity Update** | At 04:00 | `$S/cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g` |
 | **Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" $S/backup-scripts-git.sh` |
 | **Server Stacks Backup** | At 05:00 | `$S/cron-guard "Server Stacks Backup" $S/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
-| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "dockcheck update checker" $S/dockcheck/dockcheck.sh -mniIMx 10 -d 5` |
-| **mmotti Pihole Regex Update** | At 02:30, only on Monday | `$S/cron-guard "Pi-hole Regex" docker exec pihole "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/mas...` |
+| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" $S/dockcheck/dockcheck.sh -mniIMx 10 -d 5` |
 
 
 ## ⚡ Root Cron

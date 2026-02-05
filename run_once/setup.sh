@@ -20,7 +20,7 @@ sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
 sudo apt update && sudo apt upgrade -y
 
 # Core tools
-sudo apt install -y btop curl dos2unix fastfetch unbound moreutils mariadb-client mosh ncdu git unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat zsh
+sudo apt install -y btop curl dos2unix fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs veracrypt ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat zsh
 
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
