@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Master logic to push/pull Git repos (Docs, Stacks)
+# @DESCRIPTION: Master logic to push/pull Git repos
 # @FREQUENCY: Varies
 # ==============================================================================
 # GENERIC GIT AUTO-SYNC SCRIPT

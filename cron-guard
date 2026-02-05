@@ -1,21 +1,24 @@
 #!/bin/bash
-# @DESCRIPTION: Runs a command, captures output, and Telegrams on failure with logs (needs to be copied to /usr/local/bin/)
+# @DESCRIPTION: Runs a command, captures output, and Telegrams on failure with logs
 # @FREQUENCY: On Failure
 
-# INSTALL
-# sudo cp cron-guard /usr/local/bin/
-# sudo chmod +x /usr/local/bin/cron-guard
-#
-# USAGE: While it's already in crontabs, but in case if new ones, add it like: cron-guard "NAME OF JOB" command_to_run
-# For multiple commands involving '&&' or '|', use sh -c then wrap the whole command between '...'
-# Example: /usr/local/bin/cron-guard "Test" sh -c 'cd /path/of/the/file && rm file'
+# USAGE: cron-guard "NAME OF JOB" "command_to_run"
+# Note: For multiple commands, wrap the whole string in quotes.
+
+# Checklist for quotes:
+# Single quotes can still be used for single commands
+# Prefer Double Quotes for the outer wrapper: "command && command"
+# Use Single Quotes for anything inside: "docker exec 'cmd'"
+# Alternate if needed: 'run "cmd"'
+# Escape only as a last resort: "run \"cmd\""
+# Always escape % in crontab: \%
 
 # ------
 
 set -o pipefail
 
 # --- 1. CONFIG LOADER ---
-ENV_FILE="/home/gravi-ctrl/scripts/.env"
+ENV_FILE="$(dirname "$(readlink -f "$0")")/.env"
 
 if [ -f "$ENV_FILE" ]; then
     set -a
@@ -29,15 +32,16 @@ CHAT_ID="${TELEGRAM_CHAT_ID:-YOUR_HARDCODED_CHAT_ID_HERE}"
 
 # --- 3. SAFETY CHECK ---
 if [[ "$TOKEN" == "YOUR_HARDCODED_*" ]] || [ -z "$TOKEN" ]; then
-    "$@"
+    shift 1
+    /bin/bash -c "$*"
     exit $?
 fi
 
 # --- 4. EXECUTION ---
 JOB_NAME="$1"
-shift 1 
+shift 1
 
-OUTPUT=$("$@" 2>&1)
+OUTPUT=$(/bin/bash -c "$*" 2>&1)
 EXIT_CODE=$?
 
 # --- 5. FAILURE HANDLING ---

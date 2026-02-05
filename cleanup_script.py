@@ -16,9 +16,14 @@ import os
 import glob
 import sys
 import shutil
+from dotenv import load_dotenv
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+load_dotenv(os.path.join(script_dir, '.env'))
 
 # --- CONFIGURATION ---
-FILES_TO_KEEP = 2
+# Defaults to 2 if variable is missing
+FILES_TO_KEEP = int(os.environ.get("FILES_TO_KEEP", 2))
 DELETE_ALL_TRIGGER = "::DELETE_ALL"
 # --- END OF CONFIGURATION ---
 
@@ -33,7 +38,7 @@ def clean_backup_folder(folder_path, num_to_keep):
     try:
         # Get all files and directories
         all_items = glob.glob(os.path.join(folder_path, '*'))
-        
+
         # Sort by modification time (newest first)
         if len(all_items) > num_to_keep:
             all_items.sort(key=os.path.getmtime, reverse=True)

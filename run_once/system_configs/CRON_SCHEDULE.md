@@ -4,25 +4,24 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Healthchecks.io Server/Internet status** | Every 5 minutes | `. /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1` |
-| **NextDNS IP Update** | Every 5 minutes | `. /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1` |
-| **Obsidian Personal Notes Sync** | Every 15 minutes | `cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backu...` |
-| **Obsidian Work Notes Sync** | Every 15 minutes | `cron-guard "Obsidian Work Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/ob...` |
-| **Server Stacks Backup** | Every 30 minutes | `cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
-| **Cleanup Script** | At 01:00 and 13:00 | `cron-guard "Cleanup Job" python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contact...` |
-| **Audiobookshelf Backup** | At 01:30 | `cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/B...` |
-| **Paperless Auto Renamer** | At 04:00 | `cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
-| **Pi-hole Daily Gravity Update** | At 04:00 | `cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g` |
-| **Scripts & System Configs - Calls the wrapper, which takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh` |
-| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mMniIx 10 -d 5` |
-| **mmotti Pihole Regex Update** | At 02:30, only on Monday | `cron-guard "Pi-hole Regex" docker exec pihole /bin/sh -c "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-r...` |
+| **Healthchecks.io Server/Internet status** | Every 5 minutes | `. $S/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1` |
+| **NextDNS IP Update** | Every 5 minutes | `. $S/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1` |
+| **Grouped Obsidian Sync (Personal & Work)** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
+| **Cleanup Script** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/B...` |
+| **Audiobookshelf Backup** | At 01:30 | `$S/cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ $A/syncthing/Backup/audio...` |
+| **Paperless Auto Renamer** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
+| **Pi-hole Daily Gravity Update** | At 04:00 | `$S/cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g` |
+| **Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" $S/backup-scripts-git.sh` |
+| **Server Stacks Backup** | At 05:00 | `$S/cron-guard "Server Stacks Backup" $S/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
+| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "dockcheck update checker" $S/dockcheck/dockcheck.sh -mniIMx 10 -d 5` |
+| **mmotti Pihole Regex Update** | At 02:30, only on Monday | `$S/cron-guard "Pi-hole Regex" docker exec pihole "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/mas...` |
 
 
 ## ⚡ Root Cron
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `/home/gravi-ctrl/scripts/battery_monitor.sh > /dev/null 2>&1` |
-| **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `cron-guard "Nextcloud Cal/Card Backup" sh -c 'calcardbackup /opt/stacks/nextcloud/html -o /srv/data/assets/syncthing/...` |
-| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `cron-guard "Docker Stacks Backup" /home/gravi-ctrl/scripts/local-opt-backup.sh` |
-| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && cron-guard "ctrl_s_master" /home/gravi-ctrl/scripts/ctrl_s_master/run.sh` |
+| **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
+| **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
+| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `$S/cron-guard "Docker Stacks Backup" $S/local-opt-backup.sh` |
+| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" $S/ctrl_s_master/run.sh` |
 

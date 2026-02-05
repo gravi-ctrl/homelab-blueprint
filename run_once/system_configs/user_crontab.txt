@@ -23,39 +23,38 @@
 # m h  dom mon dow   command
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+S=/home/gravi-ctrl/scripts
+A=/srv/data/assets
 
 # Healthchecks.io Server/Internet status
-*/5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1
+*/5 * * * * . $S/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1
 
 # NextDNS IP Update
-*/5 * * * * . /home/gravi-ctrl/scripts/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1
+*/5 * * * * . $S/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1
 
-# Obsidian Personal Notes Sync
-*/15 * * * * cron-guard "Obsidian Personal Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/personal" "Obsidian Personal"
-
-# Obsidian Work Notes Sync
-*/15 * * * * cron-guard "Obsidian Work Notes Sync" /home/gravi-ctrl/scripts/git-auto-sync.sh "/srv/data/assets/syncthing/Backup/obsidian-notes/work" "Obsidian Work"
-
-# Server Stacks Backup
-*/30 * * * * cron-guard "Server Stacks Backup" /home/gravi-ctrl/scripts/git-auto-sync.sh "/opt/stacks" "Server Stacks"
+# Grouped Obsidian Sync (Personal & Work)
+*/15 * * * * $S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal' && $S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
 # Cleanup Script
-0 1,13 * * * cron-guard "Cleanup Job" python3 /home/gravi-ctrl/scripts/cleanup_script.py /srv/data/assets/syncthing/Backup/contacts-calendars_backup /srv/data/assets/syncthing/Backup/tasks /srv/data/assets/syncthing/Backup/antennapod /srv/data/assets/downloads/watch::DELETE_ALL
+0 1,13 * * * $S/cron-guard "Cleanup Job" python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/Backup/tasks $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL
 
 # Audiobookshelf Backup
-30 1 * * * cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ /srv/data/assets/syncthing/Backup/audiobookshelf/
+30 1 * * * $S/cron-guard "Audiobookshelf Backup" rsync -a --delete /opt/stacks/audiobookshelf/backups/ $A/syncthing/Backup/audiobookshelf/
 
 # Paperless Auto Renamer
-0 4 * * * cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer
+0 4 * * * $S/cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer
 
 # Pi-hole Daily Gravity Update
-0 4 * * * cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g
+0 4 * * * $S/cron-guard "Pi-hole Daily Update" docker exec pihole pihole -g
 
-# Scripts & System Configs - Calls the wrapper, which takes a snapshot of configs then calls git-auto-sync
-0 5 * * * cron-guard "Scripts & System Configs Backup" /home/gravi-ctrl/scripts/backup-scripts-git.sh
+# Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync
+0 5 * * * $S/cron-guard "Scripts & System Configs Backup" $S/backup-scripts-git.sh
+
+# Server Stacks Backup
+0 5 * * * $S/cron-guard "Server Stacks Backup" $S/git-auto-sync.sh "/opt/stacks" "Server Stacks"
 
 # dockcheck - Send a TG notification with the available container updates
-0 9 * * * cron-guard "dockcheck update checker" /home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mMniIx 10 -d 5
+0 9 * * * $S/cron-guard "dockcheck update checker" $S/dockcheck/dockcheck.sh -mniIMx 10 -d 5
 
 # mmotti Pihole Regex Update
-30 2 * * 1 cron-guard "Pi-hole Regex" docker exec pihole /bin/sh -c "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && /usr/local/bin/pihole -g"
+30 2 * * 1 $S/cron-guard "Pi-hole Regex" docker exec pihole "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g"
