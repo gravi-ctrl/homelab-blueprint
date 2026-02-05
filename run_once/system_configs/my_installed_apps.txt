@@ -10,6 +10,7 @@ bash
 bcache-tools
 bindfs
 bsdutils
+btop
 btrfs-progs
 byobu
 ca-certificates
@@ -50,7 +51,6 @@ grub-efi-amd64
 grub-efi-amd64-signed
 gzip
 hostname
-htop
 init
 inotify-tools
 iproute2
