@@ -4,15 +4,14 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Healthchecks.io Server/Internet status** | Every 5 minutes | `. $S/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1` |
-| **NextDNS IP Update** | Every 5 minutes | `. $S/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1` |
-| **Grouped Obsidian Sync (Personal & Work)** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
-| **Pi-hole Gravity and mmotti Regex Update** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & Regex" docker exec pihole "curl -sSL https://raw.githubusercontent.com/mmotti/pihole...` |
-| **Cleanup Script** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/B...` |
-| **Paperless Auto Renamer** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer` |
-| **Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" $S/backup-scripts-git.sh` |
-| **Server Stacks Backup** | At 05:00 | `$S/cron-guard "Server Stacks Backup" $S/git-auto-sync.sh "/opt/stacks" "Server Stacks"` |
-| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" $S/dockcheck/dockcheck.sh -mniIMx 10 -d 5` |
+| **NextDNS IP Update & Healthcecks Server/Internet status** | Every 5 minutes | `$S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$...` |
+| **Obsidian Sync (Personal & Work)** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
+| **Pi-hole Gravity and mmotti Regex Update** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com...` |
+| **Cleanup Script** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
+| **Paperless Auto Renamer** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
+| **Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
+| **Server Stacks Backup** | At 05:00 | `$S/cron-guard "Server Stacks Backup" "$S/git-auto-sync.sh" "/opt/stacks" "Server Stacks"` |
+| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"` |
 
 
 ## ⚡ Root Cron
@@ -20,6 +19,6 @@
 | :--- | :--- | :--- |
 | **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
 | **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
-| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `$S/cron-guard "Docker Stacks Backup" $S/local-opt-backup.sh` |
-| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" $S/ctrl_s_master/run.sh` |
+| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `$S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
+| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/run.sh"` |
 

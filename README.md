@@ -76,5 +76,5 @@ If the server is wiped, follow this order to restore functionality.
     ```
 
 ### Phase 4: Finalize
-*   **Activating Scripts:** Most of the scripts are working through crontabs, but check on the scripts and read their instructions on top (if there are any) to restore/activate them — if needed.
+*   **Pathes** Most if not all of the scripts are working through crontabs. Just make sure the pathes of the scripts are matching the ones in crontabs.
 *   **Reboot**.
