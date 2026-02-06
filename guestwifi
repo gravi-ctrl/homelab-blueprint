@@ -2,8 +2,6 @@
 # @DESCRIPTION: Triggers the running wifi_robot container via HTTP
 # @FREQUENCY: On Demand
 
-# USAGE: guestwifi on (to turn Guest Wi-Fi ON) guestwifi off (to turn it OFF)
-
 # -------------------
 
 if [ -z "$1" ]; then

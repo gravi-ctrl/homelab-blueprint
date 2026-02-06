@@ -60,11 +60,6 @@
             "keyColor": "yellow"
         },
         {
-            "type": "bios",
-            "key": "│ ├",
-            "keyColor": "yellow"
-        },
-        {
             "type": "packages",
             "key": "│ ├󰏖",
             "keyColor": "yellow"
@@ -76,23 +71,13 @@
         },
         "break",
         {
-            "type": "de",
-            "key": " DE",
+            "type": "battery",
+            "key": " BA",
             "keyColor": "blue"
         },
         {
-            "type": "lm",
+            "type": "users",
             "key": "│ ├",
-            "keyColor": "blue"
-        },
-        {
-            "type": "wm",
-            "key": "│ ├",
-            "keyColor": "blue"
-        },
-        {
-            "type": "wmtheme",
-            "key": "│ ├󰉼",
             "keyColor": "blue"
         },
         {
