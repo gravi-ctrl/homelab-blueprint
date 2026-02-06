@@ -11,7 +11,7 @@
 | `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos | Varies |
-| `guestwifi` | Triggers the running wifi_robot container via HTTP (needs to be copied to /usr/local/bin/) | On Demand |
+| `guestwifi` | Triggers the running wifi_robot container via HTTP | On Demand |
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.xz, backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |

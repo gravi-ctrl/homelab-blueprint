@@ -26,29 +26,26 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 S=/home/gravi-ctrl/scripts
 A=/srv/data/assets
 
-# Healthchecks.io Server/Internet status
-*/5 * * * * . $S/.env; curl -fsS --retry 3 "$SERVER_HC_URL" > /dev/null 2>&1
+# NextDNS IP Update & Healthcecks Server/Internet status
+*/5 * * * * $S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
 
-# NextDNS IP Update
-*/5 * * * * . $S/.env; curl -fsS --retry 3 "$NEXTDNS_URL" > /dev/null 2>&1
-
-# Grouped Obsidian Sync (Personal & Work)
+# Obsidian Sync (Personal & Work)
 */15 * * * * $S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal' && $S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
 # Pi-hole Gravity and mmotti Regex Update
-0 0 * * * $S/cron-guard "Pi-hole Gravity & Regex" docker exec pihole "curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g"
+0 0 * * * $S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Cleanup Script
-0 1,13 * * * $S/cron-guard "Cleanup Job" python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/Backup/tasks $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL
+0 1,13 * * * $S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/Backup/tasks $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
 
 # Paperless Auto Renamer
-0 4 * * * $S/cron-guard "Paperless Auto Renamer" docker exec -i paperless-ngx python3 manage.py document_renamer
+0 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
 # Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync
-0 5 * * * $S/cron-guard "Scripts & System Configs Backup" $S/backup-scripts-git.sh
+0 5 * * * $S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
 # Server Stacks Backup
-0 5 * * * $S/cron-guard "Server Stacks Backup" $S/git-auto-sync.sh "/opt/stacks" "Server Stacks"
+0 5 * * * $S/cron-guard "Server Stacks Backup" "$S/git-auto-sync.sh" "/opt/stacks" "Server Stacks"
 
 # dockcheck - Send a TG notification with the available container updates
-0 9 * * * $S/cron-guard "Dockcheck Update Checker" $S/dockcheck/dockcheck.sh -mniIMx 10 -d 5
+0 9 * * * $S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"

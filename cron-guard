@@ -6,9 +6,11 @@
 # Note: For multiple commands, wrap the whole string in quotes.
 
 # Checklist for quotes:
+# Checklist for quotes:
 # Single quotes can still be used for single commands
 # Prefer Double Quotes for the outer wrapper: "command && command"
 # Use Single Quotes for anything inside: "docker exec 'cmd'"
+# For Docker: Use "docker exec container sh -c 'cmd1 && cmd2'" to run multiple/piped commands INSIDE the container
 # Alternate if needed: 'run "cmd"'
 # Escape only as a last resort: "run \"cmd\""
 # Always escape % in crontab: \%
@@ -52,7 +54,7 @@ if [ $EXIT_CODE -ne 0 ]; then
     TEXT=$(printf "🚨 *CRON FAILURE*\n\n📂 *Job:* %s\n⏰ *Time:* %s\n🔢 *Exit Code:* %s\n\n📜 *Log:*\n\`\`\`\n%s\n\`\`\`" \
     "$JOB_NAME" "$DATE_TIME" "$EXIT_CODE" "${LOG_TAIL:-No output.}")
 
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+    curl -s --retry 3 --retry-connrefused -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
         -d chat_id="$CHAT_ID" \
         -d parse_mode="Markdown" \
         --data-urlencode "text=$TEXT" > /dev/null 2>&1
