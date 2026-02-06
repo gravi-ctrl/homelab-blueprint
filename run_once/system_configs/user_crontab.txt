@@ -44,11 +44,8 @@ A=/srv/data/assets
 # Paperless Auto Renamer
 0 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
-# Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync
+# Scripts, Stacks and System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync for it and for /opt/stacks
 0 5 * * * $S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
-
-# Server Stacks Backup
-0 5 * * * $S/cron-guard "Server Stacks Backup" "$S/git-auto-sync.sh" "/opt/stacks" "Server Stacks"
 
 # dockcheck - Send a TG notification with the available container updates
 0 9 * * * $S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"

@@ -10,8 +10,7 @@
 | **Cleanup Script** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
 | **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
 | **Paperless Auto Renamer** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
-| **Scripts & System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
-| **Server Stacks Backup** | At 05:00 | `$S/cron-guard "Server Stacks Backup" "$S/git-auto-sync.sh" "/opt/stacks" "Server Stacks"` |
+| **Scripts, Stacks and System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync for it and for /opt/stacks** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
 | **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"` |
 
 
