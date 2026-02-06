@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub using `git-auto-sync.sh` along with /opt/stacks
+# @DESCRIPTION: Snapshots fstab/cron/packages/dotfiles and pushes this repo along wiht /opt/stacks to GitHub using `git-auto-sync.sh`
 # @FREQUENCY: Daily 5am
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER

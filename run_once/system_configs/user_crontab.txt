@@ -26,26 +26,26 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 S=/home/gravi-ctrl/scripts
 A=/srv/data/assets
 
-# NextDNS IP Update & Healthcecks Server/Internet status
+# Update NextDNS IP and report server/internet health
 */5 * * * * $S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
 
-# Obsidian Sync (Personal & Work)
+# Sync Personal and Work Obsidian vaults to Git
 */15 * * * * $S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal' && $S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
-# Pi-hole Gravity and mmotti Regex Update
-0 0 * * * $S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
+# Update Pi-hole Gravity (adlists) and apply mmotti regex rules
+0 0 * * * $S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL -o /tmp/mmotti.py https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py && python3 /tmp/mmotti.py && rm /tmp/mmotti.py && pihole -g'"
 
-# Cleanup Script
+# Rotate Syncthing backups (retain recent) and purge download watch folder
 0 1,13 * * * $S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/Backup/tasks $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
 
-# Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions
+# Export Nextcloud Calendars (.ics) and Contacts (.vcf)
 0 4 * * * $S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contacts-calendars_backup -oe -oc 'docker exec -u 33 nextcloud-app-1 php occ'"
 
-# Paperless Auto Renamer
+# Apply file renaming rules to Paperless-ngx documents
 0 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
-# Scripts, Stacks and System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync for it and for /opt/stacks
+# Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git
 0 5 * * * $S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
-# dockcheck - Send a TG notification with the available container updates
+# Check for available Docker container updates and notify
 0 9 * * * $S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"
