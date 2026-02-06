@@ -3,7 +3,7 @@
 
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
-| `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and pushes this repo to GitHub using `git-auto-sync.sh` along with /opt/stacks | Daily 5am |
+| `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and pushes this repo along wiht /opt/stacks to GitHub using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the laptop | Checks every 5m (root crontab) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |

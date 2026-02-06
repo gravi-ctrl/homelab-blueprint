@@ -4,20 +4,20 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **NextDNS IP Update & Healthcecks Server/Internet status** | Every 5 minutes | `$S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$...` |
-| **Obsidian Sync (Personal & Work)** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
-| **Pi-hole Gravity and mmotti Regex Update** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercont...` |
-| **Cleanup Script** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
-| **Nextcloud Contacts & Calendar - Exports .ics/.vcf files and fixes the permissions** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
-| **Paperless Auto Renamer** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
-| **Scripts, Stacks and System Configs - Calls the wrapper, takes a snapshot of configs then calls git-auto-sync for it and for /opt/stacks** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
-| **dockcheck - Send a TG notification with the available container updates** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"` |
+| **Update NextDNS IP and report server/internet health** | Every 5 minutes | `$S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$...` |
+| **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
+| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL -o /tmp/mmotti.py https://...` |
+| **Rotate Syncthing backups (retain recent) and purge download watch folder** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
+| **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
+| **Apply file renaming rules to Paperless-ngx documents** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
+| **Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
+| **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"` |
 
 
 ## ⚡ Root Cron
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Battery Monitor - Shuts down the laptop if battery is under 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
-| **Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes** | At 05:30, only on Monday | `$S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
+| **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
+| **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Monday | `$S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
 | **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/run.sh"` |
 

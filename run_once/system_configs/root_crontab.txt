@@ -26,10 +26,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 S=/home/gravi-ctrl/scripts
 A=/srv/data/assets
 
-# Battery Monitor - Shuts down the laptop if battery is under 20%
+# Emergency shutdown if battery is discharging and below 20%
 */5 * * * * $S/battery_monitor.sh > /dev/null 2>&1
 
-# Docker Containers Backup - NOTE: Takes the containers down for a couple of minutes
+# Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)
 30 5 * * 1 $S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"
 
 # ctrl_s_master Project

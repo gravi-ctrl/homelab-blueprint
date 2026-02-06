@@ -73,8 +73,8 @@ tar -cJf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='*.tmp' \
     -C / \
     opt/stacks \
-    home/gravi-ctrl/.ssh \
-    etc/ssh \
+    home/$BACKUP_USER/.ssh \
+    etc/ssh
 
 TAR_EXIT_CODE=$?
 
