@@ -146,6 +146,7 @@ function actual_show_welcome_msg() {
     echo -e "\e[90m--------------------------------------------------\e[0m"
     echo -e "\e[1mQuick Aliases:\e[0m"
     echo -e "  \e[32mwelcome\e[0m  -> Show this message again"
+    echo -e "  \e[32mguestwifi\e[0m-> Turn guest Wi-Fi on and of (usage:guestwifi on)"
     echo -e "  \e[32mdps\e[0m      -> Clean docker process table"
     echo -e "  \e[32mdc\e[0m       -> dockcheck for containers update check"
     echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
