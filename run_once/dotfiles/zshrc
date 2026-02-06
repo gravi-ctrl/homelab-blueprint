@@ -142,24 +142,43 @@ source $ZSH/oh-my-zsh.sh
 # 0. WELCOME MESSAGE (Function)
 # ==============================================================================
 function actual_show_welcome_msg() {
-    echo -e "\n\e[1;35m🚀System Briefing for\e[0m \e[1;31m$USER\e[0m"
-    echo -e "\e[90m--------------------------------------------------\e[0m"
-    echo -e "\e[1mQuick Aliases:\e[0m"
-    echo -e "  \e[32mwelcome\e[0m  -> Show this message again"
-    echo -e "  \e[32mguestwifi\e[0m-> Turn guest Wi-Fi on and of (usage:guestwifi on)"
-    echo -e "  \e[32mdps\e[0m      -> Clean docker process table"
-    echo -e "  \e[32mdc\e[0m       -> dockcheck for containers update check"
-    echo -e "  \e[32mextract\e[0m  -> Extracts any archive (zip, tar, etc.)"
-    echo -e "  \e[32mstamp\e[0m    -> Adds a timestamp to your commands"
-    echo -e "  \e[32mcht\e[0m      -> Get command examples (usage: cht ls)"
-    echo -e "\e[1mFuzzy Find (FZF):\e[0m"
-    echo -e "  \e[33mCtrl+R\e[0m   -> Search History"
-    echo -e "  \e[33mCtrl+T\e[0m   -> Paste File/Folder path"
-    echo -e "  \e[33mAlt+C\e[0m    -> Jump 'cd' to Folder"
-    echo -e "\e[1mAutosuggestions:\e[0m"
-    echo -e "  \e[33m→ / End\e[0m  -> Accepts Suggestion"
-    echo -e "  \e[33mCtrl+Spc\e[0m -> \e[1;31mEXECUTES\e[0m Suggestion"
-    echo -e "\e[90m--------------------------------------------------\e[0m\n"
+    # Define Colors
+    local P="\e[1;35m"  # Purple
+    local R="\e[1;31m"  # Red
+    local G="\e[32m"    # Green
+    local Y="\e[33m"    # Yellow
+    local C="\e[36m"    # Cyan
+    local W="\e[0m"     # White/Reset
+    local D="\e[90m"    # Dark Gray
+
+    echo -e "\n${P}🚀 System Briefing for${W} ${R}$USER${W}"
+    echo -e "${D}------------------------------------------------------------------${W}"
+
+    # Header
+    printf "  \e[1;4m%-18s\e[0m               \e[1;4m%-20s\e[0m\n\n" "Quick Aliases" "Shortcuts & Nano"
+
+    # Row 1: welcome / Ctrl+R
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "welcome" "Briefing" "Ctrl+R" "FZF History"
+
+    # Row 2: guestwifi / Ctrl+T
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "guestwifi" "WiFi Toggle" "Ctrl+T" "FZF Files"
+
+    # Row 3: dps / Alt+C
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dps" "Docker Table" "Alt+C" "FZF Jump"
+
+    # Row 4: dc / → / End
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dc" "Update Check" "→ / End" "Accept Suggest"
+
+    # Row 5: extract / Ctrl+Spc (The Red Execute Row)
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "extract" "Unzip/Tar" "Ctrl+Spc"
+
+    # Row 6: stamp / Alt+N
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "stamp" "Timestamp" "Alt+N" "Nano Line #s"
+
+    # Row 7: cht / Alt+M
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "cht" "Cmd Help" "Alt+M" "Nano Mouse"
+
+    echo -e "${D}------------------------------------------------------------------${W}\n"
 }
 
 # ==============================================================================
@@ -314,5 +333,3 @@ chpwd() {
     done
 }
 
-# Time stamp to each line/command
-RPROMPT="[%D{%f/%m/%y} | %D{%L:%M:%S}]"

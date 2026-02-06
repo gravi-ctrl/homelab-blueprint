@@ -6,14 +6,13 @@
 # Note: For multiple commands, wrap the whole string in quotes.
 
 # Checklist for quotes:
-# Checklist for quotes:
 # Single quotes can still be used for single commands
 # Prefer Double Quotes for the outer wrapper: "command && command"
 # Use Single Quotes for anything inside: "docker exec 'cmd'"
 # For Docker: Use "docker exec container sh -c 'cmd1 && cmd2'" to run multiple/piped commands INSIDE the container
 # Alternate if needed: 'run "cmd"'
 # Escape only as a last resort: "run \"cmd\""
-# Always escape % in crontab: \%
+# Always escape % in crontab: "\%"
 
 # ------
 
