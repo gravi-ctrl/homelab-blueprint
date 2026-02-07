@@ -26,7 +26,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 S=/home/gravi-ctrl/scripts
 A=/srv/data/assets
 
-# Update NextDNS IP and report server/internet health
+# Update NextDNS IP and monitor server/internet health
 */5 * * * * $S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
 
 # Sync Personal and Work Obsidian vaults to Git

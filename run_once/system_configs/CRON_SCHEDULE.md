@@ -4,7 +4,7 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Update NextDNS IP and report server/internet health** | Every 5 minutes | `$S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$...` |
+| **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `$S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$...` |
 | **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL -o /tmp/mmotti.py https://...` |
 | **Rotate Syncthing backups (retain recent) and purge download watch folder** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
