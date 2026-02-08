@@ -5,7 +5,7 @@
 actual_server https://actualbudget.org/blog
 apprise-api https://github.com/linuxserver/docker-apprise-api/releases
 audiobookshelf https://github.com/advplyr/audiobookshelf/releases
-bazarr https://github.com/morpheus65535/bazarr/releases
+bazarr https://github.com/linuxserver/docker-bazarr/releases
 bazarr-ls https://github.com/linuxserver/docker-bazarr/releases
 beszel https://github.com/henrygd/beszel/releases
 bookstack https://github.com/BookStackApp/BookStack/releases
@@ -65,11 +65,11 @@ paperless-redis https://hub.docker.com/_/redis/tags
 owncast https://github.com/owncast/owncast/releases
 pangolin https://github.com/fosrl/pangolin/releases
 pihole https://github.com/pi-hole/pi-hole/releases
-prowlarr https://github.com/Prowlarr/Prowlarr/releases
+prowlarr https://github.com/linuxserver/docker-prowlarr/releases
 prowlarr-ls https://github.com/linuxserver/docker-prowlarr/releases
 qbittorrent https://www.qbittorrent.org/news
 qbittorrent-nox https://www.qbittorrent.org/news
-radarr https://github.com/Radarr/Radarr/releases/
+radarr https://github.com/linuxserver/docker-radarr/releases
 radarr-ls https://github.com/linuxserver/docker-radarr/releases
 readarr https://github.com/Readarr/Readarr/releases
 readeck https://codeberg.org/readeck/readeck/releases
@@ -82,7 +82,7 @@ scrutiny https://github.com/starosdev/scrutiny/releases
 sftpgo https://github.com/drakkan/sftpgo/releases
 slskd https://github.com/slskd/slskd/releases
 snappymail https://github.com/the-djmaze/snappymail/releases
-sonarr https://github.com/Sonarr/Sonarr/releases/
+sonarr https://github.com/linuxserver/docker-sonarr/releases
 sonarr-ls https://github.com/linuxserver/docker-sonarr/releases
 syncthing https://github.com/syncthing/syncthing/releases
 tailscaled https://github.com/tailscale/tailscale/releases
