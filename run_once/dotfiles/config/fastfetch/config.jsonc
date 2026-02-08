@@ -76,12 +76,12 @@
             "keyColor": "blue"
         },
         {
-            "type": "users",
+            "type": "localip",
             "key": "│ ├",
             "keyColor": "blue"
         },
         {
-            "type": "terminal",
+            "type": "loadavg",
             "key": "└ └",
             "keyColor": "blue"
         },
@@ -92,13 +92,7 @@
         "break",
         {
             "type": "custom",
-            "format": "\u001b[90m┌────────────────────Uptime / Age / DT────────────────────┐"
-        },
-        {
-            "type": "command",
-            "key": "  OS Age ",
-            "keyColor": "magenta",
-            "text": "birth_install=$(stat -c %W /); current=$(date +%s); time_progression=$((current - birth_install)); days_difference=$((time_progression / 86400)); echo $days_difference days"
+            "format": "\u001b[90m┌────────────────────Uptime / DT────────────────────┐"
         },
         {
             "type": "uptime",
