@@ -48,4 +48,4 @@ A=/srv/data/assets
 0 5 * * * $S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
 # Check for available Docker container updates and notify
-0 9 * * * $S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"
+0 9 * * * $S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"
