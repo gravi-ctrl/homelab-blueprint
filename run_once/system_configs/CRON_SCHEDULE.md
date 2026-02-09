@@ -11,7 +11,7 @@
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
 | **Apply file renaming rules to Paperless-ngx documents** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
 | **Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
-| **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"` |
+| **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"` |
 
 
 ## ⚡ Root Cron

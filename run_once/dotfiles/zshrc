@@ -235,7 +235,7 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 # 4. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
-alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5'
+alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -mx 10 -d 5 -e wifi-robot'
 
 # Guest Wi-Fi script
 alias guestwifi='/home/gravi-ctrl/scripts/guestwifi'
