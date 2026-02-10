@@ -2,7 +2,6 @@ bind ^H chopwordleft main
 set softwrap         # Wraps text instead of cutting it off
 set linenumbers      # Shows line numbers on the left
 set constantshow     # Always shows line/column/char position at the bottom
-set indicator        # Adds a tiny "scrollbar" on the right side
 set titlecolor white,blue  # Makes the top bar pop so you know what file you're in
 set zap              # Allows you to delete a highlighted region with Backspace/Delete
 set atblanks         # Wraps lines at whitespace rather than mid-word
