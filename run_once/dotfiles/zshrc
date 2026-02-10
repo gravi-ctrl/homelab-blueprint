@@ -21,31 +21,24 @@ if [[ -n "$SSH_CONNECTION" ]]; then
     show_welcome_msg
 fi
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
+# -------------------------------------------------------------------------
+
+# Enable Powerlevel10k instant prompt.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
 # If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+export PATH=$HOME/bin:$HOME/.local/bin:$HOME/.atuin/bin:/usr/local/bin:$PATH
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+# Set name of the theme to load
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+plugins=(git zsh-syntax-highlighting fzf-tab)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -68,12 +61,12 @@ function actual_show_welcome_msg() {
     echo -e "\n${P}🚀 System Briefing for${W} ${R}$USER${W}"
     echo -e "${D}------------------------------------------------------------------${W}"
 
-    printf "  \e[1;4m%-18s\e[0m               \e[1;4m%-20s\e[0m\n\n" "Quick Aliases" "Shortcuts & Nano"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "welcome" "Briefing" "Ctrl+R" "FZF History"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "guestwifi" "WiFi Toggle" "Ctrl+T" "FZF Files"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dps" "Docker Table" "Alt+C" "FZF Jump"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dc" "Update Check" "→ / End" "Accept Suggest"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "extract" "Unzip/Tar" "Ctrl+Spc"
+    printf "  \e[1;4m%-18s\e[0m               \e[1;4m%-20s\e[0m\n\n" "Quick Aliases" "Modern Shortcuts"
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "welcome" "Briefing" "Ctrl+R" "Atuin History"
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "guestwifi" "WiFi Toggle" "z <dir>" "Smart Jump"
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dps" "Docker Table" "zi" "FZF Jump"
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dc" "Update Check" "Tab" "FZF Completion"
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "extract" "Unzip/Tar" "Ctrl+T" "Find File"
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "stamp" "Timestamp" "Alt+N" "Nano Line #s"
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "cht" "Cmd Help" "Alt+M" "Nano Mouse"
 
@@ -113,7 +106,7 @@ zshaddhistory() {
 }
 
 # ==============================================================================
-# 4. INPUT BEHAVIOR & KEYBINDINGS
+# 4. INPUT BEHAVIOR & KEYBINDINGS (PRESERVED)
 # ==============================================================================
 # Word Style: Only letters/numbers are "words" (Stops backspace at / or -)
 autoload -U select-word-style && select-word-style bash
@@ -155,12 +148,34 @@ stamp() {
   "$@" | ts
 }
 
-# Fuzzy Finder (FZF) Keybindings & Completion
+# --- ORIGINAL FZF KEYBINDINGS (Ctrl+T / Alt+C) ---
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
 
-# 'Ctrl + Space' accepts and executes the suggestion immediately
-bindkey '^ ' autosuggest-execute
+# --- ZOXIDE INIT (Smarter 'cd') ---
+# Init is done here so it's loaded before chpwd
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+    alias cd="z"
+fi
+
+# --- ATUIN INIT (Better History - Ctrl+R) ---
+if command -v atuin >/dev/null 2>&1; then
+    eval "$(atuin init zsh)"
+fi
+
+# --- FZF-TAB CONFIGURATION (Substring Matching & Previews) ---
+# 1. Force dotfiles to show up
+setopt GLOB_DOTS
+
+# 2. Match pattern: Case insensitive -> Partial -> Substring
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+
+# 3. Colors and Previews
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:*:*' fzf-preview 'less ${(Q)realpath}'
 
 # ==============================================================================
 # 6. CUSTOM FUNCTIONS
