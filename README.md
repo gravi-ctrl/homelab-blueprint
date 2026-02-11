@@ -74,7 +74,7 @@ If the server is wiped, follow this order to restore functionality.
     cd /opt/stacks/dockge
     docker compose up -d
     # Then deploy remaining stacks via Dockge Web UI
-    # If 'Option C' was chosen, Dockge can help fill the `.env` with ease
+    # If 'Option C' was chosen, Dockge can help fill the .env with ease
     ```
 
 ### Phase 4: Finalize
