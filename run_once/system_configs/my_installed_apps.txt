@@ -143,3 +143,4 @@ xfsprogs
 zip
 zram-tools
 zsh
+zstd
