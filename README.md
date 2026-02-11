@@ -52,14 +52,15 @@ If the server is wiped, follow this order to restore functionality.
     git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
     ```
 2.  **Restore Identity & Secrets:**
-    *   *Source:* The weekly `docker-stacks-DATE.tar.xz` backup.
+    *   *Prerequisite:* Ensure zstd is installed (`sudo apt install zstd`).
+    *   *Source:* The weekly `docker-stacks-DATE.tar.zst` backup.
     *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys:
         ```bash
-        sudo tar -xJf docker-stacks-DATE.tar.xz -C /
+        sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
         ```
     *   **Option B (Just Envs):**
         ```bash
-        sudo tar -xJf docker-stacks-DATE.tar.xz -C / --wildcards 'opt/stacks/*/.env'
+        sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'opt/stacks/*/.env'
         ```
     *   **Option C (.env.example):**
         *   Get the secrets from your PWM.
