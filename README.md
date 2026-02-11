@@ -64,7 +64,7 @@ If the server is wiped, follow this order to restore functionality.
         ```
     *   **Option C (.env.example):**
         *   Get the secrets from your PWM.
-        *   Copy every `.env.example` in every stack to `.env` using
+        *   Copy every `.env.example` in every stack to `.env` using:
         ```bash
         for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
         ```
@@ -74,6 +74,7 @@ If the server is wiped, follow this order to restore functionality.
     cd /opt/stacks/dockge
     docker compose up -d
     # Then deploy remaining stacks via Dockge Web UI
+    # If 'Option C' was chosen, Dockge can help fill the `.env` with ease
     ```
 
 ### Phase 4: Finalize
