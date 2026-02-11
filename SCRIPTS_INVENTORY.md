@@ -4,7 +4,7 @@
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh` | Daily 5am |
-| `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Checks every 5m (root crontab) |
+| `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am |
 | `cleanup_script.py` | Cleans folders (files AND subdirs), keeping recent or deleting all | Daily 1am and 1pm |
@@ -12,7 +12,7 @@
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.sh` | Master logic to push/pull Git repos | Varies |
 | `guestwifi` | Triggers the running wifi_robot container via HTTP | On Demand |
-| `local-opt-backup.sh` | Backs up Docker volumes to tar.zst, backs up `~/.ssh` and `/etc/ssh` | Weekly (Mon 5:30am) (root crontab) |
+| `local-opt-backup.sh` | Backs up Docker volumes to tar.zst, backs up `~/.ssh` and `/etc/ssh` | Weekly 5:30am on Monday (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
