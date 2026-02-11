@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Backs up Docker volumes to tar.xz, backs up `~/.ssh` and `/etc/ssh`
+# @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up `~/.ssh` and `/etc/ssh`
 # @FREQUENCY: Weekly (Mon 5:30am) (root crontab)
 # ==============================================================================
 # 🛡️  SERVER BACKUP
@@ -8,7 +8,7 @@
 #
 # --- DOCKER RESTORE ---
 # 1.  Stop Docker: sudo systemctl stop docker
-# 2.  Extract:     sudo tar -xJf docker-stacks-DATE.tar.xz -C /
+# 2.  Extract:     sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
 # 3.  Permissions: sudo chown -R $(id -u):$(id -g) /home/gravi-ctrl/.ssh
 # 3.5 Permissions: sudo chmod 700 /home/gravi-ctrl/.ssh
 #                  sudo chmod 600 /home/gravi-ctrl/.ssh/id_ed25519
@@ -32,11 +32,16 @@ if [ -z "$KUMA_HC_URL" ]; then
     exit 1
 fi
 
+# Auto-install zstd if missing
+if ! command -v zstd &> /dev/null; then
+    echo "Installing zstd..."
+    apt-get update && apt-get install -y zstd
+fi
+
 BACKUP_DIR="/srv/data/assets/syncthing/Backup/docker-containers-backup"
 STACKS_ROOT="/opt/stacks"
 DATE=$(date +%F)
-export XZ_OPT="-T2"
-DOCKER_FILENAME="docker-stacks-$DATE.tar.xz"
+DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
 
 mkdir -p "$BACKUP_DIR"
 
@@ -65,12 +70,15 @@ systemctl stop docker.socket docker.service containerd
 echo "Waiting 20 seconds for clean shutdown..."
 sleep 20
 
-echo "Creating high-compression backup (XZ)..."
-tar -cJf "$BACKUP_DIR/$DOCKER_FILENAME" \
+echo "Creating high-speed backup (ZSTD)..."
+tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='.git' \
     --exclude='*.log' \
     --exclude='*.log.gz' \
     --exclude='*.tmp' \
+    --exclude='*.js.map' \
+    --exclude='*/nextcloud/data/appdata_*/preview/*' \
+    --exclude='*/nextcloud/data/updater-*/backups/*' \
     -C / \
     opt/stacks \
     home/$BACKUP_USER/.ssh \
@@ -107,7 +115,8 @@ fi
 # --- 4. VALIDATION & CLEANUP ---
 if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
     [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup Successful."
-    find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.xz" ! -name "$DOCKER_FILENAME" -delete
+    # Find and delete old tar.zst files, keep current one
+    find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst" ! -name "$DOCKER_FILENAME" -delete
     echo "🎉 ALL TASKS FINISHED."
     exit 0
 else
