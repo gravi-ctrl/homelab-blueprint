@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up `~/.ssh` and `/etc/ssh`
-# @FREQUENCY: Weekly (Mon 5:30am) (root crontab)
+# @FREQUENCY: Weekly 5:30am on Monday (root crontab)
 # ==============================================================================
 # 🛡️  SERVER BACKUP
 # ==============================================================================
