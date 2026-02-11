@@ -4,12 +4,12 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `$S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$...` |
+| **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `$S/cron-guard "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "...` |
 | **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
-| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL -o /tmp/mmotti.py https://...` |
+| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 00:00 | `$S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com...` |
 | **Rotate Syncthing backups (retain recent) and purge download watch folder** | At 01:00 and 13:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
-| **Apply file renaming rules to Paperless-ngx documents** | At 04:00 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
+| **Apply file renaming rules to Paperless-ngx documents** | At 04:15 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
 | **Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
 | **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"` |
 

@@ -6,18 +6,18 @@ A=/srv/data/assets
 # .------------ minute (0 - 59)
 # | .---------- hour (0 - 23)
 # | | .-------- day of month (1 - 31)
-# | | | .------ month (1 - 12) OR jan,feb,mar,apr ...
-# | | | | .---- day of week (0 - 6) (Sun=0 or 7) OR sun,mon,tue ...
+# | | | .------ month (1 - 12)
+# | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
 # Update NextDNS IP and monitor server/internet health
-*/5 * * * * $S/cron-guard "NxtDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
+*/5 * * * * $S/cron-guard "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
 
 # Sync Personal and Work Obsidian vaults to Git
-*/15 * * * * $S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal' && $S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
+*/15 * * * * $S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; $S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
 # Update Pi-hole Gravity (adlists) and apply mmotti regex rules
-0 0 * * * $S/cron-guard "Pi-hole Gravity & mmotti Regex" "docker exec pihole /bin/bash -c 'curl -sSL -o /tmp/mmotti.py https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py && python3 /tmp/mmotti.py && rm /tmp/mmotti.py && pihole -g'"
+0 0 * * * $S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Rotate Syncthing backups (retain recent) and purge download watch folder
 0 1,13 * * * $S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/Backup/tasks $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
@@ -26,7 +26,7 @@ A=/srv/data/assets
 0 4 * * * $S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contacts-calendars_backup -oe -oc 'docker exec -u 33 nextcloud-app-1 php occ'"
 
 # Apply file renaming rules to Paperless-ngx documents
-0 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
+15 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
 # Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git
 0 5 * * * $S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
