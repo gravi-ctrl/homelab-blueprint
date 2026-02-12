@@ -87,12 +87,14 @@ If the server is wiped, follow this order to restore functionality.
 
 ### Phase 3: Restore Docker Stacks
 
-**Choose your approach:**
+| Approach | Best For |
+|----------|----------|
+| **Option A** | Have backup file (fastest) |
+| **Option B** | Manual setup or partial restore |
 
-*   **Option A** — Full Restore from Backup (fastest, if you have the `.tar.zst`)
-*   **Option B** — Clone Repo + Restore Configs (manual setup)
+---
 
-#### Option A: Full Restore from Backup (Fastest)
+#### Option A: Full Restore from Backup
 
 If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everything in one command: compose files, configs, and secrets.
 
