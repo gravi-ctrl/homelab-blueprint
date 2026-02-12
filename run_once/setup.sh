@@ -88,20 +88,77 @@ if [ "$SHELL" != "/usr/bin/zsh" ]; then
     sudo chsh -s $(which zsh) $USER
 fi
 
+# 6. RESTORE SYSTEM CONFIGURATIONS
+echo -e "${YELLOW}[6/6] Restoring System Configurations...${NC}"
+
+SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
+
+if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
+
+    # A. Restore /etc/hosts
+    if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
+        echo "Restoring /etc/hosts..."
+        sudo cp "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts
+        sudo chown root:root /etc/hosts
+        sudo chmod 644 /etc/hosts
+        echo -e "${GREEN}✓ /etc/hosts restored${NC}"
+    fi
+
+    # B. Restore User Crontab
+    if [ -f "$SYSTEM_CONFIGS_DIR/user_crontab.txt" ]; then
+        echo "Restoring user crontab..."
+        crontab "$SYSTEM_CONFIGS_DIR/user_crontab.txt"
+        echo -e "${GREEN}✓ User crontab restored${NC}"
+    fi
+
+    # C. Restore Root Crontab (if available)
+    if [ -f "$SYSTEM_CONFIGS_DIR/root_crontab.txt" ]; then
+        if ! grep -q "Root crontab skipped" "$SYSTEM_CONFIGS_DIR/root_crontab.txt"; then
+            echo "Restoring root crontab..."
+            sudo crontab "$SYSTEM_CONFIGS_DIR/root_crontab.txt"
+            echo -e "${GREEN}✓ Root crontab restored${NC}"
+        fi
+    fi
+
+    # D. Display fstab for manual review (requires careful handling)
+    if [ -f "$SYSTEM_CONFIGS_DIR/fstab.txt" ]; then
+        echo -e "${YELLOW}⚠️  /etc/fstab backup found - review needed before restore:${NC}"
+        echo "────────────────────────────────────────"
+        cat "$SYSTEM_CONFIGS_DIR/fstab.txt"
+        echo "────────────────────────────────────────"
+    fi
+
+else
+    echo -e "${RED}Warning: System configs backup not found.${NC}"
+fi
+
 # ==============================================================================
 echo -e "${GREEN}=== BOOTSTRAP COMPLETE ===${NC}"
 echo -e "${YELLOW}⚠️  CRITICAL NEXT STEPS:${NC}"
-echo "1. Restore FSTAB (Mount Drives):"
-echo "   - Edit /etc/fstab and add your drive UUIDs."
-echo "   - RUN: 'sudo mount -a' to verify."
-echo "2. FIX PERMISSIONS (Only AFTER mounting drives):"
-echo "   - Run: sudo chown -R $(id -u):$(id -g) /srv/data/assets"
-echo "   - Run: sudo chown -R 33:33 /srv/data/assets/nextcloud_data"
-echo "   - Run: sudo setfacl -R -m u:33:rwx /srv/data/assets"
-echo "   - Run: sudo setfacl -R -d -m u:33:rwx /srv/data/assets"
-echo "3. Restore Cronjobs:"
-echo "   - cat ~/scripts/run_once/system_configs/user_crontab.txt | crontab -"
-echo "   - cat ~/scripts/run_once/system_configs/root_crontab.txt | sudo crontab -"
-echo "4. Restore Hosts File:"
-echo "   - sudo cp ~/scripts/run_once/system_configs/hosts.txt /etc/hosts"
-echo "5. Reboot."
+echo ""
+echo "1. RESTORE FSTAB (Mount Drives):"
+echo "   📄 Location: $HOME/scripts/run_once/system_configs/fstab.txt"
+echo "   ⚠️  IMPORTANT: Review backup above before copying!"
+echo "   Steps:"
+echo "      a) nano /etc/fstab  (review current)"
+echo "      b) Update with UUIDs from backup file"
+echo "      c) Run: sudo mount -a  (test before reboot)"
+echo ""
+echo "2. PERMISSION FIX (After mounting drives):"
+echo "   sudo chown -R \$(id -u):\$(id -g) /srv/data/assets"
+echo "   sudo chown -R 33:33 /srv/data/assets/nextcloud_data"
+echo "   sudo setfacl -R -m u:33:rwx /srv/data/assets"
+echo "   sudo setfacl -R -d -m u:33:rwx /srv/data/assets"
+echo ""
+echo "3. VERIFY RESTORED ITEMS:"
+echo "   ✓ /etc/hosts          - Restored automatically"
+echo "   ✓ Crontabs            - Restored automatically"
+echo "   ✓ Dotfiles            - Restored automatically"
+echo "   ⚠️  /etc/fstab         - Manual review required (step 1)"
+echo ""
+echo "4. OPTIONAL - Restore Installed Packages:"
+echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
+echo "   (Review, then: sudo apt-get install <packages>)"
+echo ""
+echo "5. REBOOT:"
+echo "   sudo reboot"
