@@ -87,7 +87,10 @@ If the server is wiped, follow this order to restore functionality.
 
 ### Phase 3: Restore Docker Stacks
 
-Choose one of the two approaches below:
+**Choose your approach:**
+
+*   **Option A** — Full Restore from Backup (fastest, if you have the `.tar.zst`)
+*   **Option B** — Clone Repo + Restore Configs (manual setup)
 
 ---
 
