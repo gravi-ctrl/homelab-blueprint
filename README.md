@@ -138,7 +138,7 @@ If you don't have the backup file or prefer manual setup:
         ```
 
     *   **Option B2 (Manual entry):**
-        Get the secrets from your PWM and fill in manually:
+        If you don't have the `docker-stacks-DATE.tar.zst`, then use the below to copy `.env.example` files to `.env`:
         ```bash
         for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
         ```
