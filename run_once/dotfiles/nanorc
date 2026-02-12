@@ -1,13 +1,15 @@
-bind ^H chopwordleft main # Deletes the word to the left (Ctrl+Backspace behavior)
-set softwrap         # Wraps text instead of cutting it off
-# set linenumbers      # Shows line numbers on the left
-set constantshow     # Always shows line/column/char position at the bottom
-set titlecolor white,blue  # Makes the top bar pop so you know what file you're in
-set zap              # Allows you to delete a highlighted region with Backspace/Delete
-set atblanks         # Wraps lines at whitespace rather than mid-word
-# set mouse            # Allows you to click to move the cursor or scroll with the wheel
-set autoindent       # New lines start at the same indent as the previous one
-set tabsize 4        # Standardizes tabs
-set tabstospaces     # Converts tabs to spaces (much better for script portability)
-set smarthome        # Home key goes to the start of text, then start of line
+# Copy to /etc/nanorc to have a global config
+
+bind ^H chopwordleft main           # Deletes the word to the left (Ctrl+Backspace behavior)
+set softwrap                        # Wraps text instead of cutting it off
+# set linenumbers                     # Shows line numbers on the left
+set constantshow                    # Always shows line/column/char position at the bottom
+set titlecolor white,blue           # Makes the top bar pop so you know what file you're in
+set zap                             # Allows you to delete a highlighted region with Backspace/Delete
+set atblanks                        # Wraps lines at whitespace rather than mid-word
+# set mouse                           # Allows you to click to move the cursor or scroll with the wheel
+set autoindent                      # New lines start at the same indent as the previous one
+set tabsize 4                       # Standardizes tabs
+set tabstospaces                    # Converts tabs to spaces (much better for script portability)
+set smarthome                       # Home key goes to the start of text, then start of line
 include "/usr/share/nano/*.nanorc"  # Syntax highliting
