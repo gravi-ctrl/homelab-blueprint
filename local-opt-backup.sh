@@ -72,13 +72,47 @@ sleep 20
 
 echo "Creating high-speed backup (ZSTD)..."
 tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
+    \
+    `# --- Generic patterns ---` \
     --exclude='.git' \
+    --exclude='__pycache__' \
+    --exclude='node_modules' \
+    --exclude='lost+found' \
     --exclude='*.log' \
     --exclude='*.log.gz' \
+    --exclude='*.log.??' \
     --exclude='*.tmp' \
+    --exclude='*.pyc' \
+    --exclude='*.pid' \
+    --exclude='*.swp' \
+    --exclude='*.bak' \
     --exclude='*.js.map' \
-    --exclude='*/nextcloud/data/appdata_*/preview/*' \
-    --exclude='*/nextcloud/data/updater-*/backups/*' \
+    --exclude='*.sock' \
+    --exclude='*.core' \
+    --exclude='ipc-socket' \
+    --exclude='lockfile' \
+    --exclude='GPUCache' \
+    --exclude='CachedImages' \
+    --exclude='Crash Reports' \
+    \
+    `# --- Stack-specific ---` \
+    --exclude='opt/stacks/jellyfin/config/transcodes' \
+    --exclude='opt/stacks/jellyfin/config/cache' \
+    --exclude='opt/stacks/jellyfin/config/log' \
+    --exclude='opt/stacks/arrs/config/*/MediaCover' \
+    --exclude='opt/stacks/arrs/config/*/Backups' \
+    --exclude='opt/stacks/arrs/config/*/logs' \
+    --exclude='opt/stacks/arrs/config/*/UpdateLogs' \
+    --exclude='opt/stacks/scrutiny/influxdb' \
+    --exclude='opt/stacks/audiobookshelf/backups' \
+    --exclude='opt/stacks/audiobookshelf/metadata/cache' \
+    --exclude='opt/stacks/pihole/etc-pihole/pihole-FTL.db' \
+    --exclude='opt/stacks/qbittorrent/config/qBittorrent/data/logs' \
+    --exclude='opt/stacks/qbittorrent/config/qBittorrent/data/GeoDB' \
+    --exclude='opt/stacks/jdownloader/config/logs' \
+    --exclude='opt/stacks/jdownloader/config/tmp' \
+    --exclude='opt/stacks/borg-ui/borg_cache' \
+    \
     -C / \
     opt/stacks \
     home/$BACKUP_USER/.ssh \
