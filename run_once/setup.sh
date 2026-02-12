@@ -12,7 +12,16 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+set -e
+trap 'echo "❌ Script failed at line $LINENO"; exit 1' ERR
+
 echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
+
+# Validate sudo works
+if ! sudo -n true 2>/dev/null; then
+    echo -e "${RED}❌ Error: This script requires passwordless sudo.${NC}"
+    exit 1
+fi
 
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/6] Updating System & Installing Tools...${NC}"
