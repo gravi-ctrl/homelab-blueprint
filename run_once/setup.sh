@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Installs dependencies, configures Docker, Permissions, Python, and Shell
+# @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell and restores system configs & dotfiles (Run without sudo)
 # @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
@@ -13,18 +13,25 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 set -e
-trap 'echo "❌ Script failed at line $LINENO"; exit 1' ERR
+trap 'echo -e "${RED}❌ Script failed at line $LINENO${NC}"; exit 1' ERR
 
 echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 
-# Validate sudo works
-if ! sudo -n true 2>/dev/null; then
-    echo -e "${RED}❌ Error: This script requires passwordless sudo.${NC}"
+# 0. SUDO VALIDATION
+if ! sudo -v; then
+    echo -e "${RED}❌ Error: Sudo authentication failed.${NC}"
     exit 1
 fi
+# Keep sudo alive
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/6] Updating System & Installing Tools...${NC}"
+
+# Fix for minimal installs missing add-apt-repository
+sudo apt-get update
+sudo apt-get install -y software-properties-common
+
 sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
 sudo apt-get update && sudo apt-get upgrade -y
 
@@ -51,7 +58,6 @@ sudo mkdir -p /srv/data/assets/nextcloud_data
 
 # 4. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[4/6] Installing Python Libs...${NC}"
-# Using --break-system-packages because this is a dedicated server environment
 pip3 install python-dotenv cron-descriptor python-telegram-bot selenium flask --break-system-packages
 
 # 5. SHELL ENVIRONMENT (ZSH + P10K)
@@ -80,15 +86,16 @@ DOTFILES_DIR="$HOME/scripts/run_once/dotfiles"
 
 if [ -d "$DOTFILES_DIR" ]; then
     echo "Restoring dotfiles from backup..."
-    cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
-    cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
-    cp "$DOTFILES_DIR/nanorc" "$HOME/.nanorc"
-    cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
+
+    [ -f "$DOTFILES_DIR/zshrc" ]     && cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
+    [ -f "$DOTFILES_DIR/p10k.zsh" ]  && cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
+    [ -f "$DOTFILES_DIR/hushlogin" ] && cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
+    [ -f "$DOTFILES_DIR/nanorc" ]    && sudo cp "$DOTFILES_DIR/nanorc" "/etc/nanorc"
 
     mkdir -p "$HOME/.config"
     rsync -av "$DOTFILES_DIR/config/" "$HOME/.config/"
 else
-    echo -e "${RED}Warning: Dotfiles backup not found in scripts folder. Skipping restore.${NC}"
+    echo -e "${RED}Warning: Dotfiles backup not found. Skipping.${NC}"
 fi
 
 # E. Set Default Shell
@@ -99,46 +106,30 @@ fi
 
 # 6. RESTORE SYSTEM CONFIGURATIONS
 echo -e "${YELLOW}[6/6] Restoring System Configurations...${NC}"
-
 SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 
 if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
-
-    # A. Restore /etc/hosts
+    # A. Hosts
     if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
-        echo "Restoring /etc/hosts..."
         sudo cp "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts
         sudo chown root:root /etc/hosts
         sudo chmod 644 /etc/hosts
         echo -e "${GREEN}✓ /etc/hosts restored${NC}"
     fi
-
-    # B. Restore User Crontab
+    # B. User Crontab
     if [ -f "$SYSTEM_CONFIGS_DIR/user_crontab.txt" ]; then
-        echo "Restoring user crontab..."
         crontab "$SYSTEM_CONFIGS_DIR/user_crontab.txt"
         echo -e "${GREEN}✓ User crontab restored${NC}"
     fi
-
-    # C. Restore Root Crontab (if available)
-    if [ -f "$SYSTEM_CONFIGS_DIR/root_crontab.txt" ]; then
-        if ! grep -q "Root crontab skipped" "$SYSTEM_CONFIGS_DIR/root_crontab.txt"; then
-            echo "Restoring root crontab..."
-            sudo crontab "$SYSTEM_CONFIGS_DIR/root_crontab.txt"
-            echo -e "${GREEN}✓ Root crontab restored${NC}"
-        fi
+    # C. Root Crontab
+    if [ -f "$SYSTEM_CONFIGS_DIR/root_crontab.txt" ] && ! grep -q "Root crontab skipped" "$SYSTEM_CONFIGS_DIR/root_crontab.txt"; then
+        sudo crontab "$SYSTEM_CONFIGS_DIR/root_crontab.txt"
+        echo -e "${GREEN}✓ Root crontab restored${NC}"
     fi
-
-    # D. Display fstab for manual review (requires careful handling)
+    # D. Fstab review
     if [ -f "$SYSTEM_CONFIGS_DIR/fstab.txt" ]; then
-        echo -e "${YELLOW}⚠️  /etc/fstab backup found - review needed before restore:${NC}"
-        echo "────────────────────────────────────────"
-        cat "$SYSTEM_CONFIGS_DIR/fstab.txt"
-        echo "────────────────────────────────────────"
+        echo -e "${YELLOW}⚠️  /etc/fstab backup found - review needed manually.${NC}"
     fi
-
-else
-    echo -e "${RED}Warning: System configs backup not found.${NC}"
 fi
 
 # ==============================================================================
