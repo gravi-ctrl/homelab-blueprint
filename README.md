@@ -58,7 +58,6 @@ If the server is wiped, follow this order to restore functionality.
        sudo nano /etc/fstab
        ```
    *   Update UUIDs for your new hard drives
-   *   Copy the **BindFS** line for Nextcloud assets from `fstab.txt`
    *   Test before rebooting:
        ```bash
        sudo mount -a
