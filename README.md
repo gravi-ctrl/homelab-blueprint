@@ -43,7 +43,9 @@ If the server is wiped, follow this order to restore functionality.
     *   Restore Root: `cat "run_once/system_configs/root_crontab.txt" | sudo crontab -`.
 4.  **Firewall Rules:**
     *   Run the script: `run_once/setup-firewall.sh`.
-
+5.  **Hosts File:**
+    *   Run `sudo cp ~/scripts/run_once/system_configs/hosts.txt /etc/hosts`.
+  
 ### Phase 3: Restore Docker Stacks
 1.  **Clone the Docker Repo:**
     ```bash
