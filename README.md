@@ -87,6 +87,39 @@ If the server is wiped, follow this order to restore functionality.
 
 ### Phase 3: Restore Docker Stacks
 
+Choose one of the two approaches below:
+
+---
+
+#### Option A: Full Restore from Backup (Fastest)
+
+If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everything in one command: compose files, configs, and secrets.
+
+*   **Prerequisite:** Ensure zstd is installed
+    ```bash
+    sudo apt install zstd
+    ```
+
+*   **Restore the entire stack:**
+    ```bash
+    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
+    ```
+    This extracts everything to the proper locations including `/opt/stacks/`, SSH keys, and host keys.
+
+*   **Launch Dockge:**
+    ```bash
+    cd /opt/stacks/dockge
+    docker compose up -d
+    ```
+
+*   **Deploy remaining stacks via Dockge Web UI**
+
+---
+
+#### Option B: Clone Repo + Restore Configs
+
+If you don't have the backup file or prefer manual setup:
+
 1.  **Clone the Docker Repo:**
     ```bash
     sudo mkdir -p /opt/stacks
@@ -94,33 +127,30 @@ If the server is wiped, follow this order to restore functionality.
     git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
     ```
 
-2.  **Restore Identity & Secrets:**
+2.  **Restore Secrets & Configs:**
     *   *Prerequisite:* Ensure zstd is installed (`sudo apt install zstd`).
-    *   *Source:* The weekly `docker-stacks-DATE.tar.zst` backup.
-    *   **Option A (Full Restore):** Restores Stacks, SSH Keys and Host Keys:
-        ```bash
-        sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-        ```
-    *   **Option B (Just Envs):**
+    
+    *   **Option B1 (From partial backup):**
+        If you have the `docker-stacks-DATE.tar.zst` but only want `.env` files:
         ```bash
         sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'opt/stacks/*/.env'
         ```
-    *   **Option C (.env.example):**
-        *   Get the secrets from your PWM.
-        *   Copy every `.env.example` in every stack to `.env` using:
+
+    *   **Option B2 (Manual entry):**
+        Get the secrets from your PWM and fill in manually:
         ```bash
         for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
         ```
-        *   Fill in the `.env` files with your secrets either through terminal, or Dockge.
+        Then fill in each `.env` file with your secrets using a text editor or Dockge Web UI.
 
 3.  **Launch:**
     ```bash
     cd /opt/stacks/dockge
     docker compose up -d
     # Then deploy remaining stacks via Dockge Web UI
-    # If 'Option C' was chosen, Dockge can help fill the .env with ease
+    # Dockge can help manage and fill .env files with ease
     ```
-
+    
 ---
 
 ### Phase 4: Finalize
