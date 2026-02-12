@@ -92,8 +92,6 @@ If the server is wiped, follow this order to restore functionality.
 *   **Option A** — Full Restore from Backup (fastest, if you have the `.tar.zst`)
 *   **Option B** — Clone Repo + Restore Configs (manual setup)
 
----
-
 #### Option A: Full Restore from Backup (Fastest)
 
 If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everything in one command: compose files, configs, and secrets.
