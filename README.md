@@ -45,7 +45,7 @@ If the server is wiped, follow this order to restore functionality.
     *   Run the script: `run_once/setup-firewall.sh`.
 5.  **Hosts File:**
     *   Run `sudo cp run_once/system_configs/hosts.txt /etc/hosts`.
-  
+
 ### Phase 3: Restore Docker Stacks
 1.  **Clone the Docker Repo:**
     ```bash
