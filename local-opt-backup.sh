@@ -107,6 +107,7 @@ tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='opt/stacks/audiobookshelf/backups' \
     --exclude='opt/stacks/audiobookshelf/metadata/cache' \
     --exclude='opt/stacks/pihole/etc-pihole/pihole-FTL.db' \
+    --exclude='opt/stacks/pihole/etc-pihole/gravity_old.db' \
     --exclude='opt/stacks/qbittorrent/config/qBittorrent/data/logs' \
     --exclude='opt/stacks/qbittorrent/config/qBittorrent/data/GeoDB' \
     --exclude='opt/stacks/jdownloader/config/logs' \
