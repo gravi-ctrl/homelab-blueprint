@@ -46,10 +46,10 @@ fi
 apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
 # C. Dotfiles
-cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
-cp ~/.p10k.zsh "$TARGET_DIR/run_once/dotfiles/p10k.zsh"
-cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
-cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
+[ -f ~/.zshrc ] && cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
+[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "$TARGET_DIR/run_once/dotfiles/p10k.zsh"
+[ -f ~/.nanorc ] && cp ~/.nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
+[ -f ~/.hushlogin ] && cp ~/.hushlogin "$TARGET_DIR/run_once/dotfiles/hushlogin"
 
 # Mirror specific .config folders
 CONFIG_DEST="$TARGET_DIR/run_once/dotfiles/config"
