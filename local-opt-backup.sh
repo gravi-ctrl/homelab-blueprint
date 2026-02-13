@@ -9,9 +9,10 @@
 # --- DOCKER RESTORE ---
 # 1.  Stop Docker: sudo systemctl stop docker
 # 2.  Extract:     sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-# 3.  Permissions: sudo chown -R $(id -u):$(id -g) /home/gravi-ctrl/.ssh
-# 3.5 Permissions: sudo chmod 700 /home/gravi-ctrl/.ssh
-#                  sudo chmod 600 /home/gravi-ctrl/.ssh/id_ed25519
+# 3.  Permissions: sudo chown -R $(id -u):$(id -g) ~/.ssh
+# 3.5 Permissions: sudo chmod 700 ~/.ssh
+#                  sudo chmod 600 ~/.ssh/id_*
+#                  sudo chmod 644 ~/.ssh/id_*.pub
 # 4.  Start:       sudo systemctl start docker
 # ==============================================================================
 
