@@ -62,7 +62,7 @@ keep_kuma_alive &
 HEARTBEAT_PID=$!
 
 # Safety Net: Kill heartbeat and restore Docker on exit
-trap 'kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start docker.socket; systemctl start docker.service' EXIT
+trap 'kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service' EXIT
 
 echo "Stopping and Masking Docker..."
 systemctl mask docker.socket
@@ -139,7 +139,7 @@ echo "Waiting 60 seconds for HDD I/O to settle..."
 sleep 60
 
 # Find containers that are not running or are unhealthy
-STUCK_CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E "restarting|exited|unhealthy" | awk '{print $1}')
+STUCK_CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "restarting|exited|unhealthy" | awk '{print $1}')
 
 if [ ! -z "$STUCK_CONTAINERS" ]; then
     for container in $STUCK_CONTAINERS; do
