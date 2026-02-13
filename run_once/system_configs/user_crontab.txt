@@ -10,9 +10,6 @@ A=/srv/data/assets
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# Test crontab
-@reboot $S/cron-guard
-
 # Update NextDNS IP and monitor server/internet health
 */5 * * * * $S/cron-guard "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
 
