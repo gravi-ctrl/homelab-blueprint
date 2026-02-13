@@ -10,6 +10,6 @@ set atblanks                        # Wraps lines at whitespace rather than mid-
 # set mouse                           # Allows you to click to move the cursor or scroll with the wheel
 set autoindent                      # New lines start at the same indent as the previous one
 set tabsize 4                       # Standardizes tabs
-set tabstospaces                    # Converts tabs to spaces (much better for script portability)
+# set tabstospaces                    # Converts tabs to spaces (much better for script portability)
 set smarthome                       # Home key goes to the start of text, then start of line
 include "/usr/share/nano/*.nanorc"  # Syntax highliting
