@@ -59,11 +59,21 @@ def parse_crontab(filename, title):
 
             try:
                 if line.startswith("@"):
+                    special_map = {
+                        '@reboot':   'On every boot/restart',
+                        '@yearly':   'Once a year (Jan 1, 00:00)',
+                        '@annually': 'Once a year (Jan 1, 00:00)',
+                        '@monthly':  'Once a month (1st, 00:00)',
+                        '@weekly':   'Once a week (Sunday, 00:00)',
+                        '@daily':    'Once a day (00:00)',
+                        '@midnight': 'Once a day (00:00)',
+                        '@hourly':   'Once an hour (:00)',
+                    }
                     parts = line.split(maxsplit=1)
                     if len(parts) == 2:
                         raw_schedule = parts[0]
                         command = parts[1]
-                        human_desc = "On System Event"
+                        human_desc = special_map.get(raw_schedule.lower(), f"Unknown: `{raw_schedule}`")
                     else:
                         command = line
                         human_desc = "Unknown"
@@ -85,17 +95,17 @@ def parse_crontab(filename, title):
                         if date_match:
                             day_val = date_match.group(1).lower()
                             day_name = week_map.get(day_val, "Day")
-                            
+
                             dom_parts = dom.split(',')
                             found_ordinals = [ordinal_map[p] for p in dom_parts if p in ordinal_map]
-                            
+
                             if found_ordinals:
                                 ord_str = " and ".join(found_ordinals)
                                 time_str = f"{hour.zfill(2)}:{minute.zfill(2)}"
                                 human_desc = f"At {time_str}, on the **{ord_str} {day_name}** of the month"
                             else:
                                 human_desc += f" <br>**(⚠️ Condition: Only on {day_name}s)**"
-                        
+
                         elif command.startswith("if [") or command.startswith("[ ") or command.startswith("test "):
                             human_desc += " <br>**(⚠️ Conditional: Bash Logic Check)**"
 
