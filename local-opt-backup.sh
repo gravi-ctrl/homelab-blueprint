@@ -1,20 +1,15 @@
 #!/bin/bash
-# @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up `~/.ssh` and `/etc/ssh`
-# @FREQUENCY: Weekly 5:30am on Monday (root crontab)
+# @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up ~/.ssh and /etc/ssh
+# @FREQUENCY: Weekly 5:30am on Thursday (root crontab)
 # ==============================================================================
-# 🛡️  SERVER BACKUP
+# RESTORE:
+#   1. Stop Docker:  sudo systemctl stop docker
+#   2. Extract:      sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
+#   3. Fix perms:    sudo chown -R $(id -u):$(id -g) ~/.ssh
+#   4. SSH perms:    sudo chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
+#   5. Start Docker: sudo systemctl start docker
 # ==============================================================================
-# 🆘 RESTORE INSTRUCTIONS
-#
-# --- DOCKER RESTORE ---
-# 1.  Stop Docker: sudo systemctl stop docker
-# 2.  Extract:     sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-# 3.  Permissions: sudo chown -R $(id -u):$(id -g) ~/.ssh
-# 3.5 Permissions: sudo chmod 700 ~/.ssh
-#                  sudo chmod 600 ~/.ssh/id_*
-#                  sudo chmod 644 ~/.ssh/id_*.pub
-# 4.  Start:       sudo systemctl start docker
-# ==============================================================================
+set -o pipefail
 
 # --- 1. CONFIGURATION & SECRETS ---
 # .env file stored beside the script
@@ -23,17 +18,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/.env" ]; then
     source "$SCRIPT_DIR/.env"
 else
-    echo "❌ Error: .env file not found in $SCRIPT_DIR"
+    echo "❌ .env file not found in $SCRIPT_DIR"
     exit 1
 fi
 
-# Ensure mandatory URL is loaded
+# Esnure the variables are loaded
 if [ -z "$KUMA_HC_URL" ]; then
-    echo "❌ Error: KUMA_HC_URL is not set in .env"
+    echo "❌ KUMA_HC_URL is not set in .env"
     exit 1
 fi
 
-# Auto-install zstd if missing
+if [ -z "$BACKUP_USER" ]; then
+    echo "❌ BACKUP_USER is not set in .env"
+    exit 1
+fi
+
+# Ensure the path exists
+if [ ! -d "/home/$BACKUP_USER/.ssh" ]; then
+    echo "❌ /home/$BACKUP_USER/.ssh does not exist"
+    exit 1
+fi
+
+# Install zstd if missing
 if ! command -v zstd &> /dev/null; then
     echo "Installing zstd..."
     apt-get update && apt-get install -y zstd
@@ -46,7 +52,7 @@ DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
 
 mkdir -p "$BACKUP_DIR"
 
-# --- HEARTBEAT FUNCTION (Runs in background) ---
+# HEARTBEAT FUNCTION (Runs in background)
 keep_kuma_alive() {
     while true; do
         curl -fsS --retry 3 "$KUMA_HC_URL" > /dev/null
@@ -54,27 +60,19 @@ keep_kuma_alive() {
     done
 }
 
-# --- 2. DOCKER STOP & BACKUP ---
 echo "--- [1/2] Starting Docker Stacks Backup ---"
 
-# Start the background heartbeat
 keep_kuma_alive &
 HEARTBEAT_PID=$!
 
-# Safety Net: Kill heartbeat and restore Docker on exit
 trap 'kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service' EXIT
 
-echo "Stopping and Masking Docker..."
+echo "Stopping and masking Docker..."
 systemctl mask docker.socket
 systemctl stop docker.socket docker.service containerd
 
-echo "Waiting 20 seconds for clean shutdown..."
-sleep 20
-
-echo "Creating high-speed backup (ZSTD)..."
+echo "Creating backup (ZSTD)..."
 tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
-    \
-    `# --- Generic patterns ---` \
     --exclude='.git' \
     --exclude='__pycache__' \
     --exclude='node_modules' \
@@ -95,8 +93,6 @@ tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='GPUCache' \
     --exclude='CachedImages' \
     --exclude='Crash Reports' \
-    \
-    `# --- Stack-specific ---` \
     --exclude='opt/stacks/jellyfin/config/transcodes' \
     --exclude='opt/stacks/jellyfin/config/cache' \
     --exclude='opt/stacks/jellyfin/config/log' \
@@ -114,48 +110,81 @@ tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='opt/stacks/jdownloader/config/logs' \
     --exclude='opt/stacks/jdownloader/config/tmp' \
     --exclude='opt/stacks/borg-ui/borg_cache' \
-    \
     -C / \
     opt/stacks \
-    home/$BACKUP_USER/.ssh \
+    "home/$BACKUP_USER/.ssh" \
     etc/ssh
 
 TAR_EXIT_CODE=$?
 
-# --- 3. RESTORATION & SURGICAL REPAIR ---
 echo "--- [2/2] Restoring Services & Cleanup ---"
-
-echo "Unmasking and Starting Docker..."
 systemctl unmask docker.socket
 systemctl start containerd docker.socket docker.service
 
-echo "Waiting 20 seconds for Docker socket..."
+echo "Waiting for Docker socket..."
 sleep 20
 
-echo "Running initial stack convergence..."
-find "$STACKS_ROOT" -name "docker-compose.yml" -execdir docker compose up -d \;
+echo "Starting stacks..."
+for stack_dir in "$STACKS_ROOT"/*/; do
+    if [ -f "$stack_dir/docker-compose.yml" ]; then
+        echo "  → $(basename "$stack_dir")"
+        docker compose -f "$stack_dir/docker-compose.yml" up -d
+    fi
+done
 
-echo "Waiting 60 seconds for HDD I/O to settle..."
-sleep 60
+# Disarm the safety-net trap, manual restoration is done
+trap - EXIT
+trap 'kill $HEARTBEAT_PID 2>/dev/null' EXIT
 
-# Find containers that are not running or are unhealthy
-STUCK_CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "restarting|exited|unhealthy" | awk '{print $1}')
+echo "Waiting for containers to settle..."
+MAX_WAIT=120
+ELAPSED=0
+INTERVAL=10
 
-if [ ! -z "$STUCK_CONTAINERS" ]; then
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    sleep $INTERVAL
+    ELAPSED=$((ELAPSED + INTERVAL))
+
+    STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy" | awk '{print $1}')
+
+    if [ -z "$STUCK" ]; then
+        echo "✅ All containers healthy after ${ELAPSED}s"
+        break
+    fi
+
+    echo "  ⏳ ${ELAPSED}s — still waiting on: $STUCK"
+done
+
+STUCK_CONTAINERS=$STUCK
+
+if [ -n "$STUCK_CONTAINERS" ]; then
     for container in $STUCK_CONTAINERS; do
         echo "Restarting stuck container: $container"
         docker restart "$container"
     done
 fi
 
-# --- 4. VALIDATION & CLEANUP ---
+# Validation and Cleanup
 if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
-    [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup Successful."
-    # Find and delete old tar.zst files, keep current one
-    find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst" ! -name "$DOCKER_FILENAME" -delete
-    echo "🎉 ALL TASKS FINISHED."
-    exit 0
+    [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup successful."
+
+    echo "Verifying backup integrity..."
+    if zstd -t "$BACKUP_DIR/$DOCKER_FILENAME"; then
+        BACKUP_SIZE=$(du -sh "$BACKUP_DIR/$DOCKER_FILENAME" | cut -f1)
+        echo "📦 Backup size: $BACKUP_SIZE"
+        find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst" \
+            ! -name "$DOCKER_FILENAME" -printf '%T@ %p\n' \
+            | sort -n | head -n -1 | awk '{print $2}' | xargs -r rm
+        echo "🎉 All tasks finished."
+        kill $HEARTBEAT_PID 2>/dev/null
+        exit 0
+    else
+        echo "❌ Backup file is CORRUPT. Keeping old backups."
+        kill $HEARTBEAT_PID 2>/dev/null
+        exit 1
+    fi
 else
     echo "❌ Tar backup failed (Code $TAR_EXIT_CODE)!"
+    kill $HEARTBEAT_PID 2>/dev/null
     exit 1
 fi

@@ -14,7 +14,7 @@ A=/srv/data/assets
 */5 * * * * $S/battery_monitor.sh > /dev/null 2>&1
 
 # Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)
-30 5 * * 1 $S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"
+30 5 * * 4 $S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"
 
 # ctrl_s_master Project
 0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/run.sh"
