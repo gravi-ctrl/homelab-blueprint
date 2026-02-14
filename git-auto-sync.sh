@@ -31,8 +31,10 @@ else
     echo "Everything up-to-date."
 fi
 
-# 5. Download updates from GitHub
-git pull origin main --no-edit
+# 5. Detect current branch and Pull updates
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "⬇️  Pulling changes from origin/$CURRENT_BRANCH..."
+git pull origin "$CURRENT_BRANCH" --no-edit
 
 # 6. Push changes with Retry Logic
 # We try up to 3 times to account for network blips
