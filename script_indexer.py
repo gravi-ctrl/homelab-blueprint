@@ -4,8 +4,12 @@
 import os
 from pathlib import Path
 
-ROOT_DIR = "/home/gravi-ctrl/scripts"
-OUTPUT_FILE = "/home/gravi-ctrl/scripts/SCRIPTS_INVENTORY.md"
+# Load BACKUP_USER from .env
+with open(os.path.join(os.path.dirname(__file__), ".env")) as f:
+    BACKUP_USER = next(l.split('=')[1].strip().strip("'\"") for l in f if l.startswith('BACKUP_USER='))
+
+ROOT_DIR = f"/home/{BACKUP_USER}/scripts"
+OUTPUT_FILE = f"{ROOT_DIR}/SCRIPTS_INVENTORY.md"
 EXTENSIONS = {".sh", ".py"}
 
 def is_script_file(file_path):
