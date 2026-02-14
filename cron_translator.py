@@ -5,9 +5,13 @@ import os
 import re
 from cron_descriptor import get_description, Options
 
+# Load BACKUP_USER from .env
+with open(os.path.join(os.path.dirname(__file__), ".env")) as f:
+    BACKUP_USER = next(l.split('=')[1].strip().strip("'\"") for l in f if l.startswith('BACKUP_USER='))
+
 # --- CONFIG ---
-SOURCE_DIR = "/home/gravi-ctrl/scripts/run_once/system_configs"
-OUTPUT_FILE = "/home/gravi-ctrl/scripts/run_once/system_configs/CRON_SCHEDULE.md"
+SOURCE_DIR = f"/home/{BACKUP_USER}/scripts/run_once/system_configs"
+OUTPUT_FILE = f"{SOURCE_DIR}/CRON_SCHEDULE.md"
 
 opts = Options()
 opts.use_24hour_time_format = True
@@ -142,7 +146,7 @@ final_md = [
     ""
 ]
 
-final_md.extend(parse_crontab("user_crontab.txt", "👤 User Cron (gravi-ctrl)"))
+final_md.extend(parse_crontab("user_crontab.txt", f"👤 User Cron ({BACKUP_USER})"))
 final_md.extend(parse_crontab("root_crontab.txt", "⚡ Root Cron"))
 
 with open(OUTPUT_FILE, 'w') as f:

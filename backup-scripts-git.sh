@@ -6,7 +6,9 @@
 # ==============================================================================
 
 # --- CONFIG ---
-TARGET_DIR="/home/gravi-ctrl/scripts"
+# Load BACKUP_USER and TOOLS from .env
+BACKUP_USER=$(grep '^BACKUP_USER=' "$(dirname "$(readlink -f "$0")")/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+TARGET_DIR="/home/$BACKUP_USER/scripts"
 SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
 MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.sh"
 TRANSLATOR_SCRIPT="$TARGET_DIR/cron_translator.py"
