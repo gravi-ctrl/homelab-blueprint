@@ -67,7 +67,7 @@ pangolin https://github.com/fosrl/pangolin/releases
 pihole https://github.com/pi-hole/pi-hole/releases
 prowlarr https://github.com/linuxserver/docker-prowlarr/releases
 prowlarr-ls https://github.com/linuxserver/docker-prowlarr/releases
-qbittorrent https://www.qbittorrent.org/news
+qbittorrent https://github.com/linuxserver/docker-qbittorrent/releases
 qbittorrent-nox https://www.qbittorrent.org/news
 radarr https://github.com/linuxserver/docker-radarr/releases
 radarr-ls https://github.com/linuxserver/docker-radarr/releases
