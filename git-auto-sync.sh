@@ -25,14 +25,10 @@ cd "$TARGET_DIR" || { echo "❌ Error: Could not cd to $TARGET_DIR"; exit 1; }
 git add .
 
 # 4. Commit ONLY if there are changes
-# We use a clean date format: YYYY-MM-DD HH:MM:SS
 if ! git diff-index --quiet HEAD --; then
     git commit -m "$LABEL: $(date '+%Y-%m-%d %H:%M:%S')"
 else
-    # Optional: Print message for manual runs, but exit successfully
     echo "Everything up-to-date."
-    # We do not exit here, because we still want to attempt a push
-    # (in case a previous push failed but commit succeeded)
 fi
 
 # 5. Download updates from GitHub
