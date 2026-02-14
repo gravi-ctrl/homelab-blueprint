@@ -21,10 +21,6 @@ fi
 # If this fails, the script exits immediately (preventing accidental commits elsewhere)
 cd "$TARGET_DIR" || { echo "❌ Error: Could not cd to $TARGET_DIR"; exit 1; }
 
-# Download updates from GitHub before doing anything else.
-# If there is a conflict (same line edited in both places), this might fail, and will require a human fix.
-git pull origin main --no-edit
-
 # 3. Stage all changes
 git add .
 
@@ -35,11 +31,14 @@ if ! git diff-index --quiet HEAD --; then
 else
     # Optional: Print message for manual runs, but exit successfully
     echo "Everything up-to-date."
-    # We do not exit here, because we still want to attempt a push 
+    # We do not exit here, because we still want to attempt a push
     # (in case a previous push failed but commit succeeded)
 fi
 
-# 5. Push changes with Retry Logic
+# 5. Download updates from GitHub
+git pull origin main --no-edit
+
+# 6. Push changes with Retry Logic
 # We try up to 3 times to account for network blips
 MAX_RETRIES=3
 COUNT=0
