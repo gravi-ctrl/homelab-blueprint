@@ -56,6 +56,7 @@ mqtt https://github.com/eclipse/mosquitto/tags
 n8n https://github.com/n8n-io/n8n/releases
 newt https://github.com/fosrl/newt/releases
 nextcloud-app-1 https://hub.docker.com/_/nextcloud/tags
+nextcloud-db-1 https://hub.docker.com/_/mariadb/tags?page=1&name=lts
 nextcloud-aio-mastercontainer https://github.com/nextcloud/all-in-one/releases
 ngrok https://hub.docker.com/r/ngrok/ngrok/tags
 npm_app_1 https://github.com/NginxProxyManager/nginx-proxy-manager/releases
@@ -75,6 +76,7 @@ readarr https://github.com/Readarr/Readarr/releases
 readeck https://codeberg.org/readeck/readeck/releases
 recyclarr https://github.com/recyclarr/recyclarr/releases
 romm https://github.com/rommapp/romm/releases
+romm-db https://hub.docker.com/_/mariadb/tags?page=1&name=lts
 romm-redis https://hub.docker.com/_/redis/tags
 roundcubemail https://github.com/roundcube/roundcubemail/releases
 sabnzbd https://github.com/linuxserver/docker-sabnzbd/releases
