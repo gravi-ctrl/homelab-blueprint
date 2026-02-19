@@ -136,34 +136,6 @@ done
 trap - EXIT
 trap 'kill $HEARTBEAT_PID 2>/dev/null' EXIT
 
-echo "Waiting for containers to settle..."
-MAX_WAIT=120
-ELAPSED=0
-INTERVAL=10
-
-while [ $ELAPSED -lt $MAX_WAIT ]; do
-    sleep $INTERVAL
-    ELAPSED=$((ELAPSED + INTERVAL))
-
-    STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy" | awk '{print $1}')
-
-    if [ -z "$STUCK" ]; then
-        echo "✅ All containers healthy after ${ELAPSED}s"
-        break
-    fi
-
-    echo "  ⏳ ${ELAPSED}s — still waiting on: $STUCK"
-done
-
-STUCK_CONTAINERS=$STUCK
-
-if [ -n "$STUCK_CONTAINERS" ]; then
-    for container in $STUCK_CONTAINERS; do
-        echo "Restarting stuck container: $container"
-        docker restart "$container"
-    done
-fi
-
 # Validation and Cleanup
 if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
     [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup successful."
@@ -175,9 +147,6 @@ if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
         find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst" \
             ! -name "$DOCKER_FILENAME" -printf '%T@ %p\n' \
             | sort -n | head -n -1 | awk '{print $2}' | xargs -r rm
-        echo "🎉 All tasks finished."
-        kill $HEARTBEAT_PID 2>/dev/null
-        exit 0
     else
         echo "❌ Backup file is CORRUPT. Keeping old backups."
         kill $HEARTBEAT_PID 2>/dev/null
@@ -188,3 +157,34 @@ else
     kill $HEARTBEAT_PID 2>/dev/null
     exit 1
 fi
+
+echo "Waiting for containers to settle..."
+MAX_WAIT=120
+ELAPSED=0
+INTERVAL=10
+
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy" | awk '{print $1}')
+
+    if [ -z "$STUCK" ]; then
+        echo "✅ All containers healthy after ${ELAPSED}s"
+        break
+    fi
+
+    echo "  ⏳ ${ELAPSED}s — still waiting on: $STUCK"
+    sleep $INTERVAL
+    ELAPSED=$((ELAPSED + INTERVAL))
+done
+
+STUCK_CONTAINERS=$STUCK
+
+if [ -n "$STUCK_CONTAINERS" ]; then
+    for container in $STUCK_CONTAINERS; do
+        echo "Restarting stuck container: $container"
+        docker restart "$container"
+    done
+fi
+
+echo "🎉 All tasks finished."
+kill $HEARTBEAT_PID 2>/dev/null
+exit 0
