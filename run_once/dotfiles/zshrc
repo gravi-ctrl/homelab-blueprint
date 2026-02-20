@@ -172,7 +172,8 @@ extract() {
         # 1. Determine the target directory name (remove extension)
         local dir="${1%.*}"
 
-        # Handle the .tar.gz / .tar.bz2 case where %.* only removes the last part
+        # Handle the .tar.* case (e.g., .tar.gz, .tar.zst) where %.* only removes the last part
+        # This regex covers .tar.gz, .tar.bz2, .tar.xz, .tar.zst, etc.
         if [[ "$1" =~ \.tar\..+$ ]]; then
             dir="${dir%.*}"
         fi
@@ -187,14 +188,19 @@ extract() {
 
         # 3. Extraction logic
         case "$1" in
-            *.tar.bz2|*.tbz2|*.tar.gz|*.tgz|*.tar.xz|*.tar)
+            # Added *.tar.zst, *.tzst, and *.txz to the list
+            *.tar.bz2|*.tbz2|*.tar.gz|*.tgz|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar)
                          tar -xf "$1" -C "$dir" ;;
             *.zip)       unzip "$1" -d "$dir" ;;
-            *.rar)       unrar x "$1" "$dir/" ;; # 'x' preserves path structure
-            *.7z)        7z x "$1" -o"$dir"    ;; # -o must be attached to the path
+            *.rar)       unrar x "$1" "$dir/" ;;
+            *.7z)        7z x "$1" -o"$dir"    ;;
+
+            # Single file decompressors
             *.bz2)       bunzip2 -c "$1" > "$dir/${1%.*}" ;;
             *.gz)        gunzip -c "$1" > "$dir/${1%.*}"  ;;
             *.Z)         uncompress -c "$1" > "$dir/${1%.*}" ;;
+            *.zst)       zstd -d "$1" -o "$dir/${1%.*}" ;; # Added standalone zstd
+
             *)           echo "Error: '$1' cannot be extracted via extract()"
                          rmdir "$dir"
                          return 1 ;;
