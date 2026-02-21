@@ -39,10 +39,10 @@ if [ ! -d "/home/$BACKUP_USER/.ssh" ]; then
     exit 1
 fi
 
-# Install zstd if missing
-if ! command -v zstd &> /dev/null; then
-    echo "Installing zstd..."
-    apt-get update && apt-get install -y zstd
+# Install zstd and at if missing
+if ! command -v zstd &> /dev/null || ! command -v at &> /dev/null; then
+    echo "Installing dependencies (zstd, at)..."
+    apt-get update && apt-get install -y zstd at
 fi
 
 BACKUP_DIR="/srv/data/assets/syncthing/Backup/docker-containers-backup"
@@ -65,9 +65,28 @@ echo "--- [1/2] Starting Docker Stacks Backup ---"
 keep_kuma_alive &
 HEARTBEAT_PID=$!
 
-trap 'kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service' EXIT
+# SAFETY & CLEANUP FUNCTION
+# This runs on EXIT, whether successful, failed, or interrupted (Ctrl+C)
+cleanup() {
+    # 1. Kill the Heartbeat
+    kill $HEARTBEAT_PID 2>/dev/null
+    
+    # 2. Ensure Docker is unmasked and started (Idempotent)
+    systemctl unmask docker.socket 2>/dev/null
+    systemctl start containerd docker.socket docker.service 2>/dev/null
+
+    # 3. Cancel the "Dead Man's Switch" (at jobs) if script finishes/exits
+    for job in $(atq | awk '{print $1}'); do atrm $job; done 2>/dev/null
+}
+
+# Trap signals: EXIT (normal/error), INT (Ctrl+C), TERM (kill)
+trap cleanup EXIT INT TERM
 
 echo "Stopping and masking Docker..."
+
+# DEAD MAN'S SWITCH: Schedule auto-rescue in 1 hour if script dies/hangs
+echo "systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service" | at now + 60 minutes 2>/dev/null
+
 systemctl mask docker.socket
 systemctl stop docker.socket docker.service containerd
 
@@ -132,10 +151,6 @@ for stack_dir in "$STACKS_ROOT"/*/; do
     fi
 done
 
-# Disarm the safety-net trap, manual restoration is done
-trap - EXIT
-trap 'kill $HEARTBEAT_PID 2>/dev/null' EXIT
-
 # Validation and Cleanup
 if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
     [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup successful."
@@ -149,12 +164,10 @@ if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
             | sort -n | head -n -1 | awk '{print $2}' | xargs -r rm
     else
         echo "❌ Backup file is CORRUPT. Keeping old backups."
-        kill $HEARTBEAT_PID 2>/dev/null
         exit 1
     fi
 else
     echo "❌ Tar backup failed (Code $TAR_EXIT_CODE)!"
-    kill $HEARTBEAT_PID 2>/dev/null
     exit 1
 fi
 
@@ -186,5 +199,4 @@ if [ -n "$STUCK_CONTAINERS" ]; then
 fi
 
 echo "🎉 All tasks finished."
-kill $HEARTBEAT_PID 2>/dev/null
 exit 0
