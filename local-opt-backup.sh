@@ -66,8 +66,10 @@ cleanup() {
     systemctl unmask docker.socket 2>/dev/null
     systemctl start containerd docker.socket docker.service 2>/dev/null
 
-    # 3. Cancel the "Dead Man's Switch" (at jobs)
-    for job in $(atq | awk '{print $1}'); do atrm $job; done 2>/dev/null
+    # 3. Cancel ONLY the specific "Dead Man's Switch" job created by this script
+    if [ -n "$AT_JOB_ID" ]; then
+        atrm "$AT_JOB_ID" 2>/dev/null
+    fi
 }
 
 # Trap signals: EXIT (normal/error), INT (Ctrl+C), TERM (kill)
@@ -76,7 +78,8 @@ trap cleanup EXIT INT TERM
 echo "Stopping and masking Docker..."
 
 # DEAD MAN'S SWITCH: Schedule auto-rescue in 1 hour.
-echo "kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service" | at now + 60 minutes 2>/dev/null
+AT_OUTPUT=$(echo "kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service" | at now + 60 minutes 2>&1)
+AT_JOB_ID=$(echo "$AT_OUTPUT" | awk '/job/ {print $2}')
 
 systemctl mask docker.socket
 systemctl stop docker.socket docker.service containerd
