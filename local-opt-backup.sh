@@ -11,8 +11,27 @@
 # ==============================================================================
 set -o pipefail
 
-# --- 1. CONFIGURATION & SECRETS ---
-# .env file stored beside the script
+# --- 0. INTERACTIVITY CHECK ---
+# If running manually, switch to SystemD background service to survive SSH/Tailscale disconnects.
+if [ -t 0 ]; then
+    echo "⚠️  Interactive session detected. Switching to background SystemD service..."
+
+    if command -v systemd-run &> /dev/null; then
+        UNIT_NAME="docker-backup-manual-$(date +%s)"
+        systemd-run --unit="$UNIT_NAME" \
+                    --quiet \
+                    "$(realpath "${BASH_SOURCE[0]}")"
+
+        echo "✅ Backup dispatched to background. You may safely disconnect."
+        echo "📝 Monitor logs: journalctl -u $UNIT_NAME -f"
+        exit 0
+    else
+        echo "❌ systemd-run not found. Proceeding in foreground (Do not close SSH)."
+        sleep 3
+    fi
+fi
+
+# --- 1. CONFIGURATION ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -22,26 +41,18 @@ else
     exit 1
 fi
 
-# Esnure the variables are loaded
-if [ -z "$KUMA_HC_URL" ]; then
-    echo "❌ KUMA_HC_URL is not set in .env"
+if [ -z "$KUMA_HC_URL" ] || [ -z "$BACKUP_USER" ]; then
+    echo "❌ Missing configuration in .env"
     exit 1
 fi
 
-if [ -z "$BACKUP_USER" ]; then
-    echo "❌ BACKUP_USER is not set in .env"
-    exit 1
-fi
-
-# Ensure the path exists
 if [ ! -d "/home/$BACKUP_USER/.ssh" ]; then
     echo "❌ /home/$BACKUP_USER/.ssh does not exist"
     exit 1
 fi
 
-# Install zstd if missing
+# Install dependencies if missing
 if ! command -v zstd &> /dev/null; then
-    echo "Installing zstd..."
     apt-get update && apt-get install -y zstd
 fi
 
@@ -52,7 +63,7 @@ DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
 
 mkdir -p "$BACKUP_DIR"
 
-# HEARTBEAT FUNCTION (Runs in background)
+# HEARTBEAT FUNCTION
 keep_kuma_alive() {
     while true; do
         curl -fsS --retry 3 "$KUMA_HC_URL" > /dev/null
@@ -65,14 +76,30 @@ echo "--- [1/2] Starting Docker Stacks Backup ---"
 keep_kuma_alive &
 HEARTBEAT_PID=$!
 
-trap 'kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service' EXIT
+# SAFETY & CLEANUP FUNCTION
+cleanup() {
+    # 1. Kill Heartbeat
+    if [ -n "$HEARTBEAT_PID" ]; then
+        kill $HEARTBEAT_PID 2>/dev/null
+    fi
+
+    # 2. Ensure Docker is unmasked and started
+    echo "Restoring Docker Services..."
+    systemctl unmask docker.socket 2>/dev/null
+    systemctl start containerd docker.socket docker.service 2>/dev/null
+}
+
+# Trap signals: EXIT (Success/Fail), INT (Ctrl+C), TERM (Kill), HUP (Disconnect)
+trap cleanup EXIT INT TERM HUP
 
 echo "Stopping and masking Docker..."
 systemctl mask docker.socket
 systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
-tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
+
+# TIMEOUT: Fails and triggers cleanup if tar takes > 60 mins
+timeout 60m tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='.git' \
     --exclude='__pycache__' \
     --exclude='node_modules' \
@@ -117,7 +144,7 @@ tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
 
 TAR_EXIT_CODE=$?
 
-echo "--- [2/2] Restoring Services & Cleanup ---"
+# Explicit restart for immediate healthchecks
 systemctl unmask docker.socket
 systemctl start containerd docker.socket docker.service
 
@@ -132,14 +159,9 @@ for stack_dir in "$STACKS_ROOT"/*/; do
     fi
 done
 
-# Disarm the safety-net trap, manual restoration is done
-trap - EXIT
-trap 'kill $HEARTBEAT_PID 2>/dev/null' EXIT
-
-# Validation and Cleanup
-if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
-    [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup successful."
-
+# Validation
+if [ $TAR_EXIT_CODE -eq 0 ]; then
+    echo "✅ Backup successful."
     echo "Verifying backup integrity..."
     if zstd -t "$BACKUP_DIR/$DOCKER_FILENAME"; then
         BACKUP_SIZE=$(du -sh "$BACKUP_DIR/$DOCKER_FILENAME" | cut -f1)
@@ -148,16 +170,18 @@ if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
             ! -name "$DOCKER_FILENAME" -printf '%T@ %p\n' \
             | sort -n | head -n -1 | awk '{print $2}' | xargs -r rm
     else
-        echo "❌ Backup file is CORRUPT. Keeping old backups."
-        kill $HEARTBEAT_PID 2>/dev/null
+        echo "❌ Backup file is CORRUPT."
         exit 1
     fi
+elif [ $TAR_EXIT_CODE -eq 124 ]; then
+    echo "❌ Backup TIMED OUT (>60m). Docker restarted."
+    exit 1
 else
     echo "❌ Tar backup failed (Code $TAR_EXIT_CODE)!"
-    kill $HEARTBEAT_PID 2>/dev/null
     exit 1
 fi
 
+# Healthcheck
 echo "Waiting for containers to settle..."
 MAX_WAIT=120
 ELAPSED=0
@@ -165,26 +189,19 @@ INTERVAL=10
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
     STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy" | awk '{print $1}')
-
     if [ -z "$STUCK" ]; then
-        echo "✅ All containers healthy after ${ELAPSED}s"
+        echo "✅ All containers healthy."
         break
     fi
-
-    echo "  ⏳ ${ELAPSED}s — still waiting on: $STUCK"
     sleep $INTERVAL
     ELAPSED=$((ELAPSED + INTERVAL))
 done
 
-STUCK_CONTAINERS=$STUCK
-
-if [ -n "$STUCK_CONTAINERS" ]; then
-    for container in $STUCK_CONTAINERS; do
-        echo "Restarting stuck container: $container"
+if [ -n "$STUCK" ]; then
+    for container in $STUCK; do
         docker restart "$container"
     done
 fi
 
 echo "🎉 All tasks finished."
-kill $HEARTBEAT_PID 2>/dev/null
 exit 0
