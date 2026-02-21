@@ -5,6 +5,7 @@ apport
 apt
 apt-transport-https
 apt-utils
+at
 base-files
 bash
 bcache-tools
