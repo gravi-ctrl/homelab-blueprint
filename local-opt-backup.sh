@@ -12,7 +12,6 @@
 set -o pipefail
 
 # --- 1. CONFIGURATION & SECRETS ---
-# .env file stored beside the script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -22,24 +21,17 @@ else
     exit 1
 fi
 
-# Esnure the variables are loaded
-if [ -z "$KUMA_HC_URL" ]; then
-    echo "❌ KUMA_HC_URL is not set in .env"
+if [ -z "$KUMA_HC_URL" ] || [ -z "$BACKUP_USER" ]; then
+    echo "❌ Missing configuration in .env"
     exit 1
 fi
 
-if [ -z "$BACKUP_USER" ]; then
-    echo "❌ BACKUP_USER is not set in .env"
-    exit 1
-fi
-
-# Ensure the path exists
 if [ ! -d "/home/$BACKUP_USER/.ssh" ]; then
     echo "❌ /home/$BACKUP_USER/.ssh does not exist"
     exit 1
 fi
 
-# Install zstd and at if missing
+# Install dependencies if missing
 if ! command -v zstd &> /dev/null || ! command -v at &> /dev/null; then
     echo "Installing dependencies (zstd, at)..."
     apt-get update && apt-get install -y zstd at
@@ -66,16 +58,15 @@ keep_kuma_alive &
 HEARTBEAT_PID=$!
 
 # SAFETY & CLEANUP FUNCTION
-# This runs on EXIT, whether successful, failed, or interrupted (Ctrl+C)
 cleanup() {
-    # 1. Kill the Heartbeat
+    # 1. Kill the Heartbeat immediately
     kill $HEARTBEAT_PID 2>/dev/null
     
-    # 2. Ensure Docker is unmasked and started (Idempotent)
+    # 2. Ensure Docker is unmasked and started
     systemctl unmask docker.socket 2>/dev/null
     systemctl start containerd docker.socket docker.service 2>/dev/null
 
-    # 3. Cancel the "Dead Man's Switch" (at jobs) if script finishes/exits
+    # 3. Cancel the "Dead Man's Switch" (at jobs)
     for job in $(atq | awk '{print $1}'); do atrm $job; done 2>/dev/null
 }
 
@@ -84,8 +75,8 @@ trap cleanup EXIT INT TERM
 
 echo "Stopping and masking Docker..."
 
-# DEAD MAN'S SWITCH: Schedule auto-rescue in 1 hour if script dies/hangs
-echo "systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service" | at now + 60 minutes 2>/dev/null
+# DEAD MAN'S SWITCH: Schedule auto-rescue in 1 hour.
+echo "kill $HEARTBEAT_PID 2>/dev/null; systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service" | at now + 60 minutes 2>/dev/null
 
 systemctl mask docker.socket
 systemctl stop docker.socket docker.service containerd
@@ -151,7 +142,7 @@ for stack_dir in "$STACKS_ROOT"/*/; do
     fi
 done
 
-# Validation and Cleanup
+# Validation
 if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
     [ $TAR_EXIT_CODE -eq 1 ] && echo "⚠️ Backup completed with warnings." || echo "✅ Backup successful."
 
@@ -171,6 +162,7 @@ else
     exit 1
 fi
 
+# Healthcheck
 echo "Waiting for containers to settle..."
 MAX_WAIT=120
 ELAPSED=0
@@ -189,10 +181,8 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
     ELAPSED=$((ELAPSED + INTERVAL))
 done
 
-STUCK_CONTAINERS=$STUCK
-
-if [ -n "$STUCK_CONTAINERS" ]; then
-    for container in $STUCK_CONTAINERS; do
+if [ -n "$STUCK" ]; then
+    for container in $STUCK; do
         echo "Restarting stuck container: $container"
         docker restart "$container"
     done
