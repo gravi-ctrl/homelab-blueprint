@@ -10,7 +10,7 @@
 BACKUP_USER=$(grep '^BACKUP_USER=' "$(dirname "$(readlink -f "$0")")/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'")
 TARGET_DIR="/home/$BACKUP_USER/scripts"
 SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
-MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.sh"
+MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.py"
 TRANSLATOR_SCRIPT="$TARGET_DIR/cron_translator.py"
 STACKS_DIR="/opt/stacks"
 
@@ -68,7 +68,7 @@ for tool in "${TOOLS[@]}"; do
 done
 
 # --- 2. HANDOFF TO MASTER SCRIPT ---
-"$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
+python3 "$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
 
 # --- 3. Sync /opt/stacks ---
-"$MASTER_SCRIPT" "$STACKS_DIR" "Server Stacks"
+python3 "$MASTER_SCRIPT" "$STACKS_DIR" "Server Stacks"
