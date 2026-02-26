@@ -63,19 +63,12 @@ If the server is wiped, follow this order to restore functionality.
        sudo mount -a
        ```
 
-**2. Sudo Permissions:**
-   *   Run `sudo visudo`
-   *   Add the following line:
-       ```
-       gravi-ctrl ALL=(root) NOPASSWD: /usr/bin/crontab -l
-       ```
-
-**3. Firewall Rules:**
+**2. Firewall Rules:**
    ```bash
    ~/scripts/run_once/setup-firewall.sh
    ```
 
-**4. Fix Permissions (After mounting drives):**
+**3. Fix Permissions (After mounting drives):**
    ```bash
    sudo chown -R $(id -u):$(id -g) /srv/data/assets
    sudo chown -R 33:33 /srv/data/assets/nextcloud_data
