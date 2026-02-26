@@ -5,7 +5,7 @@
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
 | **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `$S/cron-guard "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "...` |
-| **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Pers...` |
+| **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "python3 $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal' 'Obsid...` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/...` |
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `$S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com...` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contact...` |
