@@ -56,7 +56,7 @@ if ! command -v zstd &> /dev/null; then
     apt-get update && apt-get install -y zstd
 fi
 
-BACKUP_DIR="/srv/data/assets/syncthing/Backup/docker-containers-backup"
+BACKUP_DIR="/srv/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
 STACKS_ROOT="/opt/stacks"
 DATE=$(date +%F)
 DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
