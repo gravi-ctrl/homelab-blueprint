@@ -27,7 +27,7 @@ If the server is wiped, follow this order to restore functionality.
 2.  **Run the Installer:**
     This installs Docker, dependencies, configures Python, Shell environment, and **automatically restores** system configs & dotfiles.
     ```bash
-    ~/scripts/setup.sh
+    ~/scripts/run_once/setup.sh
     ```
 
 ---
