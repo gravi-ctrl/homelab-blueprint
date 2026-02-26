@@ -21,7 +21,7 @@ If the server is wiped, follow this order to restore functionality.
 1.  **Clone this Repo:**
     ```bash
     git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
-    chmod +x ~/scripts/*.sh
+    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     ```
 
 2.  **Run the Installer:**
