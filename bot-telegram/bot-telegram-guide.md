@@ -32,7 +32,6 @@ pip3 install python-telegram-bot python-dotenv
    # --- COMMANDS ---
    # Syntax: CMD_commandName="shell command here"
    
-   
    # Command: /copy
    CMD_copy="cd /path/to/file && cp file /path/to/destination"
    ```
