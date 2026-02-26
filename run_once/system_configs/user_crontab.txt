@@ -17,13 +17,13 @@ A=/srv/data/assets
 */15 * * * * $S/cron-guard "Obsidian Notes Sync" "$S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; $S/git-auto-sync.sh '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
 # Rotate backups (retain recent) and purge download watch folder
-0 0,12 * * * $S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/contacts-calendars_backup $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
+0 0,12 * * * $S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_backup $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
 
 # Update Pi-hole Gravity (adlists) and apply mmotti regex rules
 0 1 * * * $S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-0 4 * * * $S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/contacts-calendars_backup -oe -oc 'docker exec -u 33 nextcloud-app-1 php occ'"
+0 4 * * * $S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/self-hosted/contacts-calendars_backup -oe -oc 'docker exec -u 33 nextcloud-app-1 php occ'"
 
 # Apply file renaming rules to Paperless-ngx documents
 15 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
