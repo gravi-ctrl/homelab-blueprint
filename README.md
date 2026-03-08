@@ -101,7 +101,7 @@ If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everyt
     ```
     This extracts everything to the proper locations including `/opt/stacks/`, SSH keys, and host keys.
     
-    *   Important note: to extract a specific dir in the backup:
+    *   **Important note:** to extract a specific dir in the backup:
       
         ```bash
         sudo tar --use-compress-program=zstd -xf docker-stacks-2026-02-13.tar.zst -C / 'opt/stacks/nextcloud/html/extra-apps'
