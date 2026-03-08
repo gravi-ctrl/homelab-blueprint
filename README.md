@@ -15,6 +15,7 @@ If the server is wiped, follow this order to restore functionality.
     *   `chmod 700 ~/.ssh`.
     *   `chmod 600 ~/.ssh/id_*`.
     *   `chmod 644 ~/.ssh/id_*.pub`.
+    *   `sudo systemctl restart ssh`
 
 ### Phase 1: Bootstrap System
 
