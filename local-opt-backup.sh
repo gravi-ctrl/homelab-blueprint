@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up ~/.ssh and /etc/ssh
+# @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up ~/scripts, ~/.ssh and /etc/ssh
 # @FREQUENCY: Weekly 5:30am on Thursday (root crontab)
 # ==============================================================================
 # RESTORE:
@@ -7,7 +7,8 @@
 #   2. Extract:      sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
 #   3. Fix perms:    sudo chown -R $(id -u):$(id -g) ~/.ssh
 #   4. SSH perms:    sudo chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
-#   5. Start Docker: sudo systemctl start docker
+#   5. Restart SSH:  sudo systemctl restart ssh
+#   6. Start Docker: sudo systemctl start docker
 # ==============================================================================
 set -o pipefail
 
@@ -137,8 +138,14 @@ timeout 60m tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FI
     --exclude='opt/stacks/jdownloader/config/logs' \
     --exclude='opt/stacks/jdownloader/config/tmp' \
     --exclude='opt/stacks/borg-ui/borg_cache' \
+    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/venv" \
+    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/_logs" \
+    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/vaults.hc" \
+    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/status.json" \
+    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/status_dashboard.md" \
     -C / \
     opt/stacks \
+    "home/$BACKUP_USER/scripts" \
     "home/$BACKUP_USER/.ssh" \
     etc/ssh
 
