@@ -154,4 +154,3 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 | 2 | System configs | ⚠️ Partial | Hosts, crons, dotfiles automated; fstab manual |
 | 3 | Docker stacks | ⚠️ Minimal | Already extracted; just `git pull` and launch |
 | 4 | Finalize | ⚠️ Manual | Path verification & reboot |
-
