@@ -155,13 +155,3 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 | 3 | Docker stacks | ⚠️ Minimal | Already extracted; just `git pull` and launch |
 | 4 | Finalize | ⚠️ Manual | Path verification & reboot |
 
----
-
-## 🔄 Daily Backups
-
-Backups run automatically via cron at **5am daily** and sync to Git:
-
-*   **System Configs:** `run_once/system_configs/` (fstab, hosts, crontabs, packages, dotfiles)
-*   **Scripts:** `~/scripts/` synced to Git
-*   **Docker Stacks:** `/opt/stacks/` synced to Git
-*   **Full Backup:** `docker-stacks-DATE.tar.zst` includes Docker stacks with secrets, `~/scripts` with `.env` files, and SSH keys
