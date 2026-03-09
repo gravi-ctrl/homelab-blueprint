@@ -10,8 +10,9 @@ This repository contains the "Brain" of the homelab: automation scripts, system 
 
 If the server is wiped, follow this order to restore functionality.
 
-*   For the `git clone` to work, you need to restore the github keys first, which are included in the `docker-stacks-DATE.tar.zst` backup.
-*   After restoring the keys, make sure to do the following: 
+*   The weekly `docker-stacks-DATE.tar.zst` backup includes `/opt/stacks/`, `~/scripts` (with `.env` files not stored in Git), `~/.ssh`, and `/etc/ssh`.
+*   For the `git clone` to work, you need to restore the GitHub keys first, which are included in the backup.
+*   After restoring the keys, make sure to do the following:
     *   `chmod 700 ~/.ssh`.
     *   `chmod 600 ~/.ssh/id_*`.
     *   `chmod 644 ~/.ssh/id_*.pub`.
@@ -24,6 +25,12 @@ If the server is wiped, follow this order to restore functionality.
     git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
     find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     ```
+
+    > **Alternative (if you have the backup):** `~/scripts` is included in the weekly backup with `.env` files (secrets not stored in Git). You can extract it directly instead of cloning:
+    > ```bash
+    > sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / 'home/gravi-ctrl/scripts'
+    > ```
+    > If you want the latest code afterward, run `git pull` from `~/scripts` (`.env` files are gitignored and won't be overwritten).
 
 2.  **Run the Installer:**
     This installs Docker, dependencies, configures Python, Shell environment, and **automatically restores** system configs & dotfiles.
@@ -88,7 +95,7 @@ If the server is wiped, follow this order to restore functionality.
 
 #### Option A: Full Restore from Backup
 
-If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everything in one command: compose files, configs, and secrets.
+If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everything in one command: compose files, configs, secrets, and scripts.
 
 *   **Prerequisite:** Ensure zstd is installed
     ```bash
@@ -99,13 +106,15 @@ If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everyt
     ```bash
     sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
     ```
-    This extracts everything to the proper locations including `/opt/stacks/`, SSH keys, and host keys.
-    
+    This extracts everything to the proper locations including `/opt/stacks/`, `~/scripts` (with `.env` files), SSH keys, and host keys.
+
     *   **Important note:** to extract a specific dir in the backup:
-      
+
         ```bash
         sudo tar --use-compress-program=zstd -xf docker-stacks-2026-02-13.tar.zst -C / 'opt/stacks/nextcloud/html/extra-apps'
         ```
+
+    > **Note:** If you already cloned `~/scripts` via Git in Phase 1, this will overwrite it with the backup version. Run `git pull` from `~/scripts` afterward to get the latest code (`.env` files are gitignored and won't be overwritten).
 
 *   **Launch Dockge:**
     ```bash
@@ -130,11 +139,14 @@ If you don't have the backup file or prefer manual setup:
 
 2.  **Restore Secrets & Configs:**
     *   *Prerequisite:* Ensure zstd is installed (`sudo apt install zstd`).
-    
+
     *   **Option B1 (From partial backup):**
         If you have the `docker-stacks-DATE.tar.zst` but only want `.env` files:
         ```bash
+        # Docker stack .env files
         sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'opt/stacks/*/.env'
+        # Scripts .env files
+        sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'home/gravi-ctrl/scripts/*/.env'
         ```
 
     *   **Option B2 (Manual entry):**
@@ -151,7 +163,7 @@ If you don't have the backup file or prefer manual setup:
     # Then deploy remaining stacks via Dockge Web UI
     # Dockge can help manage and fill .env files with ease
     ```
-    
+
 ---
 
 ### Phase 4: Finalize
@@ -168,7 +180,7 @@ If you don't have the backup file or prefer manual setup:
 
 | Phase | Task | Automation | Notes |
 |-------|------|-----------|-------|
-| 1 | Clone repo & Run setup.sh | ✅ Full | Handles ~85% of restoration |
+| 1 | Clone repo & Run setup.sh | ✅ Full | Handles ~85% of restoration. Scripts also available from backup. |
 | 2 | System configs | ⚠️ Partial | Hosts, crons, dotfiles automated; fstab manual |
 | 3 | Docker stacks | ⚠️ Manual | Requires secrets & .env files |
 | 4 | Finalize | ⚠️ Manual | Path verification & reboot |
@@ -182,4 +194,4 @@ Backups run automatically via cron at **5am daily** and sync to Git:
 *   **System Configs:** `run_once/system_configs/` (fstab, hosts, crontabs, packages, dotfiles)
 *   **Scripts:** `~/scripts/` synced to Git
 *   **Docker Stacks:** `/opt/stacks/` synced to Git
-*   **Full Backup:** `docker-stacks-DATE.tar.zst` includes secrets & SSH keys
+*   **Full Backup:** `docker-stacks-DATE.tar.zst` includes Docker stacks with secrets, `~/scripts` with `.env` files, and SSH keys
