@@ -10,29 +10,35 @@ This repository contains the "Brain" of the homelab: automation scripts, system 
 
 If the server is wiped, follow this order to restore functionality.
 
-*   The weekly `docker-stacks-DATE.tar.zst` backup includes `/opt/stacks/`, `~/scripts` (with `.env` files not stored in Git), `~/.ssh`, and `/etc/ssh`.
-*   For the `git clone` to work, you need to restore the GitHub keys first, which are included in the backup.
-*   After restoring the keys, make sure to do the following:
-    *   `chmod 700 ~/.ssh`.
-    *   `chmod 600 ~/.ssh/id_*`.
-    *   `chmod 644 ~/.ssh/id_*.pub`.
-    *   `sudo systemctl restart ssh`
+The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to restore:
+*   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
+*   `~/scripts` — Automation scripts with `.env` files (secrets not stored in Git)
+*   `~/.ssh` — GitHub deploy keys
+*   `/etc/ssh` — Host keys
 
 ### Phase 1: Bootstrap System
 
-1.  **Clone this Repo and make the scripts executable:**
+1.  **Extract the backup and fix SSH permissions:**
     ```bash
-    git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
-    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
+    sudo apt install zstd
+    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
+    sudo chown -R $(id -u):$(id -g) ~/.ssh
+    chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
+    sudo systemctl restart ssh
     ```
 
-    > **Alternative (if you have the backup):** `~/scripts` is included in the weekly backup with `.env` files (secrets not stored in Git). You can extract it directly instead of cloning:
+    > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repos:
     > ```bash
-    > sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / 'home/gravi-ctrl/scripts'
+    > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
+    > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     > ```
-    > If you want the latest code afterward, run `git pull` from `~/scripts` (`.env` files are gitignored and won't be overwritten).
 
-2.  **Run the Installer:**
+2.  **Pull the latest code** (backup may be up to a week old):
+    ```bash
+    cd ~/scripts && git pull
+    ```
+
+3.  **Run the Installer:**
     This installs Docker, dependencies, configures Python, Shell environment, and **automatically restores** system configs & dotfiles.
     ```bash
     ~/scripts/run_once/setup.sh
@@ -88,80 +94,44 @@ If the server is wiped, follow this order to restore functionality.
 
 ### Phase 3: Restore Docker Stacks
 
-| Approach | Best For |
-|----------|----------|
-| **Option A** | Have backup file (fastest) |
-| **Option B** | Manual setup or partial restore |
+The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in Phase 1. Pull the latest and launch:
 
-#### Option A: Full Restore from Backup
-
-If you have the weekly `docker-stacks-DATE.tar.zst` backup, this restores everything in one command: compose files, configs, secrets, and scripts.
-
-*   **Prerequisite:** Ensure zstd is installed
+1.  **Pull the latest code** (backup may be up to a week old):
     ```bash
-    sudo apt install zstd
+    cd /opt/stacks && git pull
     ```
 
-*   **Restore the entire stack:**
-    ```bash
-    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-    ```
-    This extracts everything to the proper locations including `/opt/stacks/`, `~/scripts` (with `.env` files), SSH keys, and host keys.
-
-    *   **Important note:** to extract a specific dir in the backup:
-
-        ```bash
-        sudo tar --use-compress-program=zstd -xf docker-stacks-2026-02-13.tar.zst -C / 'opt/stacks/nextcloud/html/extra-apps'
-        ```
-
-    > **Note:** If you already cloned `~/scripts` via Git in Phase 1, this will overwrite it with the backup version. Run `git pull` from `~/scripts` afterward to get the latest code (`.env` files are gitignored and won't be overwritten).
-
-*   **Launch Dockge:**
+2.  **Launch Dockge:**
     ```bash
     cd /opt/stacks/dockge
     docker compose up -d
     ```
 
-*   **Deploy remaining stacks via Dockge Web UI**
+3.  **Deploy remaining stacks via Dockge Web UI.**
 
----
+> **No backup?** Clone the repo and set up secrets manually:
+> ```bash
+> sudo mkdir -p /opt/stacks
+> sudo chown -R $(id -u):$(id -g) /opt/stacks
+> git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
+> ```
+> Then copy `.env.example` files to `.env` and fill in your secrets:
+> ```bash
+> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
+> ```
+> You can edit them manually or through the Dockge Web UI after launching it.
+> The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
-#### Option B: Clone Repo + Restore Configs
+**Useful extraction tips:**
 
-If you don't have the backup file or prefer manual setup:
-
-1.  **Clone the Docker Repo:**
+*   Extract a specific directory from the backup:
     ```bash
-    sudo mkdir -p /opt/stacks
-    sudo chown -R $(id -u):$(id -g) /opt/stacks
-    git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
+    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / 'opt/stacks/nextcloud/html/extra-apps'
     ```
 
-2.  **Restore Secrets & Configs:**
-    *   *Prerequisite:* Ensure zstd is installed (`sudo apt install zstd`).
-
-    *   **Option B1 (From partial backup):**
-        If you have the `docker-stacks-DATE.tar.zst` but only want `.env` files:
-        ```bash
-        # Docker stack .env files
-        sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'opt/stacks/*/.env'
-        # Scripts .env files
-        sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'home/gravi-ctrl/scripts/*/.env'
-        ```
-
-    *   **Option B2 (Manual entry):**
-        If you don't have the `docker-stacks-DATE.tar.zst`, then use the below to copy `.env.example` files to `.env`:
-        ```bash
-        for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
-        ```
-        Then fill in each `.env` file with your secrets using a text editor or Dockge Web UI.
-
-3.  **Launch:**
+*   Extract only `.env` files (secrets) from the backup:
     ```bash
-    cd /opt/stacks/dockge
-    docker compose up -d
-    # Then deploy remaining stacks via Dockge Web UI
-    # Dockge can help manage and fill .env files with ease
+    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
     ```
 
 ---
@@ -180,9 +150,9 @@ If you don't have the backup file or prefer manual setup:
 
 | Phase | Task | Automation | Notes |
 |-------|------|-----------|-------|
-| 1 | Clone repo & Run setup.sh | ✅ Full | Handles ~85% of restoration. Scripts also available from backup. |
+| 1 | Extract backup & Run setup.sh | ✅ Full | Handles ~85% of restoration |
 | 2 | System configs | ⚠️ Partial | Hosts, crons, dotfiles automated; fstab manual |
-| 3 | Docker stacks | ⚠️ Manual | Requires secrets & .env files |
+| 3 | Docker stacks | ⚠️ Minimal | Already extracted; just `git pull` and launch |
 | 4 | Finalize | ⚠️ Manual | Path verification & reboot |
 
 ---
