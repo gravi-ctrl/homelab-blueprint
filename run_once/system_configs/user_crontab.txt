@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 S=/home/gravi-ctrl/scripts
-A=/srv/data/assets
+A=/data/assets
 
 # .------------ minute (0 - 59)
 # | .---------- hour (0 - 23)
