@@ -13,7 +13,7 @@
 #/dev/disk/by-uuid/BF58-1168 /boot/efi vfat defaults 0 1
 /swap.img	none	swap	sw	0	0
 
-UUID=e8e2dfc0-81fa-4b62-8929-2d1876819878    /srv/data    ext4    defaults,errors=remount-ro   0   2
+UUID=e8e2dfc0-81fa-4b62-8929-2d1876819878    /data    ext4    defaults,errors=remount-ro   0   2
 
 UUID=BF58-1168  /boot/efi       vfat    defaults      0       1
 
