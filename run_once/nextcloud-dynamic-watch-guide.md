@@ -64,4 +64,4 @@ Nextcloud data folders are huge. Default Linux limits are too low, which causes 
     ```bash
     sudo journalctl -u nc-watcher.service -f
     ```
-2.  **Test it:** Create a test file in your assets folder (`/srv/data/assets`). You should see the log trigger within 10 seconds, and the file should appear in Nextcloud immediately.
+2.  **Test it:** Create a test file in your assets folder (`/data/assets`). You should see the log trigger within 10 seconds, and the file should appear in Nextcloud immediately.

@@ -3,7 +3,7 @@
 
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
-| `backup-scripts-git.sh` | Snapshots fstab/cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh` | Daily 5am |
+| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am |
@@ -13,7 +13,7 @@
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
 | `guestwifi` | Triggers the running wifi_robot container via HTTP | On Demand |
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.zst, backs up ~/scripts, ~/.ssh and /etc/ssh | Weekly 5:30am on Thursday (root crontab) |
-| `nextcloud-dynamic-watch.sh` | Watches `/srv/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
+| `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell and restores system configs & dotfiles (Run without sudo) | Run Once |
