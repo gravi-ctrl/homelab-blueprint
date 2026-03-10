@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Watches `/srv/data/assets` + Internal Data, scans Nextcloud via Docker
+# @DESCRIPTION: Watches `/data/assets` + Internal Data, scans Nextcloud via Docker
 # @FREQUENCY: Service (Always)
 # ==============================================================================
 # NEXTCLOUD DYNAMIC WATCHER (Docker Edition)
@@ -9,8 +9,8 @@
 NC_USER="not-admin"
 # This must match the name you gave the folder in 'External Storage' settings exactly:
 NC_MOUNT_NAME="assets"
-REAL_ASSETS_DIR="/srv/data/assets"
-HOST_DATA_DIR="/srv/data/assets/nextcloud_data"
+REAL_ASSETS_DIR="/data/assets"
+HOST_DATA_DIR="/data/assets/nextcloud_data"
 # Path to your docker-compose file:
 COMPOSE_FILE="/opt/stacks/nextcloud/docker-compose.yml"
 
@@ -41,14 +41,14 @@ while true; do
         for DIR_PATH in $TARGETS; do
             SCAN_PATH=""
 
-            # CASE A: External Assets (/srv/data/assets -> /not-admin/files/Assets)
+            # CASE A: External Assets (/data/assets -> /not-admin/files/Assets)
             if [[ "$DIR_PATH" == "$REAL_ASSETS_DIR"* ]]; then
                 # Strip the host path
                 RELATIVE=$(echo "$DIR_PATH" | sed "s|^$REAL_ASSETS_DIR||")
                 # Map to Nextcloud internal path
                 SCAN_PATH="${NC_USER}/files/${NC_MOUNT_NAME}${RELATIVE}"
 
-            # CASE B: Internal Storage (/srv/data/assets/nextcloud_data -> /not-admin/files)
+            # CASE B: Internal Storage (/data/assets/nextcloud_data -> /not-admin/files)
             elif [[ "$DIR_PATH" == "$HOST_DATA_DIR"* ]]; then
                 # Strip the host data path
                 RELATIVE=$(echo "$DIR_PATH" | sed "s|^$HOST_DATA_DIR||")
