@@ -58,31 +58,12 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 #### ⚠️ Manual Steps Still Required:
 
-**1. Fstab (Mount Drives) - CRITICAL:**
-   *   After `setup.sh` completes, review your backup:
-       ```bash
-       cat ~/scripts/run_once/system_configs/fstab.txt
-       ```
-   *   Find your new drive UUIDs:
-       ```bash
-       blkid
-       ```
-   *   Edit `/etc/fstab`:
-       ```bash
-       sudo nano /etc/fstab
-       ```
-   *   Update UUIDs for your new hard drives
-   *   Test before rebooting:
-       ```bash
-       sudo mount -a
-       ```
-
-**2. Firewall Rules:**
+**1. Firewall Rules:**
    ```bash
    ~/scripts/run_once/setup-firewall.sh
    ```
 
-**3. Fix Permissions (After mounting drives):**
+**2. Fix Permissions (After mounting drives):**
    ```bash
    sudo chown -R $(id -u):$(id -g) /data/assets
    sudo chown -R 33:33 /data/assets/nextcloud_data
@@ -151,6 +132,6 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 | Phase | Task | Automation | Notes |
 |-------|------|-----------|-------|
 | 1 | Extract backup & Run setup.sh | ✅ Full | Handles ~85% of restoration |
-| 2 | System configs | ⚠️ Partial | Hosts, crons, dotfiles automated; fstab manual |
+| 2 | System configs | ⚠️ Partial | Hosts, crons, dotfiles automated |
 | 3 | Docker stacks | ⚠️ Minimal | Already extracted; just `git pull` and launch |
 | 4 | Finalize | ⚠️ Manual | Path verification & reboot |
