@@ -16,5 +16,5 @@
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
-| `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell and restores system configs & dotfiles (Run without sudo) | Run Once |
+| `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles (Run without sudo) | Run Once |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |
