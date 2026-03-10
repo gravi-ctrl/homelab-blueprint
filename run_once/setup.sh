@@ -131,35 +131,22 @@ if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
         sudo crontab "$SYSTEM_CONFIGS_DIR/root_crontab.txt"
         echo -e "${GREEN}✓ Root crontab restored${NC}"
     fi
-    # D. Fstab review
-    if [ -f "$SYSTEM_CONFIGS_DIR/fstab.txt" ]; then
-        echo -e "${YELLOW}⚠️  /etc/fstab backup found - review needed manually.${NC}"
-    fi
 fi
 
 # ==============================================================================
 echo -e "${GREEN}=== BOOTSTRAP COMPLETE ===${NC}"
 echo -e "${YELLOW}⚠️  CRITICAL NEXT STEPS:${NC}"
 echo ""
-echo "1. RESTORE FSTAB (Mount Drives):"
-echo "   📄 Location: $HOME/scripts/run_once/system_configs/fstab.txt"
-echo "   ⚠️  IMPORTANT: Review backup above before copying!"
-echo "   Steps:"
-echo "      a) nano /etc/fstab  (review current)"
-echo "      b) Update with UUIDs from backup file"
-echo "      c) Run: sudo mount -a  (test before reboot)"
-echo ""
-echo "2. PERMISSION FIX (After mounting drives):"
+echo "1. PERMISSION FIX (After mounting drives):"
 echo "   sudo chown -R \$(id -u):\$(id -g) /data/assets"
 echo "   sudo chown -R 33:33 /data/assets/nextcloud_data"
 echo "   sudo setfacl -R -m u:33:rwx /data/assets"
 echo "   sudo setfacl -R -d -m u:33:rwx /data/assets"
 echo ""
-echo "3. VERIFY RESTORED ITEMS:"
+echo "2. VERIFY RESTORED ITEMS:"
 echo "   ✓ /etc/hosts          - Restored automatically"
 echo "   ✓ Crontabs            - Restored automatically"
 echo "   ✓ Dotfiles            - Restored automatically"
-echo "   ⚠️  /etc/fstab        - Manual review required (step 1)"
 echo ""
 echo "4. OPTIONAL - Restore Installed Packages:"
 echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
