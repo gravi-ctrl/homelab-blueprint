@@ -84,10 +84,10 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 **3. Fix Permissions (After mounting drives):**
    ```bash
-   sudo chown -R $(id -u):$(id -g) /srv/data/assets
-   sudo chown -R 33:33 /srv/data/assets/nextcloud_data
-   sudo setfacl -R -m u:33:rwx /srv/data/assets
-   sudo setfacl -R -d -m u:33:rwx /srv/data/assets
+   sudo chown -R $(id -u):$(id -g) /data/assets
+   sudo chown -R 33:33 /data/assets/nextcloud_data
+   sudo setfacl -R -m u:33:rwx /data/assets
+   sudo setfacl -R -d -m u:33:rwx /data/assets
    ```
 
 ---
