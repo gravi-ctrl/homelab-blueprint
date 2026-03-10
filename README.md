@@ -33,7 +33,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > ```
     > You'll need to add the secrets manually in the `.env` files.
 
-2.  **Re-link Git and pull the latest code**:
+2.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
     ```bash
     cd ~/scripts
     git init
@@ -45,46 +45,45 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```
 
 3.  **Run the Installer:**
-    This installs Docker, dependencies, configures Python, Shell environment, and **automatically restores** system configs & dotfiles.
+
+    This installs Docker, dependencies, configures Python, Shell environment, and **automatically handles:**
+    *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
+    *   `/etc/hosts` restoration
+    *   User & Root crontabs restoration
+    *   SSH conflict fix and restart
+    *   Firewall rules (`setup-firewall.sh`)
+    *   `/data/assets` directory creation & permissions
+
     ```bash
     ~/scripts/run_once/setup.sh
     ```
 
----
-
-### Phase 2: Restore System Configs
-
-*Reference files are located in:* `run_once/system_configs/`.
-
-#### ✅ Automatically Handled by `setup.sh`:
-
-*   `/etc/hosts` - Restored automatically
-*   User & Root crontabs - Restored automatically
-*   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`) - Restored automatically
-
-#### ⚠️ Manual Steps Still Required:
-
-*   **Fix Permissions (After mounting drives):**
-   ```bash
-   sudo chown -R $(id -u):$(id -g) /data/assets
-   sudo chown -R 33:33 /data/assets/nextcloud_data
-   sudo setfacl -R -m u:33:rwx /data/assets
-   sudo setfacl -R -d -m u:33:rwx /data/assets
-   ```
+    *Reference files are located in:* `run_once/system_configs/`.
 
 ---
 
-### Phase 3: Restore Docker Stacks
+### Phase 2: Restore Docker Stacks
 
-The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in Phase 1. Pull the latest and launch:
+The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in Phase 1.
 
-1.  **Launch Dockge:**
+1.  **Re-link Git and pull the latest code:**
+    ```bash
+    cd /opt/stacks
+    git init
+    git remote add origin git@github.com:gravi-ctrl/server-docker-backup.git
+    git fetch origin
+    git reset --hard origin/main
+    git branch -M main
+    git branch --set-upstream-to=origin/main
+    ```
+
+2.  **Launch Dockge:**
     ```bash
     cd /opt/stacks/dockge
     docker compose up -d
     ```
 
-2.  **Deploy remaining stacks via Dockge Web UI.**
+3.  **Deploy remaining stacks via Dockge Web UI.**
 
 > **No backup?** Clone the repo and set up secrets manually:
 > ```bash
@@ -99,17 +98,6 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 > You can edit them manually or through the Dockge Web UI after launching it.
 > The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
-
-3.  **Re-link Git and pull the latest code**:
-    ```bash
-    cd /opt/stacks
-    git init
-    git remote add origin git@github.com:gravi-ctrl/server-docker-backup.git
-    git fetch origin
-    git reset --hard origin/main
-    git branch -M main
-    git branch --set-upstream-to=origin/main
-    ```
 **Useful extraction tips:**
 
 *   Extract a specific directory from the backup:
@@ -124,7 +112,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 
 ---
 
-### Phase 4: Finalize
+### Phase 3: Finalize
 
 *   **Verify Paths:** Most if not all of the scripts are working through crontabs. Just make sure the paths of the scripts are matching the ones in crontabs.
 *   **Reboot:**
@@ -138,7 +126,6 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 
 | Phase | Task | Automation | Notes |
 |-------|------|-----------|-------|
-| 1 | Extract backup & Run setup.sh | ✅ Full | Handles ~85% of restoration |
-| 2 | System configs | ⚠️ Partial | Hosts, crons, dotfiles automated |
-| 3 | Docker stacks | ⚠️ Minimal | Already extracted; just `git pull` and launch |
-| 4 | Finalize | ⚠️ Manual | Path verification & reboot |
+| 1 | Extract backup, re-link Git & run setup.sh | ✅ Full | Handles ~95% of restoration |
+| 2 | Docker stacks | ⚠️ Minimal | Re-link Git, launch Dockge, deploy stacks |
+| 3 | Finalize | ⚠️ Manual | Path verification & reboot |
