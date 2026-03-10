@@ -63,12 +63,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 #### ⚠️ Manual Steps Still Required:
 
-**1. Firewall Rules:**
-   ```bash
-   ~/scripts/run_once/setup-firewall.sh
-   ```
-
-**2. Fix Permissions (After mounting drives):**
+*   **Fix Permissions (After mounting drives):**
    ```bash
    sudo chown -R $(id -u):$(id -g) /data/assets
    sudo chown -R 33:33 /data/assets/nextcloud_data
