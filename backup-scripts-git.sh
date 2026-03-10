@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots fstab/cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh`
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh`
 # @FREQUENCY: Daily 5am
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
@@ -23,7 +23,6 @@ mkdir -p "$SNAPSHOT_DIR"
 mkdir -p "$TARGET_DIR/run_once/dotfiles"
 
 # A. System Files & Raw Crons
-cp /etc/fstab "$SNAPSHOT_DIR/fstab.txt"
 cp /etc/hosts "$SNAPSHOT_DIR/hosts.txt"
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt"
 
