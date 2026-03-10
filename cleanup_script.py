@@ -4,13 +4,13 @@
 #
 # --- USAGE EXAMPLES ---
 # 1. Standard (Keep 2 most recent):
-#    /home/user/scripts/cleanup_script.py /srv/backup/daily
+#    /home/user/scripts/cleanup_script.py /backup/daily
 #
 # 2. Delete EVERYTHING in the folder:
-#    /home/user/scripts/cleanup_script.py /srv/backup/temp::DELETE_ALL
+#    /home/user/scripts/cleanup_script.py /backup/temp::DELETE_ALL
 #
 # 3. Mixed (Keep 2 in 'daily', delete all in 'temp'):
-#    /home/user/scripts/cleanup_script.py /srv/backup/daily /srv/backup/temp::DELETE_ALL
+#    /home/user/scripts/cleanup_script.py /backup/daily /backup/temp::DELETE_ALL
 
 import os
 import glob
