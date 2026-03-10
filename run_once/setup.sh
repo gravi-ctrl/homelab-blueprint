@@ -32,7 +32,8 @@ echo -e "${YELLOW}[1/6] Updating System & Installing Tools...${NC}"
 sudo apt-get update
 sudo apt-get install -y software-properties-common
 
-sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch ppa:unit193/encryption
+sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
+sudo add-apt-repository -y ppa:unit193/encryption
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Core tools
