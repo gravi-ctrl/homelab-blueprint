@@ -25,6 +25,10 @@ fi
 # Keep sudo alive
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
+# To avoid SSH config conflicts with my own .conf file
+sudo rm /etc/ssh/sshd_config.d/50-cloud-init.conf
+sudo systemctl restart ssh
+
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/6] Updating System & Installing Tools...${NC}"
 
