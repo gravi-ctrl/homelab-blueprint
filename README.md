@@ -24,8 +24,6 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
     sudo chown -R $(id -u):$(id -g) ~/.ssh
     chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
-    sudo rm /etc/ssh/sshd_config.d/50-cloud-init.conf   # To avoid conflicts with my own .conf file
-    sudo systemctl restart ssh
     ```
 
     > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repos:
