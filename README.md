@@ -33,9 +33,13 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     > ```
 
-2.  **Pull the latest code** (backup may be up to a week old):
+2.  **Re-link Git and pull the latest code**:
     ```bash
-    cd ~/scripts && git pull
+    cd ~/scripts
+    git init
+    git remote add origin git@github.com:gravi-ctrl/server-scripts.git
+    git fetch origin
+    git reset --hard origin/main
     ```
 
 3.  **Run the Installer:**
@@ -103,6 +107,15 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 > You can edit them manually or through the Dockge Web UI after launching it.
 > The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
+
+4.  **Re-link Git and pull the latest code**:
+    ```bash
+    cd /opt/stacks
+    git init
+    git remote add origin git@github.com:gravi-ctrl/server-docker-backup.git
+    git fetch origin
+    git reset --hard origin/main
+    ```
 **Useful extraction tips:**
 
 *   Extract a specific directory from the backup:
