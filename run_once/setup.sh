@@ -54,11 +54,11 @@ fi
 
 # 3. DIRECTORY SKELETON
 echo -e "${YELLOW}[3/6] Creating Directory Structure...${NC}"
-sudo mkdir -p /srv/data/assets/torrents
-sudo mkdir -p /srv/data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
-sudo mkdir -p /srv/data/assets/downloads
-sudo mkdir -p /srv/data/assets/romm/{library,resources}
-sudo mkdir -p /srv/data/assets/nextcloud_data
+sudo mkdir -p /data/assets/torrents
+sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
+sudo mkdir -p /data/assets/downloads
+sudo mkdir -p /data/assets/romm/{library,resources}
+sudo mkdir -p /data/assets/nextcloud_data
 
 # 4. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[4/6] Installing Python Libs...${NC}"
