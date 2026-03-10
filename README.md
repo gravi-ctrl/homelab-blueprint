@@ -82,18 +82,13 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in Phase 1. Pull the latest and launch:
 
-1.  **Pull the latest code** (backup may be up to a week old):
-    ```bash
-    cd /opt/stacks && git pull
-    ```
-
-2.  **Launch Dockge:**
+1.  **Launch Dockge:**
     ```bash
     cd /opt/stacks/dockge
     docker compose up -d
     ```
 
-3.  **Deploy remaining stacks via Dockge Web UI.**
+2.  **Deploy remaining stacks via Dockge Web UI.**
 
 > **No backup?** Clone the repo and set up secrets manually:
 > ```bash
@@ -109,7 +104,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 > The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
 
-4.  **Re-link Git and pull the latest code**:
+3.  **Re-link Git and pull the latest code**:
     ```bash
     cd /opt/stacks
     git init
