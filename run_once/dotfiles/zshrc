@@ -83,7 +83,7 @@ function actual_show_welcome_msg() {
 # ==============================================================================
 # 2. ENVIRONMENT & PATHS
 # ==============================================================================
-export assets="/srv/data/assets"
+export assets="/data/assets"
 export HISTFILE=~/.zsh_history
 export HISTSIZE=10000
 export SAVEHIST=10000
