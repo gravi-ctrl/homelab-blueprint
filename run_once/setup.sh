@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell and restores system configs & dotfiles (Run without sudo)
+# @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles (Run without sudo)
 # @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
@@ -30,7 +30,7 @@ sudo rm /etc/ssh/sshd_config.d/50-cloud-init.conf
 sudo systemctl restart ssh
 
 # 1. SYSTEM UPDATE & DEPENDENCIES
-echo -e "${YELLOW}[1/6] Updating System & Installing Tools...${NC}"
+echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 
 # Fix for minimal installs missing add-apt-repository
 sudo apt-get update
@@ -49,16 +49,16 @@ echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d
 
 # 2. DOCKER INSTALLATION
 if ! command -v docker &> /dev/null; then
-    echo -e "${YELLOW}[2/6] Installing Docker...${NC}"
+    echo -e "${YELLOW}[2/7] Installing Docker...${NC}"
     curl -fsSL https://get.docker.com | sh
     sudo usermod -aG docker $USER
     echo "Docker installed."
 else
-    echo -e "${GREEN}[2/6] Docker already installed.${NC}"
+    echo -e "${GREEN}[2/7] Docker already installed.${NC}"
 fi
 
 # 3. DIRECTORY SKELETON
-echo -e "${YELLOW}[3/6] Creating Directory Structure...${NC}"
+echo -e "${YELLOW}[3/7] Creating Directory Structure...${NC}"
 sudo mkdir -p /data/assets/torrents
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /data/assets/downloads
@@ -67,11 +67,11 @@ sudo mkdir -p /data/assets/nextcloud_data
 sudo mkdir -p /data/assets/syncthing
 
 # 4. PYTHON REQUIREMENTS
-echo -e "${YELLOW}[4/6] Installing Python Libs...${NC}"
+echo -e "${YELLOW}[4/7] Installing Python Libs...${NC}"
 pip3 install python-dotenv cron-descriptor python-telegram-bot selenium flask --break-system-packages
 
 # 5. SHELL ENVIRONMENT (ZSH + P10K)
-echo -e "${YELLOW}[5/6] Configuring Zsh Environment...${NC}"
+echo -e "${YELLOW}[5/7] Configuring Zsh Environment...${NC}"
 
 # A. Install Oh-My-Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -115,7 +115,7 @@ if [ "$SHELL" != "/usr/bin/zsh" ]; then
 fi
 
 # 6. RESTORE SYSTEM CONFIGURATIONS
-echo -e "${YELLOW}[6/6] Restoring System Configurations...${NC}"
+echo -e "${YELLOW}[6/7] Restoring System Configurations...${NC}"
 SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 
 if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
@@ -139,6 +139,17 @@ if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
     fi
 fi
 
+# 7. FIREWALL SETUP
+echo -e "${YELLOW}[7/7] Restoring Firewall Rules...${NC}"
+FIREWALL_SCRIPT="$HOME/scripts/run_once/setup-firewall.sh"
+if [ -f "$FIREWALL_SCRIPT" ]; then
+    echo "🔥 Setting up firewall rules..."
+    bash "$FIREWALL_SCRIPT"
+    echo "✅ Firewall configured."
+else
+    echo "⚠️  Firewall script not found at: $FIREWALL_SCRIPT"
+fi
+
 # ==============================================================================
 echo -e "${GREEN}=== BOOTSTRAP COMPLETE ===${NC}"
 echo -e "${YELLOW}⚠️  CRITICAL NEXT STEPS:${NC}"
@@ -153,6 +164,7 @@ echo "2. VERIFY RESTORED ITEMS:"
 echo "   ✓ /etc/hosts          - Restored automatically"
 echo "   ✓ Crontabs            - Restored automatically"
 echo "   ✓ Dotfiles            - Restored automatically"
+echo "   ✓ Firewall Rules      - Restored automatically"
 echo ""
 echo "4. OPTIONAL - Restore Installed Packages:"
 echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
