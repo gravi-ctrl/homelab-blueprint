@@ -66,6 +66,14 @@ sudo mkdir -p /data/assets/romm/{library,resources}
 sudo mkdir -p /data/assets/nextcloud_data
 sudo mkdir -p /data/assets/syncthing
 
+# ── Prepare Data Directories & Permissions ─────────────────────
+echo "${YELLOW} Fix Directories Permissions..."
+sudo chown -R $(id -u):$(id -g) /data/assets
+sudo chown -R 33:33 /data/assets/nextcloud_data
+sudo setfacl -R -m u:33:rwx /data/assets
+sudo setfacl -R -d -m u:33:rwx /data/assets
+echo "✅ Data directories ready."
+
 # 4. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[4/7] Installing Python Libs...${NC}"
 pip3 install python-dotenv cron-descriptor python-telegram-bot selenium flask --break-system-packages
