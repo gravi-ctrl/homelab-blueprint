@@ -10,7 +10,7 @@ This repository contains the "Brain" of the homelab: automation scripts, system 
 
 If the server is wiped, follow this order to restore functionality.
 
-The weekly `docker-stacks-*.tar.zst` backup contains everything needed to restore:
+The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to restore:
 *   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
 *   `~/scripts` — Automation scripts with `.env` files (secrets not stored in Git)
 *   `~/.ssh` — GitHub deploy keys
@@ -22,7 +22,7 @@ The weekly `docker-stacks-*.tar.zst` backup contains everything needed to restor
 
     ```bash
     sudo apt install zstd
-    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
+    sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
     sudo chown -R $(id -u):$(id -g) ~/.ssh
     chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
     ```
