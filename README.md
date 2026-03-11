@@ -63,7 +63,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 ---
 
-### Phase 2: Restore Docker Stacks
+### Phase 2: Restore [Docker Stacks](https://github.com/gravi-ctrl/server-docker-backup)
 
 The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in Phase 1.
 
