@@ -57,6 +57,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```bash
     ~/scripts/run_once/setup.sh
     ```
+4.  **Once the installer is done, just re-open the SSH session for changes to take effect**
 
     *Reference files are located in:* `run_once/system_configs/`.
 
