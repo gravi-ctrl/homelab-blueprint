@@ -31,7 +31,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
     > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     > ```
-    > You'll need to add the secrets manually in the `.env` files.
+    > You'll need to copy the `.env.example` files to `.env` and add the secrets manually.
 
 2.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
     ```bash
