@@ -62,7 +62,7 @@ for tool in "${TOOLS[@]}"; do
 
     if [ -d "$SOURCE_PATH" ]; then
         mkdir -p "$DEST_PATH"
-        rsync -av --delete "$SOURCE_PATH/" "$DEST_PATH/"
+        rsync -a --delete "$SOURCE_PATH/" "$DEST_PATH/"
     fi
 done
 
