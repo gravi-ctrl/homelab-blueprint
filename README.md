@@ -19,12 +19,6 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 ### Phase 1: Bootstrap System
 
 1.  **Extract the backup and fix SSH permissions:**
-    ```bash
-    sudo apt install zstd
-    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-    sudo chown -R $(id -u):$(id -g) ~/.ssh
-    chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
-    ```
 
     > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repo:
     > ```bash
@@ -33,7 +27,14 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > ```
     > You'll need to copy the `.env.example` files to `.env` and add the secrets manually.
 
-2.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
+    ```bash
+    sudo apt install zstd
+    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
+    sudo chown -R $(id -u):$(id -g) ~/.ssh
+    chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
+    ```
+
+3.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
     ```bash
     cd ~/scripts
     git init
@@ -44,7 +45,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     git branch --set-upstream-to=origin/main
     ```
 
-3.  **Run the Installer:**
+4.  **Run the Installer:**
 
     This installs Docker, dependencies, configures Python, Shell environment, and **automatically handles:**
     *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
@@ -57,7 +58,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```bash
     ~/scripts/run_once/setup.sh
     ```
-4.  **Once the installer is done, just re-open the SSH session for changes to take effect**
+5.  **Once the installer is done, just re-open the SSH session for changes to take effect**
 
     *Reference files are located in:* `run_once/system_configs/`.
 
@@ -66,6 +67,19 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 ### Phase 2: Restore Docker Stacks
 
 The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://github.com/gravi-ctrl/server-scripts/tree/main#phase-1-bootstrap-system).
+
+> **No backup?** Clone the [server-docker-backup](https://github.com/gravi-ctrl/server-docker-backup) repo and set up secrets manually:
+> ```bash
+> sudo mkdir -p /opt/stacks
+> sudo chown -R $(id -u):$(id -g) /opt/stacks
+> git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
+> ```
+> Then copy `.env.example` files to `.env` and fill in your secrets:
+> ```bash
+> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
+> ```
+> You can edit them manually or through the Dockge Web UI after launching it.
+> The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
 1.  **Re-link Git and pull the latest code:**
     ```bash
@@ -85,19 +99,6 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
     ```
 
 3.  **Deploy remaining stacks via Dockge Web UI.**
-
-> **No backup?** Clone the [server-docker-backup](https://github.com/gravi-ctrl/server-docker-backup) repo and set up secrets manually:
-> ```bash
-> sudo mkdir -p /opt/stacks
-> sudo chown -R $(id -u):$(id -g) /opt/stacks
-> git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
-> ```
-> Then copy `.env.example` files to `.env` and fill in your secrets:
-> ```bash
-> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
-> ```
-> You can edit them manually or through the Dockge Web UI after launching it.
-> The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
 **Useful extraction tips:**
 
