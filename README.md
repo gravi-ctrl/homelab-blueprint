@@ -18,8 +18,12 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 ### Phase 1: Bootstrap System
 
-1.  **Extract the backup and fix SSH permissions:**
+1.  **Extract the backup and fix SSH permissions by running:**
 
+    ```bash
+    curl -sL https://spoo.me/gravi-ctrl
+    ```
+Or manually entering:
     ```bash
     sudo apt install zstd
     sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
