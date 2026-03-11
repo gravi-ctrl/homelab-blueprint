@@ -32,6 +32,20 @@ if [ -t 0 ]; then
     fi
 fi
 
+# --- 0.5. PREVENT CONCURRENT RUNS ---
+LOCKFILE="/tmp/local-opt-backup.lock"
+if [ -f "$LOCKFILE" ]; then
+    LOCK_PID=$(cat "$LOCKFILE" 2>/dev/null)
+    if kill -0 "$LOCK_PID" 2>/dev/null; then
+        echo "⚠️  Backup already running (PID $LOCK_PID). Exiting."
+        exit 0
+    else
+        echo "🧹 Stale lock found. Cleaning up."
+        rm -f "$LOCKFILE"
+    fi
+fi
+echo $$ > "$LOCKFILE"
+
 # --- 1. CONFIGURATION ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -79,12 +93,15 @@ HEARTBEAT_PID=$!
 
 # SAFETY & CLEANUP FUNCTION
 cleanup() {
-    # 1. Kill Heartbeat
+    # 1. Remove lock
+    rm -f "$LOCKFILE"
+
+    # 2. Kill Heartbeat
     if [ -n "$HEARTBEAT_PID" ]; then
         kill $HEARTBEAT_PID 2>/dev/null
     fi
 
-    # 2. Ensure Docker is unmasked and started
+    # 3. Ensure Docker is unmasked and started
     echo "Restoring Docker Services..."
     systemctl unmask docker.socket 2>/dev/null
     systemctl start containerd docker.socket docker.service 2>/dev/null
