@@ -50,7 +50,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
     *   `/etc/hosts` restoration
     *   User & Root crontabs restoration
-    *   SSH conflict fix and restart
+    *   Cloud-init removal & SSH restart
     *   Firewall rules (`setup-firewall.sh`)
     *   `/data/assets` directory creation & permissions
 
