@@ -44,7 +44,7 @@ sudo add-apt-repository -y ppa:unit193/encryption
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Core tools
-sudo apt-get install -y veracrypt btop curl dos2unix zstd fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs ufw inotify-tools ntfs-3g samba python3-pip python3-venv fzf bat zsh
+sudo apt-get install -y veracrypt btop curl dos2unix zstd fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs ufw inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh
 
 # This dynamically gets the current username and grants read-only access to crontab
 # This helps extracting root crontab without running `sudo`, and instead of adding `USER ALL=(root) NOPASSWD: /usr/bin/crontab -l` to `sudo visudo`
