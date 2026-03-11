@@ -20,19 +20,19 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 1.  **Extract the backup and fix SSH permissions:**
 
-    > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repo:
-    > ```bash
-    > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
-    > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
-    > ```
-    > You'll need to copy the `.env.example` files to `.env` and add the secrets manually.
-
     ```bash
     sudo apt install zstd
     sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
     sudo chown -R $(id -u):$(id -g) ~/.ssh
     chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
     ```
+
+    > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repo:
+    > ```bash
+    > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
+    > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
+    > ```
+    > You'll need to copy the `.env.example` files to `.env` and add the secrets manually.
 
 3.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
     ```bash
