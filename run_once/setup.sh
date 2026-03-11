@@ -29,6 +29,12 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 
+# Remove cloud-init (not needed on bare metal, creates conflicting SSH configs)
+sudo apt purge cloud-init -y
+sudo rm -rf /etc/cloud
+sudo rm -f /etc/ssh/sshd_config.d/50-cloud-init.conf
+sudo systemctl restart ssh
+
 # Fix for minimal installs missing add-apt-repository
 sudo apt-get update
 sudo apt-get install -y software-properties-common
