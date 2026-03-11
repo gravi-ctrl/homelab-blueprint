@@ -26,7 +26,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
     ```
 
-    > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repos:
+    > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repo:
     > ```bash
     > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
     > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
