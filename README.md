@@ -23,7 +23,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```bash
     curl -sL https://spoo.me/gravi-ctrl
     ```
-Or manually entering:
+    Or manually entering:
     ```bash
     sudo apt install zstd
     sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
