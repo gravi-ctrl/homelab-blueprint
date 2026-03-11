@@ -63,7 +63,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 ---
 
-### Phase 2: Restore [Docker Stacks](https://github.com/gravi-ctrl/server-docker-backup)
+### Phase 2: Restore Docker Stacks
 
 The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://github.com/gravi-ctrl/server-scripts/tree/main#phase-1-bootstrap-system).
 
@@ -86,7 +86,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 
 3.  **Deploy remaining stacks via Dockge Web UI.**
 
-> **No backup?** Clone the repo and set up secrets manually:
+> **No backup?** Clone the [server-docker-backup](https://github.com/gravi-ctrl/server-docker-backup) repo and set up secrets manually:
 > ```bash
 > sudo mkdir -p /opt/stacks
 > sudo chown -R $(id -u):$(id -g) /opt/stacks
