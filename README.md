@@ -40,12 +40,12 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     sudo systemctl restart ssh
     ```
 
-    > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repo:
+    > **No backup?** You'll need to manually set up SSH keys for GitHub (Secrets are in the PWM), then clone the repo:
     > ```bash
     > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
     > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     > ```
-    > You'll need to copy the `.env.example` files to `.env` and add the secrets manually.
+    > You'll need to restore the SSH keys for the server manually, and copy the `.env.example` files to `.env` and add the secrets manually from the PWM.
 
 3.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
     ```bash
@@ -87,7 +87,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 > sudo chown -R $(id -u):$(id -g) /opt/stacks
 > git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
 > ```
-> Then copy `.env.example` files to `.env` and fill in your secrets:
+> Then copy `.env.example` files to `.env` and fill in your secrets from the PWM:
 > ```bash
 > for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
 > ```
