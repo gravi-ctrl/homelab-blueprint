@@ -78,18 +78,20 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://github.com/gravi-ctrl/server-scripts/tree/main#phase-1-bootstrap-system).
 
-> **No backup?** Clone the [server-docker-backup](https://github.com/gravi-ctrl/server-docker-backup) repo and set up secrets manually:
+> **No backup?** You'll be starting fresh — application data (databases,
+> uploads, container configs) is unrecoverable.
+> Clone the [server-docker-backup](https://github.com/gravi-ctrl/server-docker-backup) repo:
 > ```bash
 > sudo mkdir -p /opt/stacks
 > sudo chown -R $(id -u):$(id -g) /opt/stacks
 > git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
 > ```
-> Then copy `.env.example` files to `.env` and fill in your secrets from the PWM:
+> Then generate new secrets for the stacks:
 > ```bash
 > for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
 > ```
+> These are fresh containers — set new passwords, don't reuse old ones.
 > You can edit them manually or through the Dockge Web UI after launching it.
-> The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
 
 1.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
     ```bash
