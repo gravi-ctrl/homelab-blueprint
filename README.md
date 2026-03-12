@@ -21,7 +21,9 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 1.  **Extract the backup and fix SSH permissions by running:**
 
     ```bash
-    curl -sL spoo.me/gravi-ctrl
+    curl -sSL spoo.me/gravi-ctrl -o script.sh
+    chmod +x script.sh
+    ./script.sh
     ```
     Or manually entering:
     ```bash
