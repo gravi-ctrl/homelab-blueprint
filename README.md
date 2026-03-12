@@ -52,9 +52,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     git init
     git remote add origin git@github.com:gravi-ctrl/server-scripts.git
     git fetch origin
-    git reset --hard origin/main
-    git branch -M main
-    git branch --set-upstream-to=origin/main
+    git checkout -f -B main origin/main
     ```
 
 4.  **Run the Installer:**
@@ -99,9 +97,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
     git init
     git remote add origin git@github.com:gravi-ctrl/server-docker-backup.git
     git fetch origin
-    git reset --hard origin/main
-    git branch -M main
-    git branch --set-upstream-to=origin/main
+    git checkout -f -B main origin/main
     ```
 
 2.  **Launch Dockge:**
