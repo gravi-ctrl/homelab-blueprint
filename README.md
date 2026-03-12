@@ -46,7 +46,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > ```
     > Then you'll need to copy the `.env.example` files to `.env` and add the secrets manually, which can be obtained from the PWM.
 
-3.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched) *(skip if you cloned above)*:
+3.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
     ```bash
     cd ~/scripts
     git init
