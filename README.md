@@ -20,7 +20,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 1.  **Extract the backup and fix SSH permissions by running:**
 
-    > *Make sure the `docker-stacks-DATE.tar.zst` file is in `/home/$USER`*
+    > *Make sure the `docker-stacks-DATE.tar.zst` file is in `/home/$USER` first*
 
     ```bash
     curl -sSL spoo.me/dock -o script.sh
