@@ -23,9 +23,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > *Make sure the `docker-stacks-DATE.tar.zst` file is in `/home/$USER` first*
 
     ```bash
-    curl -sSL spoo.me/dock -o script.sh
-    chmod +x script.sh
-    ./script.sh
+    curl -sL is.gd/bootme | bash
     ```
     **Or by manually entering:**
     ```bash
