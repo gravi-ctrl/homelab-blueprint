@@ -90,7 +90,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 > ```
 > Then copy `.env.example` files to `.env` and fill in your secrets from the PWM:
 > ```bash
-> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp -n "${d}.env.example" "${d}.env"; done
+> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
 > ```
 > You can edit them manually or through the Dockge Web UI after launching it.
 > The same applies to any `.env` files in `~/scripts` — copy from `.env.example` and fill in values.
