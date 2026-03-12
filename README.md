@@ -27,7 +27,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     chmod +x script.sh
     ./script.sh
     ```
-    Or manually entering:
+    Or by manually entering:
     ```bash
     sudo apt install zstd -y
     sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
