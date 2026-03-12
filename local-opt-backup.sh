@@ -13,7 +13,7 @@
 set -o pipefail
 
 # --- INTERACTIVITY CHECK ---
-# If running manually, switch to SystemD background service to survive SSH/Tailscale disconnects.
+# If running manually, switch to SystemD background service.
 if [ -t 0 ]; then
     echo "⚠️  Interactive session detected. Switching to background SystemD service..."
 
