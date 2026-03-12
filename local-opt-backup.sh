@@ -12,7 +12,7 @@
 # ==============================================================================
 set -o pipefail
 
-# --- 0. INTERACTIVITY CHECK ---
+# --- INTERACTIVITY CHECK ---
 # If running manually, switch to SystemD background service to survive SSH/Tailscale disconnects.
 if [ -t 0 ]; then
     echo "⚠️  Interactive session detected. Switching to background SystemD service..."
@@ -32,7 +32,7 @@ if [ -t 0 ]; then
     fi
 fi
 
-# --- 0.5. PREVENT CONCURRENT RUNS ---
+# --- PREVENT CONCURRENT RUNS ---
 LOCKFILE="/tmp/local-opt-backup.lock"
 if [ -f "$LOCKFILE" ]; then
     LOCK_PID=$(cat "$LOCKFILE" 2>/dev/null)
@@ -46,7 +46,7 @@ if [ -f "$LOCKFILE" ]; then
 fi
 echo $$ > "$LOCKFILE"
 
-# --- 1. CONFIGURATION ---
+# --- CONFIGURATION ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -116,7 +116,6 @@ systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
 
-# TIMEOUT: Fails and triggers cleanup if tar takes > 60 mins
 timeout 60m tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
     --exclude='.git' \
     --exclude='__pycache__' \
