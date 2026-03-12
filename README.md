@@ -40,13 +40,13 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     sudo systemctl restart ssh
     ```
 
-    > **No backup?** You'll need to manually set up SSH keys for GitHub (Secrets are in the PWM), then clone the repo:
+    > **No backup?** You'll need to manually set up SSH keys for both the server and GitHub (Secrets are in the PWM), then clone the repo:
     > ```bash
     > chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
     > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
     > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     > ```
-    > Then you'll need to restore the SSH keys for the server, copy the `.env.example` files to `.env` and add the secrets manually, both can be done from the PWM.
+    > Then you'll need to copy the `.env.example` files to `.env` and add the secrets manually, which can be obtained from the PWM.
 
 3.  **Re-link Git and pull the latest code** (backup excludes `.git/`, so we re-initialize it. Your `.env` secrets from the backup are in `.gitignore` and won't be touched):
     ```bash
