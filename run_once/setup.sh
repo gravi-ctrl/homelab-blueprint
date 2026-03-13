@@ -29,6 +29,9 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 # 1. SYSTEM UPDATE & DEPENDENCIES
 echo -e "${YELLOW}[1/7] Updating System & Installing Tools...${NC}"
 
+# Correct timezone
+sudo timedatectl set-timezone Africa/Cairo
+
 # Fix for minimal installs missing add-apt-repository
 sudo apt-get update
 sudo apt-get install -y software-properties-common
