@@ -5,10 +5,8 @@
 # RESTORE:
 #   1. Stop Docker:  sudo systemctl stop docker
 #   2. Extract:      sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-#   3. Fix perms:    sudo chown -R $(id -u):$(id -g) ~/.ssh
-#   4. SSH perms:    sudo chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
-#   5. Restart SSH:  sudo systemctl restart ssh
-#   6. Start Docker: sudo systemctl start docker
+#   3. Restart SSH:  sudo systemctl restart ssh
+#   4. Start Docker: sudo systemctl start docker
 # ==============================================================================
 set -o pipefail
 
