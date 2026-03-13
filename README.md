@@ -36,17 +36,29 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     sudo systemctl restart ssh
     ```
 
-    > **No backup?** You'll need to restore the SSH keys for both the Server and GitHub (Secrets are in the PWM), fix permissions, then clone the repo:
-    > ```bash
-    > chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
-    > ```
-    > ```
-    > git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
-    > find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
-    > ```
-    > Then you'll need to copy the `.env.example` files to `.env` and add the secrets manually, which can be obtained from the PWM.
+    > **No backup?** Restore manually:
+    >
+    > 1. **Get the SSH keys from your password manager** and place them in `~/.ssh/`
+    >    (you need both the server host keys and the GitHub deploy key).
+    >
+    > 2. **Fix permissions:**
+    >    ```bash
+    >    chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
+    >    ```
+    >
+    > 3. **Clone the repo:**
+    >    ```bash
+    >    git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
+    >    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
+    >    ```
+    >
+    > 4. **Create `.env` files from examples** and fill in the secrets (from your password manager):
+    >    ```bash
+    >    cd ~/scripts
+    >    cp .env.example .env
+    >    ```
 
-3.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
+2.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
     ```bash
     cd ~/scripts
     git init
@@ -55,7 +67,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     git checkout -f -B main origin/main
     ```
 
-4.  **Run the Installer:**
+3.  **Run the Installer:**
 
     This installs Docker, dependencies, configures Python, Shell environment, and **automatically handles:**
     *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
@@ -68,7 +80,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```bash
     ~/scripts/run_once/setup.sh
     ```
-5.  **Once the installer is done, just re-open the SSH session for changes to take effect**
+4.  **Once the installer is done, just re-open the SSH session for changes to take effect**
 
     *Reference files are located in:* `run_once/system_configs/`.
 
@@ -126,7 +138,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 
 ### Phase 3: Finalize
 
-*   **Verify Paths:** Most if not all of the scripts are working through crontabs. Just make sure the paths of the scripts are matching the ones in crontabs.
+*   **Verify Paths:** Most, if not all, of the scripts are working through crontabs. Just make sure the paths of the scripts are matching the ones in crontabs.
 *   **Reboot:**
     ```bash
     sudo reboot
