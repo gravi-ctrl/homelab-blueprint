@@ -54,8 +54,9 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     >
     > 4. **Create `.env` files from examples** and fill in the secrets (from your password manager):
     >    ```bash
-    >    cd ~/scripts
-    >    cp .env.example .env
+    >    cd ~/scripts && cp .env.example .env
+    >    cd ~/scripts/bot-telegram && cp .env.example .env
+    >    cd ~/scripts/dockcheck && cp default.config dockcheck.config
     >    ```
 
 2.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
