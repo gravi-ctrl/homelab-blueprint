@@ -27,7 +27,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```
     **Or by manually entering:**
     ```bash
-    sudo apt install zstd -y
+    sudo apt update && sudo apt install zstd -y
     sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
     sudo chown -R $(id -u):$(id -g) ~/.ssh
     chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
