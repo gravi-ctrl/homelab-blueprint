@@ -1,8 +1,8 @@
 #!/bin/bash
 # @DESCRIPTION: Recreates the missing .ocdata marker, user data directories, and appdata_ folders (avatars, theming, previews) that are required for profile pictures and wallpapers to work, then fixes ownership/permissions to www-data and runs occ file scan + repair to bring everything back to a working state.
 # @FREQUENCY: Run Once
-CONTAINER="nextcloud-app"
-USERNAME="youruser"
+CONTAINER="nextcloud-app-1"
+USERNAME="not-admin"
 
 # Get instance ID
 INSTANCE_ID=$(docker exec -u www-data $CONTAINER php occ config:system:get instanceid)
