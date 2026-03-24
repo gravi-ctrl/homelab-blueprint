@@ -76,16 +76,17 @@ echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
 
 # 3. DIRECTORY SKELETON
 echo -e "${YELLOW}[3/8] Creating Directory Structure...${NC}"
+sudo mkdir -p /data/borg_backup
 sudo mkdir -p /data/assets/torrents
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /data/assets/downloads
 sudo mkdir -p /data/assets/romm/{library,resources}
 sudo mkdir -p /data/assets/nextcloud_data
-sudo mkdir -p /data/assets/syncthing
+sudo mkdir -p /data/assets/syncthing/{Apps,Backup,Books,DCIM,Movies,Music,My_Shit,Shared}
 
 # ── Prepare Data Directories & Permissions ─────────────────────
 echo -e "${YELLOW}   Fixing directory permissions...${NC}"
-sudo chown -R "$(id -u):$(id -g)" /data/assets
+sudo chown -R "$(id -u):$(id -g)" /data
 sudo chown -R 33:33 /data/assets/nextcloud_data
 sudo setfacl -R -m u:33:rwx /data/assets
 sudo setfacl -R -d -m u:33:rwx /data/assets
