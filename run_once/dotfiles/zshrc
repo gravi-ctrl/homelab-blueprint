@@ -159,8 +159,8 @@ stamp() {
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
 
-# 'Ctrl + Right Arrow' accepts and executes the suggestion immediately
-bindkey '^[[1;5C' autosuggest-execute
+# 'Ctrl + Space' accepts and executes the suggestion immediately
+bindkey '^ ' autosuggest-execute
 
 # ==============================================================================
 # 6. CUSTOM FUNCTIONS
