@@ -246,8 +246,8 @@ echo "   ✓ Docker daemon.json  - Configured automatically"
 echo "   ✓ Unbound DNS         - Configured automatically"
 echo ""
 echo "2. Nextcloud post-restore script:"
-echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh
-echo "   (Ignore if `docker-stacks-DATE.tar.zst` wasn't restored)
+echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh"
+echo "   (Ignore if `docker-stacks-DATE.tar.zst` wasn't restored)"
 echo ""
 echo "3. OPTIONAL - Restore Installed Packages:"
 echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
