@@ -73,7 +73,7 @@ function actual_show_welcome_msg() {
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "guestwifi" "WiFi Toggle" "Ctrl+T" "FZF Files"
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dps" "Docker Table" "Alt+C" "FZF Jump"
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dc" "Update Check" "→ / End" "Accept Suggest"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "extract" "Unzip/Tar" "Ctrl+→"
+    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "extract" "Unzip/Tar" "Ctrl+Spc"
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "stamp" "Timestamp" "Alt+N" "Nano Line #s"
     printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "cht" "Cmd Help" "Alt+M" "Nano Mouse"
 
