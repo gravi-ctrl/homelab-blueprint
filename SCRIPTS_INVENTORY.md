@@ -15,7 +15,7 @@
 | `local-opt-backup.sh` | Backs up Docker volumes to tar.zst, backs up ~/scripts, ~/.ssh and /etc/ssh | Weekly 5:30am on Thursday (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade | Run Once |
-| `run_once/nextcloud_post-restore_fix.sh` | Recreates the missing .ocdata marker, user data directories, and appdata_ folders (avatars, theming, previews) that are required for profile pictures and wallpapers to work, then fixes ownership/permissions to www-data and runs occ file scan + repair to bring everything back to a working state. | Run Once |
+| `run_once/nextcloud_post-restore_fix.sh` | Recreates missing markers, user data directories, and appdata_ folders. NOTE: If starting fresh (didn't restore the `docker-stacks-DATE.tar.zst` file) then please ignore. | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
 | `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles (Run without sudo) | Run Once |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |
