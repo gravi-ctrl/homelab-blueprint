@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Recreates missing markers, user data directories, and appdata_ folders
+# @DESCRIPTION: Recreates missing markers, user data directories, and appdata_ folders. NOTE: If starting fresh (didn't restore the `docker-stacks-DATE.tar.zst` file) then please ignore.
 # @FREQUENCY: Run Once
 CONTAINER="nextcloud-app-1"
 USERNAME="not-admin"
