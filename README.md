@@ -56,6 +56,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     >    ```bash
     >    cp --update=none ~/scripts/.env.example ~/scripts/.env
     >    cp --update=none ~/scripts/bot-telegram/.env.example ~/scripts/bot-telegram/.env
+    >    cp --update=none ~/scripts/cert-manager/.env.example ~/scripts/cert-manager/.env
     >    cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
     >    ```
 
