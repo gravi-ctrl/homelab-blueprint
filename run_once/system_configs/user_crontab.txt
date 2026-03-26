@@ -22,9 +22,6 @@ A=/data/assets
 # Update Pi-hole Gravity (adlists) and apply mmotti regex rules
 0 1 * * * $S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
-# Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-0 4 * * * $S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/self-hosted/contacts-calendars_backup -oe -oc 'docker exec -u 33 nextcloud-app-1 php occ'"
-
 # Apply file renaming rules to Paperless-ngx documents
 15 4 * * * $S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
