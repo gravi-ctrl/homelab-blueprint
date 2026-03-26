@@ -404,8 +404,8 @@ cmd_status() {
 }
 
 cmd_setup_cron() {
-    local script_path
-    script_path="$(cd "$SCRIPT_DIR" && pwd)/cert-manager.sh"
+    local script_path="${SCRIPT_DIR}/cert-manager.sh"
+    local cron_comment="# cert-manager: regenerate & upload SSL certs to NPM (1st of every month at 03:00)"
     local cron_line="0 3 1 * * ${script_path} regen >> /var/log/cert-manager.log 2>&1"
 
     if crontab -l 2>/dev/null | grep -qF "cert-manager.sh regen"; then
@@ -414,8 +414,8 @@ cmd_setup_cron() {
         return
     fi
 
-    (crontab -l 2>/dev/null || true; echo "$cron_line") | crontab -
-    log "Cron job installed: regenerate on the 1st of every month at 03:00"
+    (crontab -l 2>/dev/null || true; echo ""; echo "$cron_comment"; echo "$cron_line") | crontab -
+    log "Cron job installed: regenerate & upload on the 1st of every month at 03:00"
     echo "  ${cron_line}"
     info "Logs will go to /var/log/cert-manager.log"
 }
