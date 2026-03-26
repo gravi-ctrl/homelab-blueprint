@@ -77,6 +77,7 @@ echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
 # 3. DIRECTORY SKELETON
 echo -e "${YELLOW}[3/8] Creating Directory Structure...${NC}"
 sudo mkdir -p /data/borg_backup
+sudo mkdir -p /data/paperless
 sudo mkdir -p /data/assets/torrents
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /data/assets/downloads
@@ -246,9 +247,9 @@ echo "   ✓ Docker daemon.json  - Configured automatically"
 echo "   ✓ Unbound DNS         - Configured automatically"
 echo ""
 echo "2. Nextcloud post-restore script:"
-echo "   (Ignore if `docker-stacks-DATE.tar.zst` wasn't restored)"
-echo "   (Run after `docker compose up -d` on Nextcloud)"
 echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh"
+echo "   (Ignore if no backup file or if nextcloud_data was restored)"
+echo "   (Run after `docker compose up -d` on Nextcloud)"
 echo ""
 echo "3. OPTIONAL - Restore Installed Packages:"
 echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
