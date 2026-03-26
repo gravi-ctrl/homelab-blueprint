@@ -40,6 +40,7 @@ login
 lvm2
 mariadb-client
 mdadm
+mkcert
 moreutils
 mosh
 multipath-tools
