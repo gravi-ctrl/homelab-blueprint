@@ -35,6 +35,8 @@ gzip
 hostname
 init
 inotify-tools
+jq
+libnss3-tools
 linux-generic
 login
 lvm2
@@ -52,6 +54,7 @@ netbase
 ntfs-3g
 open-iscsi
 openssh-server
+openssl
 pollinate
 python3
 python3-pip
