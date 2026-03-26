@@ -1,8 +1,36 @@
 #!/bin/bash
 # @DESCRIPTION: Watches `/data/assets` + Internal Data, scans Nextcloud via Docker
 # @FREQUENCY: Service (Always)
-# ==============================================================================
-# NEXTCLOUD DYNAMIC WATCHER (Docker Edition)
+#
+# --- INSTALLATION ---
+# 1. Place & make executable:
+#      chmod +x /home/gravi-ctrl/scripts/nextcloud-dynamic-watch.sh
+#
+# 2. Increase inotify watchers (required for large directories):
+#      echo 'fs.inotify.max_user_watches=524288' | sudo tee -a /etc/sysctl.conf
+#      sudo sysctl -p
+#
+# 3. Create service at /etc/systemd/system/nc-watcher.service:
+#      [Unit]
+#      Description=Nextcloud Dynamic Filesystem Watcher
+#      After=network.target docker.service
+#      Requires=docker.service
+#
+#      [Service]
+#      User=root
+#      ExecStart=/home/gravi-ctrl/scripts/nextcloud-dynamic-watch.sh
+#      Restart=always
+#      RestartSec=10
+#
+#      [Install]
+#      WantedBy=multi-user.target
+#
+# 4. Enable & start:
+#      sudo systemctl daemon-reload
+#      sudo systemctl enable --now nc-watcher.service
+#
+# 5. Verify:
+#      sudo journalctl -u nc-watcher.service -f
 # ==============================================================================
 
 # --- CONFIGURATION -----------------------------------------------------------
