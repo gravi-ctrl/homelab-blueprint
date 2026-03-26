@@ -35,11 +35,20 @@ gzip
 hostname
 init
 inotify-tools
+<<<<<<< HEAD
+=======
+jq
+libnss3-tools
+>>>>>>> 28560f44d72159ef2d1ef2e74b877cb9df5788e4
 linux-generic
 login
 lvm2
 mariadb-client
 mdadm
+<<<<<<< HEAD
+=======
+mkcert
+>>>>>>> 28560f44d72159ef2d1ef2e74b877cb9df5788e4
 moreutils
 mosh
 multipath-tools
@@ -51,6 +60,10 @@ netbase
 ntfs-3g
 open-iscsi
 openssh-server
+<<<<<<< HEAD
+=======
+openssl
+>>>>>>> 28560f44d72159ef2d1ef2e74b877cb9df5788e4
 pollinate
 python3
 python3-pip
