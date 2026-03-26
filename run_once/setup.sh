@@ -77,7 +77,7 @@ echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
 # 3. DIRECTORY SKELETON
 echo -e "${YELLOW}[3/8] Creating Directory Structure...${NC}"
 sudo mkdir -p /data/borg_backup
-sudo mkdir -p /data/paperless
+sudo mkdir -p /data/assets/paperless
 sudo mkdir -p /data/assets/torrents
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /data/assets/downloads
