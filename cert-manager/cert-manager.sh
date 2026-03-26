@@ -113,20 +113,30 @@ npm_token=""
 
 npm_auth() {
     [[ -n "$npm_token" ]] && return 0
-    local resp
+
+    local payload
+    payload=$(jq -n \
+        --arg email "$NPM_EMAIL" \
+        --arg pass "$NPM_PASS" \
+        '{identity: $email, secret: $pass}')
+
+    local resp code body
     resp=$(curl -s -w "\n%{http_code}" -X POST "${NPM_URL}/api/tokens" \
         -H "Content-Type: application/json" \
-        -d "{\"identity\":\"${NPM_EMAIL}\",\"secret\":\"${NPM_PASS}\"}") || {
+        -d "$payload") || {
         err "Could not reach NPM at ${NPM_URL}"; return 1
     }
-    local code body
+
     code=$(echo "$resp" | tail -1)
     body=$(echo "$resp" | sed '$d')
+
     if [[ "$code" -ge 400 ]]; then
         err "NPM auth failed (HTTP ${code}): ${body}"; return 1
     fi
+
     npm_token=$(echo "$body" | jq -r '.token // empty')
     [[ -z "$npm_token" ]] && { err "No token in NPM response"; return 1; }
+    log "NPM authentication successful"
 }
 
 npm_find_cert() {
@@ -137,10 +147,13 @@ npm_find_cert() {
 }
 
 npm_create_cert() {
+    local payload
+    payload=$(jq -n --arg name "$NPM_CERT_NAME" '{nice_name: $name, provider: "other"}')
+
     curl -s -X POST "${NPM_URL}/api/nginx/certificates" \
         -H "Authorization: Bearer ${npm_token}" \
         -H "Content-Type: application/json" \
-        -d "{\"nice_name\":\"${NPM_CERT_NAME}\",\"provider\":\"other\"}" \
+        -d "$payload" \
         | jq -r '.id'
 }
 
