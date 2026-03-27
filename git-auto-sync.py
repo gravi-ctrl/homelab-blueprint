@@ -76,7 +76,7 @@ def main():
         current_branch = branch_proc.stdout.strip()
         print(f"⬇️  Pulling changes from origin/{current_branch}...")
         
-        run_command(["git", "pull", "origin", current_branch, "--no-edit"])
+        run_command(["git", "pull", "origin", current_branch, "--no-edit", "--rebase"])
         
     except Exception as e:
         print(f"❌ Error during pull: {e}")
