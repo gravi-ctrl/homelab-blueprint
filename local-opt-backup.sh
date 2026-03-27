@@ -209,7 +209,7 @@ ELAPSED=0
 INTERVAL=10
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
-    STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy" | awk '{print $1}')
+    STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
     if [ -z "$STUCK" ]; then
         echo "✅ All containers healthy."
         break
