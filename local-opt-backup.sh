@@ -31,8 +31,15 @@ if [ -t 0 ]; then
     fi
 fi
 
-# --- PREVENT CONCURRENT RUNS ---
 LOCKFILE="/tmp/local-opt-backup.lock"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
+STACKS_ROOT="/opt/stacks"
+DATE=$(date +%F)
+DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
+RUNNING_STACKS_FILE="/tmp/running-stacks.list"
+
+# --- PREVENT CONCURRENT RUNS ---
 exec 9>"$LOCKFILE"
 if ! flock -n 9; then
     echo "⚠️  Backup already running. Exiting."
@@ -41,8 +48,6 @@ fi
 echo $$ > "$LOCKFILE"
 
 # --- CONFIGURATION ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 if [ -f "$SCRIPT_DIR/.env" ]; then
     source "$SCRIPT_DIR/.env"
 else
@@ -64,12 +69,6 @@ fi
 if ! command -v zstd &> /dev/null; then
     apt-get update && apt-get install -y zstd
 fi
-
-BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
-STACKS_ROOT="/opt/stacks"
-DATE=$(date +%F)
-DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
-RUNNING_STACKS_FILE="/tmp/running-stacks.list"
 
 mkdir -p "$BACKUP_DIR"
 
