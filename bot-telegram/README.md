@@ -1,81 +1,84 @@
-# Multi-Command Telegram Bot Guide
+# Telegram Remote Command Bot
 
-This guide sets up a Python bot that dynamically creates Telegram commands based on your `.env` file. You can add as many scripts as you want without editing the Python code.
+A Python bot that lets you run server commands via Telegram. Commands are defined entirely in `.env` — no code edits needed to add more.
 
-## 1. Install Dependencies
+## How It Works
+
+1. On startup, the bot reads every `CMD_` prefixed variable from `.env`
+2. Each one becomes a Telegram `/command` (e.g. `CMD_backup` → `/backup`)
+3. When triggered, it runs the shell command, and replies with the output
+4. If output exceeds 4000 characters, it sends a `.txt` log file instead
+5. Only the `ALLOWED_USER_ID` can execute commands — all others are silently ignored
+
+## Installation
+
+### 1. Install Dependencies
+
 ```bash
-sudo apt update
-sudo apt install python3-pip
+sudo apt update && sudo apt install python3-pip
 pip3 install python-telegram-bot python-dotenv
 ```
 
-## 2. Setup Directory and Environment Variables
+### 2. Configure
 
-1. Create directory:
-   ```bash
-   mkdir -p /home/gravi-ctrl/scripts/bot-telegram
-   ```
+Copy `.env.example` to `.env` and fill in your values:
 
-2. Create/Edit the `.env` file:
-   ```bash
-   nano /home/gravi-ctrl/script/bot-telegram/.env
-   ```
-
-3. **Configuration:**
-   Use the prefix `CMD_` to define new commands.
-
-   ```ini
-   # Telegram Config
-   VERGIL_BOT_TOKEN=TELEGRAM_TOKEN_HERE
-   ALLOWED_USER_ID=CHAT_ID_HERE
-
-   # --- COMMANDS ---
-   # Syntax: CMD_commandName="shell command here"
-   
-   # Command: /copy
-   CMD_copy="cd /path/to/file && cp file /path/to/destination"
-   ```
-
-## 3. Test the script
-Run the script manually to verify it picks up your commands.
 ```bash
-python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
+cp .env.example .env
+nano .env
 ```
-*Output should say:*
-> Registered command: /copy
 
-## 4. System Service (Run Forever)
+Add commands using the `CMD_` prefix:
 
-1. Create the service file:
-   ```bash
-   sudo nano /etc/systemd/system/tg-updater.service
-   ```
+```ini
+CMD_backup="bash /home/gravi-ctrl/scripts/backup.sh"
+CMD_ping="ping -c 3 google.com"
+```
 
-2. Paste configuration:
-   ```ini
-   [Unit]
-   Description=Telegram Multi-Command Bot
-   After=network.target
+### 3. Test
 
-   [Service]
-   User=gravi-ctrl
-   WorkingDirectory=/home/gravi-ctrl/scripts/bot-telegram
-   ExecStart=/usr/bin/python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
-   Restart=always
-   RestartSec=10
+```bash
+python3 bot.py
+```
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
+You should see:
 
-3. Enable and Start:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable tg-updater
-   sudo systemctl restart tg-updater
-   ```
+```
+Registered command: /backup
+Registered command: /ping
+Bot is active.
+```
 
-## How to add more commands later?
-1. Open `.env`: `nano /home/gravi-ctrl/scripts/bot-telegram/.env`
-2. Add a new line: `CMD_whatever="echo hi"`
-3. Restart the bot: `sudo systemctl restart tg-updater`
+### 4. Create System Service
+
+```bash
+sudo nano /etc/systemd/system/tg-updater.service
+```
+
+```ini
+[Unit]
+Description=Telegram Remote Command Bot
+After=network.target
+
+[Service]
+User=gravi-ctrl
+WorkingDirectory=/home/gravi-ctrl/scripts/bot-telegram
+ExecStart=/usr/bin/python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now tg-updater
+```
+
+## Adding New Commands
+
+1. Edit `.env` and add a new `CMD_` line
+2. Restart: `sudo systemctl restart tg-updater`
+
+That's it — the new `/command` is live.
