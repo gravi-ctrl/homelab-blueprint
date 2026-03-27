@@ -23,6 +23,7 @@ if [ -t 0 ]; then
 
         echo "✅ Backup dispatched to background. You may safely disconnect."
         echo "📝 Monitor logs: journalctl -u $UNIT_NAME -f"
+        echo "🛑 Stop backup: systemctl stop $UNIT_NAME"
         exit 0
     else
         echo "❌ systemd-run not found. Proceeding in foreground (Do not close SSH)."
@@ -32,15 +33,10 @@ fi
 
 # --- PREVENT CONCURRENT RUNS ---
 LOCKFILE="/tmp/local-opt-backup.lock"
-if [ -f "$LOCKFILE" ]; then
-    LOCK_PID=$(cat "$LOCKFILE" 2>/dev/null)
-    if kill -0 "$LOCK_PID" 2>/dev/null; then
-        echo "⚠️  Backup already running (PID $LOCK_PID). Exiting."
-        exit 0
-    else
-        echo "🧹 Stale lock found. Cleaning up."
-        rm -f "$LOCKFILE"
-    fi
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    echo "⚠️  Backup already running. Exiting."
+    exit 0
 fi
 echo $$ > "$LOCKFILE"
 
@@ -94,12 +90,16 @@ cleanup() {
     # 2. Kill Heartbeat
     if [ -n "$HEARTBEAT_PID" ]; then
         kill $HEARTBEAT_PID 2>/dev/null
+        wait $HEARTBEAT_PID 2>/dev/null
     fi
 
     # 3. Ensure Docker is unmasked and started
-    echo "Restoring Docker Services..."
-    systemctl unmask docker.socket 2>/dev/null
-    systemctl start containerd docker.socket docker.service 2>/dev/null
+    # Only restore Docker if it's not already running
+    if ! docker info &>/dev/null; then
+        echo "Restoring Docker Services..."
+        systemctl unmask docker.socket 2>/dev/null
+        systemctl start containerd docker.socket docker.service 2>/dev/null
+    fi
 }
 
 # Trap signals: EXIT (Success/Fail), INT (Ctrl+C), TERM (Kill), HUP (Disconnect)
@@ -183,7 +183,15 @@ systemctl unmask docker.socket
 systemctl start containerd docker.socket docker.service
 
 echo "Waiting for Docker socket..."
-sleep 20
+for i in $(seq 1 30); do
+    docker info &>/dev/null && break
+    sleep 2
+done
+
+if ! docker info &>/dev/null; then
+    echo "❌ Docker failed to start after 60s!"
+    exit 1
+fi
 
 echo "Starting previously-running stacks..."
 if [ -f "$RUNNING_STACKS_FILE" ]; then
