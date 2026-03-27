@@ -73,6 +73,7 @@ BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
 STACKS_ROOT="/opt/stacks"
 DATE=$(date +%F)
 DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
+RUNNING_STACKS_FILE="/tmp/running-stacks.list"
 
 mkdir -p "$BACKUP_DIR"
 
@@ -84,15 +85,11 @@ keep_kuma_alive() {
     done
 }
 
-echo "--- [1/2] Starting Docker Stacks Backup ---"
-
-keep_kuma_alive &
-HEARTBEAT_PID=$!
-
 # SAFETY & CLEANUP FUNCTION
 cleanup() {
-    # 1. Remove lock
+    # 1. Remove lock & stacks snapshot
     rm -f "$LOCKFILE"
+    rm -f "$RUNNING_STACKS_FILE"
 
     # 2. Kill Heartbeat
     if [ -n "$HEARTBEAT_PID" ]; then
@@ -107,6 +104,22 @@ cleanup() {
 
 # Trap signals: EXIT (Success/Fail), INT (Ctrl+C), TERM (Kill), HUP (Disconnect)
 trap cleanup EXIT INT TERM HUP
+
+echo "--- [1/2] Starting Docker Stacks Backup ---"
+
+keep_kuma_alive &
+HEARTBEAT_PID=$!
+
+# Snapshot running stacks before shutdown
+> "$RUNNING_STACKS_FILE"
+for stack_dir in "$STACKS_ROOT"/*/; do
+    if [ -f "$stack_dir/docker-compose.yml" ]; then
+        if docker compose -f "$stack_dir/docker-compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
+            echo "$stack_dir" >> "$RUNNING_STACKS_FILE"
+        fi
+    fi
+done
+echo "Captured $(wc -l < "$RUNNING_STACKS_FILE") running stack(s)."
 
 echo "Stopping and masking Docker..."
 systemctl mask docker.socket
@@ -172,13 +185,18 @@ systemctl start containerd docker.socket docker.service
 echo "Waiting for Docker socket..."
 sleep 20
 
-echo "Starting stacks..."
-for stack_dir in "$STACKS_ROOT"/*/; do
-    if [ -f "$stack_dir/docker-compose.yml" ]; then
-        echo "  → $(basename "$stack_dir")"
-        docker compose -f "$stack_dir/docker-compose.yml" up -d
-    fi
-done
+echo "Starting previously-running stacks..."
+if [ -f "$RUNNING_STACKS_FILE" ]; then
+    while IFS= read -r stack_dir; do
+        if [ -f "$stack_dir/docker-compose.yml" ]; then
+            echo "  → $(basename "$stack_dir")"
+            docker compose -f "$stack_dir/docker-compose.yml" up -d
+        fi
+    done < "$RUNNING_STACKS_FILE"
+    rm -f "$RUNNING_STACKS_FILE"
+else
+    echo "⚠️  No snapshot found. Skipping stack startup."
+fi
 
 # Validation
 if [ $TAR_EXIT_CODE -eq 0 ]; then
