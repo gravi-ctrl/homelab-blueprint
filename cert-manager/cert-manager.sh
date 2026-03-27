@@ -1,7 +1,4 @@
 #!/bin/bash
-# @DESCRIPTION: Manages mkcert CA and SAN certificates for all homeserver services. Handles init, add/remove services, regen, and upload to NPM.
-# @FREQUENCY: On-demand; optionally monthly via cron for auto-renewal
-
 #
 # Usage:
 #   ./cert-manager.sh init              One-time: install mkcert, create CA
