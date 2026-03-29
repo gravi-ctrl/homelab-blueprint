@@ -32,7 +32,7 @@ TOKEN="${TELEGRAM_DANTE_BOT_TOKEN:-YOUR_HARDCODED_TOKEN_HERE}"
 CHAT_ID="${TELEGRAM_CHAT_ID:-YOUR_HARDCODED_CHAT_ID_HERE}"
 
 # --- 3. SAFETY CHECK ---
-if [[ "$TOKEN" == "YOUR_HARDCODED_*" ]] || [ -z "$TOKEN" ]; then
+if [[ "$TOKEN" =~ ^YOUR_HARDCODED ]]; then
     shift 1
     /bin/bash -c "$*"
     exit $?
@@ -48,12 +48,12 @@ EXIT_CODE=$?
 # --- 5. FAILURE HANDLING ---
 if [ $EXIT_CODE -ne 0 ]; then
     DATE_TIME=$(date "+%Y-%m-%d %H:%M:%S")
-    LOG_TAIL=$(echo "$OUTPUT" | tail -n 10)
+    LOG_TAIL=$(echo "$OUTPUT" | tail -n 10 | sed 's/[`*_]/\\&/g')
 
     TEXT=$(printf "🚨 *CRON FAILURE*\n\n📂 *Job:* %s\n⏰ *Time:* %s\n🔢 *Exit Code:* %s\n\n📜 *Log:*\n\`\`\`\n%s\n\`\`\`" \
     "$JOB_NAME" "$DATE_TIME" "$EXIT_CODE" "${LOG_TAIL:-No output.}")
 
-    curl -s --retry 3 --retry-connrefused -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+    curl -s --retry 3 --retry-connrefused --max-time 30 -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
         -d chat_id="$CHAT_ID" \
         -d parse_mode="Markdown" \
         --data-urlencode "text=$TEXT" > /dev/null 2>&1
