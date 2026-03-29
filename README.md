@@ -23,10 +23,6 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > *Make sure the `docker-stacks-DATE.tar.zst` file is in `/home/$USER` first*
 
     ```bash
-    curl -sL is.gd/bootme | bash
-    ```
-    **Or by manually entering:**
-    ```bash
     sudo apt update && sudo apt install zstd -y
     cd $HOME && sudo tar --use-compress-program=zstd -xf docker-stacks-*.tar.zst -C /
 
