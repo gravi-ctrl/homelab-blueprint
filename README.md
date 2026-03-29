@@ -13,7 +13,7 @@ If the server is wiped, follow this order to restore functionality.
 The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to restore:
 *   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
 *   `~/scripts` — Automation scripts with `.env` files (secrets not stored in Git)
-*   `~/.ssh` — GitHub deploy keys
+*   `~/.ssh` — Codeberg deploy keys
 *   `/etc/ssh` — Host keys
 
 ### Phase 1: Bootstrap System
@@ -39,7 +39,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     > **No backup?** Restore manually:
     >
     > 1. **Get the SSH keys from your password manager** and place them in `~/.ssh/`
-    >    (you need both the server host keys and the GitHub deploy key).
+    >    (you need both the server host keys and the Codeberg deploy key).
     >
     > 2. **Fix permissions:**
     >    ```bash
@@ -48,7 +48,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     >
     > 3. **Clone the repo:**
     >    ```bash
-    >    git clone git@github.com:gravi-ctrl/server-scripts.git ~/scripts
+    >    git clone git@codeberg.org/gravi-ctrl/server-scripts.git ~/scripts
     >    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     >    ```
     >
@@ -64,7 +64,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```bash
     cd ~/scripts
     git init
-    git remote add origin git@github.com:gravi-ctrl/server-scripts.git
+    git remote add origin ssh://git@codeberg.org/gravi-ctrl/server-scripts.git
     git fetch origin
     git checkout -f -B main origin/main
     ```
@@ -90,15 +90,15 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
 
 ### Phase 2: Restore Docker Stacks
 
-The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://github.com/gravi-ctrl/server-scripts/tree/main#phase-1-bootstrap-system).
+The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://codeberg.org/gravi-ctrl/server-scripts#phase-1-bootstrap-system).
 
 > **No backup?** You'll be starting fresh — application data (databases,
 > uploads, container configs) is unrecoverable.
-> Clone the [server-docker-backup](https://github.com/gravi-ctrl/server-docker-backup) repo:
+> Clone the [server-docker-backup](https://codeberg.org/gravi-ctrl/server-docker-backup) repo:
 > ```bash
 > sudo mkdir -p /opt/stacks
 > sudo chown -R $(id -u):$(id -g) /opt/stacks
-> git clone git@github.com:gravi-ctrl/server-docker-backup.git /opt/stacks
+> git clone git@codeberg.org/gravi-ctrl/server-docker-backup.git /opt/stacks
 > ```
 > Then generate new secrets for the stacks:
 > ```bash
@@ -111,7 +111,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
     ```bash
     cd /opt/stacks
     git init
-    git remote add origin git@github.com:gravi-ctrl/server-docker-backup.git
+    git remote add origin git@codeberg.org/gravi-ctrl/server-docker-backup.git
     git fetch origin
     git checkout -f -B main origin/main
     ```
