@@ -48,7 +48,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     >
     > 3. **Clone the repo:**
     >    ```bash
-    >    git clone git@codeberg.org/gravi-ctrl/server-scripts.git ~/scripts
+    >    git clone git@codeberg.org:gravi-ctrl/server-scripts.git ~/scripts
     >    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     >    ```
     >
@@ -64,7 +64,7 @@ The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to res
     ```bash
     cd ~/scripts
     git init
-    git remote add origin ssh://git@codeberg.org/gravi-ctrl/server-scripts.git
+    git remote add origin git@codeberg.org:gravi-ctrl/server-scripts.git
     git fetch origin
     git checkout -f -B main origin/main
     ```
@@ -98,7 +98,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 > ```bash
 > sudo mkdir -p /opt/stacks
 > sudo chown -R $(id -u):$(id -g) /opt/stacks
-> git clone git@codeberg.org/gravi-ctrl/server-docker-backup.git /opt/stacks
+> git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
 > ```
 > Then generate new secrets for the stacks:
 > ```bash
@@ -111,7 +111,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
     ```bash
     cd /opt/stacks
     git init
-    git remote add origin git@codeberg.org/gravi-ctrl/server-docker-backup.git
+    git remote add origin git@codeberg.org:gravi-ctrl/server-docker-backup.git
     git fetch origin
     git checkout -f -B main origin/main
     ```
