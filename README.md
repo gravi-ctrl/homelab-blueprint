@@ -19,9 +19,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 ### Phase 1: Bootstrap System
 
 1.  **Decrypt and extract the backup, then fix SSH permissions:**
-
-    > *Make sure the `docker-stacks-DATE.tar.zst.age` file is in `/home/$USER` first*
-
+  
     ```bash
     sudo apt update && sudo apt install zstd age -y
 
@@ -29,7 +27,6 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
 
-    cd $HOME
     sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
 
     sudo apt purge cloud-init -y
