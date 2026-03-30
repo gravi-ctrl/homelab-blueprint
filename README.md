@@ -21,7 +21,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 1.  **Decrypt and extract the backup:**
   
     ```bash
-    # Save your private key from password manager into this file
+    # Save your private key from your password manager into this file
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
     ```
