@@ -10,7 +10,7 @@ This repository contains the "Brain" of the homelab: automation scripts, system 
 
 If the server is wiped, follow this order to restore functionality.
 
-The weekly `docker-stacks-DATE.tar.zst` backup contains everything needed to restore:
+The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to restore:
 *   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
 *   `~/scripts` — Automation scripts with `.env` files (secrets not stored in Git)
 *   `~/.ssh` — Codeberg deploy keys
@@ -130,12 +130,12 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 
 *   Extract a specific directory from the backup:
     ```bash
-    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / 'opt/stacks/nextcloud/html/extra-apps'
+    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C / 'opt/stacks/nextcloud/html/extra-apps'
     ```
 
 *   Extract only `.env` files (secrets) from the backup:
     ```bash
-    sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
+    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
     ```
 
 ---
