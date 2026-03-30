@@ -12,8 +12,8 @@ If the server is wiped, follow this order to restore functionality.
 
 The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to restore:
 *   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
-*   `~/scripts` — Automation scripts with `.env` files (secrets not stored in Git)
-*   `~/.ssh` — Codeberg deploy keys
+*   `~/scripts` — Automation scripts with `.env` files
+*   `~/.ssh` — Codeberg and server deploy keys
 *   `/etc/ssh` — Host keys
 
 ### Phase 1: Bootstrap System
