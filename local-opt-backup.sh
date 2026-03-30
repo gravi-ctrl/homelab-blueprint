@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Backs up Docker volumes to tar.zst, backs up ~/scripts, ~/.ssh and /etc/ssh
+# @DESCRIPTION: Backs up Docker stacks, ~/scripts, ~/.ssh and /etc/ssh to an age-encrypted tar.zst archive
 # @FREQUENCY: Weekly 5:30am on Thursday (root crontab)
 # ==============================================================================
 # RESTORE:
