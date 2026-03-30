@@ -18,7 +18,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 
 ### Phase 1: Bootstrap System
 
-1.  **Decrypt and extract the backup, then fix SSH permissions:**
+1.  **Decrypt and extract the backup:**
   
     ```bash
     sudo apt update && sudo apt install zstd age -y
