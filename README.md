@@ -26,6 +26,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     sudo chmod 600 /root/.backup-key.txt
     ```
     ```bash
+    # Install age and zstd then decrypt and extract the .tar.zst file
     sudo apt update && sudo apt install zstd age -y
 
     sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
