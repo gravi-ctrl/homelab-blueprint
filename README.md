@@ -29,6 +29,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 
     sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
 
+    # Remove cloud-init and the .conf defaut config as it creates conflicting SSH configs
     sudo apt purge cloud-init -y
     sudo rm -rf /etc/cloud
     sudo rm -f /etc/ssh/sshd_config.d/50-cloud-init.conf
