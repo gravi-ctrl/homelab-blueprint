@@ -21,11 +21,12 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 1.  **Decrypt and extract the backup:**
   
     ```bash
-    sudo apt update && sudo apt install zstd age -y
-
     # Save your private key from password manager into this file
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
+    ```
+    ```bash
+    sudo apt update && sudo apt install zstd age -y
 
     sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
 
