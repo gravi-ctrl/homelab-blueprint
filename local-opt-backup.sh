@@ -3,10 +3,10 @@
 # @FREQUENCY: Weekly 5:30am on Thursday (root crontab)
 # ==============================================================================
 # RESTORE:
-#   1. Stop Docker:  sudo systemctl stop docker
-#   2. Extract:      sudo tar --use-compress-program=zstd -xf docker-stacks-DATE.tar.zst -C /
-#   3. Restart SSH:  sudo systemctl restart ssh
-#   4. Start Docker: sudo systemctl start docker
+#   1. Stop Docker:         sudo systemctl stop docker
+#   2. Decrypt & Extract:   sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
+#   3. Restart SSH:         sudo systemctl restart ssh
+#   4. Start Docker:        sudo systemctl start docker
 # ==============================================================================
 set -o pipefail
 
@@ -32,11 +32,12 @@ if [ -t 0 ]; then
 fi
 
 LOCKFILE="/tmp/local-opt-backup.lock"
+AGE_PUBKEY="age192nt2pxwatnndc9592h7dzgya77tl3hfgpx7kdqqrhhpednll9ts3ytrq9"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
 STACKS_ROOT="/opt/stacks"
 DATE=$(date +%F)
-DOCKER_FILENAME="docker-stacks-$DATE.tar.zst"
+DOCKER_FILENAME="docker-stacks-$DATE.tar.zst.age"
 RUNNING_STACKS_FILE="/tmp/running-stacks.list"
 
 # --- PREVENT CONCURRENT RUNS ---
@@ -68,6 +69,10 @@ fi
 # Install dependencies if missing
 if ! command -v zstd &> /dev/null; then
     apt-get update && apt-get install -y zstd
+fi
+
+if ! command -v age &> /dev/null; then
+    apt-get update && apt-get install -y age
 fi
 
 mkdir -p "$BACKUP_DIR"
@@ -126,7 +131,7 @@ systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
 
-timeout 60m tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FILENAME" \
+timeout 60m tar --use-compress-program="zstd -3 -T0" -cf - \
     --exclude='.git' \
     --exclude='__pycache__' \
     --exclude='node_modules' \
@@ -173,9 +178,10 @@ timeout 60m tar --use-compress-program="zstd -3 -T0" -cf "$BACKUP_DIR/$DOCKER_FI
     opt/stacks \
     "home/$BACKUP_USER/scripts" \
     "home/$BACKUP_USER/.ssh" \
-    etc/ssh
+    etc/ssh \
+| age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
 
-TAR_EXIT_CODE=$?
+TAR_EXIT_CODE=${PIPESTATUS[0]}
 
 # Explicit restart for immediate healthchecks
 systemctl unmask docker.socket
@@ -209,14 +215,13 @@ fi
 if [ $TAR_EXIT_CODE -eq 0 ]; then
     echo "✅ Backup successful."
     echo "Verifying backup integrity..."
-    if zstd -t "$BACKUP_DIR/$DOCKER_FILENAME"; then
-        BACKUP_SIZE=$(du -sh "$BACKUP_DIR/$DOCKER_FILENAME" | cut -f1)
-        echo "📦 Backup size: $BACKUP_SIZE"
-        find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst" \
+    if age -d -i /root/.backup-key.txt "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t; then
+        echo "✅ Backup verified (decryption + integrity)"
+        find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst.age" \
             ! -name "$DOCKER_FILENAME" -printf '%T@ %p\n' \
             | sort -n | head -n -1 | awk '{print $2}' | xargs -r rm
     else
-        echo "❌ Backup file is CORRUPT."
+        echo "❌ Backup CORRUPT or key mismatch."
         exit 1
     fi
 elif [ $TAR_EXIT_CODE -eq 124 ]; then
