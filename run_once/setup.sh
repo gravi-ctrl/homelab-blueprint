@@ -41,7 +41,7 @@ sudo add-apt-repository -y ppa:unit193/encryption
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Core tools  (rsync added — used later for dotfiles)
-sudo apt-get install -y veracrypt btop curl dos2unix zstd fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs ufw inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh rsync
+sudo apt-get install -y veracrypt btop curl dos2unix age zstd fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs ufw inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh rsync
 
 # Grant current user read-only access to root crontab (for backups without full sudo)
 echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null && sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
@@ -77,6 +77,7 @@ echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
 # 3. DIRECTORY SKELETON
 echo -e "${YELLOW}[3/8] Creating Directory Structure...${NC}"
 sudo mkdir -p /data/borg_backup
+sudo mkdir -p /data/paperless
 sudo mkdir -p /data/assets/torrents
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /data/assets/downloads
