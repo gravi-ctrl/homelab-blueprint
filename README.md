@@ -18,24 +18,20 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 
 ### Phase 1: Bootstrap System
 
-1.  **Decrypt and extract the backup:**
-  
+1.  **Upload the backup archive** to the server's home directory (`~/docker-stacks-*.tar.zst.age`).
+
+2.  **Set up the decryption key:**
     ```bash
-    # Save your private key from your password manager into this file
+    # Paste your private key from your password manager
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
     ```
+
+3.  **Run the bootstrap script:**
     ```bash
-    # Install age and zstd then decrypt and extract the .tar.zst file
-    sudo apt update && sudo apt install zstd age -y
-
-    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
-
-    # Remove cloud-init and the .conf default config as it creates conflicting SSH configs
-    sudo apt purge cloud-init -y
-    sudo rm -rf /etc/cloud
-    sudo rm -f /etc/ssh/sshd_config.d/50-cloud-init.conf
-    sudo systemctl restart ssh
+    curl -fsSL https://codeberg.org/gravi-ctrl/server-bootstrap/raw/branch/main/bootstrap.sh -o bootstrap.sh
+    cat bootstrap.sh   # verify contents before running
+    bash bootstrap.sh
     ```
 
     > **No backup?** Restore manually:
@@ -62,7 +58,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     >    cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
     >    ```
 
-2.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
+4.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
     ```bash
     cd ~/scripts
     git init
@@ -71,7 +67,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     git checkout -f -B main origin/main
     ```
 
-3.  **Run the Installer:**
+5.  **Run the Installer:**
 
     This installs Docker, dependencies, configures Python, Shell environment, and **automatically handles:**
     *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
@@ -84,7 +80,8 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     ```bash
     ~/scripts/run_once/setup.sh
     ```
-4.  **Once the installer is done, just re-open the SSH session for changes to take effect**
+
+6.  **Once the installer is done, just re-open the SSH session for changes to take effect**
 
     *Reference files are located in:* `run_once/system_configs/`.
 
