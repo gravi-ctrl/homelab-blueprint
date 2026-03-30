@@ -22,7 +22,6 @@
             <Item>*\desktop.ini</Item>
             <Item>*\.stfolder\</Item>
             <Item>*\.stversions\</Item>
-            <Item>*\.git\</Item>
             <Item>\_pvt\</Item>
         </Exclude>
         <SizeMin Unit="None">0</SizeMin>
