@@ -96,7 +96,7 @@ echo -e "${GREEN}✓ Data directories ready${NC}"
 
 # 4. PYTHON REQUIREMENTS
 echo -e "${YELLOW}[4/8] Installing Python Libs...${NC}"
-pip3 install python-dotenv cron-descriptor python-telegram-bot selenium flask --break-system-packages
+pip3 install python-dotenv git-filter-repo cron-descriptor python-telegram-bot selenium flask --break-system-packages
 
 
 # 5. SHELL ENVIRONMENT (ZSH + P10K)
