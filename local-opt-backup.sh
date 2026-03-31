@@ -16,14 +16,23 @@ if [ -t 0 ]; then
     echo "⚠️  Interactive session detected. Switching to background SystemD service..."
 
     if command -v systemd-run &> /dev/null; then
-        UNIT_NAME="docker-backup-manual-$(date +%s)"
+        UNIT_NAME="docker-backup-manual"
+
+        # Clean up any previous failed run
+        systemctl reset-failed "$UNIT_NAME" 2>/dev/null
+
         systemd-run --unit="$UNIT_NAME" \
                     --quiet \
+                    --collect \
                     "$(realpath "${BASH_SOURCE[0]}")"
 
         echo "✅ Backup dispatched to background. You may safely disconnect."
-        echo "📝 Monitor logs: journalctl -u $UNIT_NAME -f"
-        echo "🛑 Stop backup: systemctl stop $UNIT_NAME"
+        echo ""
+        echo "📝 Follow live logs:        journalctl -u $UNIT_NAME -f"
+        echo "📜 View last run:           journalctl -u $UNIT_NAME --since today"
+        echo "📆 View previous Thursday:  journalctl -u $UNIT_NAME --since \"last Thursday\""
+        echo "🔍 Check status:            systemctl status $UNIT_NAME"
+        echo "🛑 Stop backup:             systemctl stop $UNIT_NAME"
         exit 0
     else
         echo "❌ systemd-run not found. Proceeding in foreground (Do not close SSH)."
