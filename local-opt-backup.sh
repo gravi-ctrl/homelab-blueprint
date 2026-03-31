@@ -214,7 +214,6 @@ if [ -f "$RUNNING_STACKS_FILE" ]; then
             docker compose -f "$stack_dir/docker-compose.yml" up -d
         fi
     done < "$RUNNING_STACKS_FILE"
-    rm -f "$RUNNING_STACKS_FILE"
 else
     echo "⚠️  No snapshot found. Skipping stack startup."
 fi
@@ -226,8 +225,7 @@ if [ $TAR_EXIT_CODE -eq 0 ]; then
     if age -d -i /root/.backup-key.txt "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t; then
         echo "✅ Backup verified (decryption + integrity)"
         find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst.age" \
-            ! -name "$DOCKER_FILENAME" -printf '%T@ %p\n' \
-            | sort -n | head -n -1 | awk '{print $2}' | xargs -r rm
+            ! -name "$DOCKER_FILENAME" -delete
     else
         echo "❌ Backup CORRUPT or key mismatch."
         exit 1
@@ -240,14 +238,27 @@ else
     exit 1
 fi
 
-# Healthcheck
+# Healthcheck — only check stacks we actually restarted
 echo "Waiting for containers to settle..."
 MAX_WAIT=120
 ELAPSED=0
 INTERVAL=10
+STUCK=""
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
-    STUCK=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
+    STUCK=""
+    if [ -f "$RUNNING_STACKS_FILE" ]; then
+        while IFS= read -r stack_dir; do
+            if [ -f "$stack_dir/docker-compose.yml" ]; then
+                PROBLEMS=$(docker compose -f "$stack_dir/docker-compose.yml" ps -a \
+                    --format '{{.Name}} {{.Status}}' 2>/dev/null \
+                    | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
+                [ -n "$PROBLEMS" ] && STUCK+="$PROBLEMS"$'\n'
+            fi
+        done < "$RUNNING_STACKS_FILE"
+        STUCK=$(echo "$STUCK" | sed '/^$/d')
+    fi
+
     if [ -z "$STUCK" ]; then
         echo "✅ All containers healthy."
         break
@@ -257,9 +268,10 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
 done
 
 if [ -n "$STUCK" ]; then
-    for container in $STUCK; do
-        docker restart "$container"
-    done
+    echo "Restarting stuck containers..."
+    while IFS= read -r container; do
+        [ -n "$container" ] && docker restart "$container"
+    done <<< "$STUCK"
 fi
 
 echo "🎉 All tasks finished."
