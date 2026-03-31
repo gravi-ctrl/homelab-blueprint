@@ -217,11 +217,15 @@ SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
     # A. Hosts
     if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
-        sudo cp /etc/hosts "/etc/hosts.backup.$(date +%Y%m%d_%H%M%S)"
-        sudo cp "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts
-        sudo chown root:root /etc/hosts
-        sudo chmod 644 /etc/hosts
-        echo -e "${GREEN}✓ /etc/hosts restored${NC}"
+        if ! cmp -s "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts; then
+            sudo cp /etc/hosts "/etc/hosts.backup.$(date +%Y%m%d_%H%M%S)"
+            sudo cp "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts
+            sudo chown root:root /etc/hosts
+            sudo chmod 644 /etc/hosts
+            echo -e "${GREEN}✓ /etc/hosts restored${NC}"
+        else
+            echo -e "${GREEN}✓ /etc/hosts already up to date${NC}"
+        fi
     fi
     # B. User Crontab
     if [ -f "$SYSTEM_CONFIGS_DIR/user_crontab.txt" ]; then
