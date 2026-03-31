@@ -9,6 +9,9 @@
 **/dockcheck.config
 **/certs/
 
+# BIG BINARIES
+**/regctl
+
 # --- LOGS & TEMP ---
 **/*.log
 **/*.tmp
