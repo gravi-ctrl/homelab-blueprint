@@ -58,6 +58,14 @@ else
     echo "Docker already installed."
 fi
 
+# Install regctl (for dockcheck container update checks)
+if ! command -v regctl &> /dev/null; then
+    sudo curl -fsSL https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl && sudo chmod +x /usr/local/bin/regctl
+    echo "regctl installed."
+else
+    echo "regctl already installed."
+fi
+
 # Docker daemon settings (DNS + log rotation)
 sudo mkdir -p /etc/docker
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
