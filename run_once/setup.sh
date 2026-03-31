@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles (Run without sudo)
+# @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles
 # @FREQUENCY: Run Once
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
@@ -14,6 +14,11 @@ NC='\033[0m'
 
 set -e
 trap 'echo -e "${RED}❌ Script failed at line $LINENO${NC}"; exit 1' ERR
+
+if [[ $EUID -eq 0 ]]; then
+    echo -e "${RED}ERROR: Do not run this script as root. Run as your normal user.${NC}"
+    exit 1
+fi
 
 echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
 
