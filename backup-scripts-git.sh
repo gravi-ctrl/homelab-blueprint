@@ -33,6 +33,7 @@ fi
 
 # --- GENERATE HUMAN READABLE SCHEDULE ---
 if [ -f "$TARGET_DIR/cron_translator.py" ]; then
+    echo "Generating cron schedule..."
     python3 "$TARGET_DIR/cron_translator.py"
 fi
 
