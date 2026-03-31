@@ -11,7 +11,6 @@ BACKUP_USER=$(grep '^BACKUP_USER=' "$(dirname "$(readlink -f "$0")")/.env" 2>/de
 TARGET_DIR="/home/$BACKUP_USER/scripts"
 SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
 MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.py"
-TRANSLATOR_SCRIPT="$TARGET_DIR/cron_translator.py"
 STACKS_DIR="/opt/stacks"
 
 # Load TOOLS from .env
@@ -33,8 +32,8 @@ else
 fi
 
 # --- GENERATE HUMAN READABLE SCHEDULE ---
-if [ -f "$TRANSLATOR_SCRIPT" ]; then
-    python3 "$TRANSLATOR_SCRIPT"
+if [ -f "$TARGET_DIR/cron_translator.py" ]; then
+    python3 "$TARGET_DIR/cron_translator.py"
 fi
 
 # --- GENERATE SCRIPT INVENTORY ---
