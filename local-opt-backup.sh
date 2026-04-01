@@ -224,8 +224,9 @@ if [ $TAR_EXIT_CODE -eq 0 ]; then
     echo "Verifying backup integrity..."
     if age -d -i /root/.backup-key.txt "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t; then
         echo "✅ Backup verified (decryption + integrity)"
-        find "$BACKUP_DIR" -type f -name "docker-stacks-*.tar.zst.age" \
-            ! -name "$DOCKER_FILENAME" -delete
+        ls -1t "$BACKUP_DIR"/docker-stacks-*.tar.zst.age \
+            | tail -n +3 \
+            | xargs -r rm -f
     else
         echo "❌ Backup CORRUPT or key mismatch."
         exit 1
