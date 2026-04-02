@@ -45,8 +45,15 @@ sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
 sudo add-apt-repository -y ppa:unit193/encryption
 sudo apt-get update && sudo apt-get upgrade -y
 
-# Core tools  (rsync added — used later for dotfiles)
-sudo apt-get install -y veracrypt btop curl dos2unix age zstd fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs ufw inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh rsync
+# Core tools — install from backed-up package list
+PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_installed_apps.txt"
+if [ -f "$PACKAGES_FILE" ]; then
+    echo "Installing packages from backup list..."
+    sudo apt-get install -y $(cat "$PACKAGES_FILE")
+else
+    echo -e "${RED}⚠️  Package list not found. Installing bare minimum...${NC}"
+    sudo apt-get install -y git curl zsh rsync python3 python3-pip python3-venv
+fi
 
 # Grant current user read-only access to root crontab (for backups without full sudo)
 echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null && sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
@@ -268,9 +275,5 @@ echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh"
 echo "   (Ignore if no backup file or if nextcloud_data was restored)"
 echo "   (Run after `docker compose up -d` on Nextcloud)"
 echo ""
-echo "3. OPTIONAL - Restore Installed Packages:"
-echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
-echo "   (Review, then: sudo apt-get install <packages>)"
-echo ""
-echo "4. REBOOT:"
+echo "3. REBOOT:"
 echo "   sudo reboot"
