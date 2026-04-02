@@ -29,7 +29,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 
 3.  **Run the bootstrap script:**
     ```bash
-    curl -fsSL codeberg.org/gravi-ctrl/server-bootstrap/raw/bootstrap.sh -o bootstrap.sh
+    curl -fsSL codeberg.org/gravi-ctrl/server-bootstrap/raw/bootstrap.sh -o $HOME/bootstrap.sh
     cat bootstrap.sh   # verify contents before running
     bash bootstrap.sh
     ```
