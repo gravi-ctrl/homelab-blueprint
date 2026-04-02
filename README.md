@@ -22,7 +22,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 
 2.  **Set up the decryption key:**
     ```bash
-    # Paste your private key from your password manager
+    # Paste your (age) private key from your password manager
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
     ```
