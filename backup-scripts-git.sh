@@ -46,7 +46,11 @@ fi
 # B. Installed Packages
 apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
-# C. Dotfiles
+# C. APT Repositories (PPAs)
+grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' /etc/apt/sources.list.d/ 2>/dev/null \
+    | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt"
+
+# D. Dotfiles
 [ -f ~/.zshrc ] && cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
 [ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "$TARGET_DIR/run_once/dotfiles/p10k.zsh"
 [ -f /etc/nanorc ] && cp /etc/nanorc "$TARGET_DIR/run_once/dotfiles/nanorc"
