@@ -32,7 +32,7 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 
 # 1. SYSTEM UPDATE & DEPENDENCIES
-echo -e "${YELLOW}[1/8] Updating System & Installing Tools...${NC}"
+echo -e "${YELLOW}[1/9] Updating System & Installing Tools...${NC}"
 
 # Correct timezone
 sudo timedatectl set-timezone Africa/Cairo
@@ -45,22 +45,21 @@ sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
 sudo add-apt-repository -y ppa:unit193/encryption
 sudo apt-get update && sudo apt-get upgrade -y
 
-# Core tools — install from backed-up package list
+# Install from backed-up package list
 PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_installed_apps.txt"
 if [ -f "$PACKAGES_FILE" ]; then
     echo "Installing packages from backup list..."
     sudo apt-get install -y $(cat "$PACKAGES_FILE")
 else
     echo -e "${RED}⚠️  Package list not found. Installing bare minimum...${NC}"
-    sudo apt-get install -y git curl zsh rsync python3 python3-pip python3-venv
+    sudo apt-get install -y git curl zsh rsync python3 python3-pip python3-venv ufw
 fi
 
 # Grant current user read-only access to root crontab (for backups without full sudo)
 echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null && sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
 
-
 # 2. DOCKER INSTALLATION & CONFIGURATION
-echo -e "${YELLOW}[2/8] Installing & Configuring Docker...${NC}"
+echo -e "${YELLOW}[2/9] Installing & Configuring Docker...${NC}"
 
 if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com | sh
@@ -95,7 +94,7 @@ echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
 
 
 # 3. DIRECTORY SKELETON
-echo -e "${YELLOW}[3/8] Creating Directory Structure...${NC}"
+echo -e "${YELLOW}[3/9] Creating Directory Structure...${NC}"
 sudo mkdir -p /data/borg_backup
 sudo mkdir -p /data/paperless
 sudo mkdir -p /data/assets/torrents
@@ -115,12 +114,12 @@ echo -e "${GREEN}✓ Data directories ready${NC}"
 
 
 # 4. PYTHON REQUIREMENTS
-echo -e "${YELLOW}[4/8] Installing Python Libs...${NC}"
+echo -e "${YELLOW}[4/9] Installing Python Libs...${NC}"
 pip3 install python-dotenv git-filter-repo cron-descriptor python-telegram-bot selenium flask --break-system-packages
 
 
 # 5. SHELL ENVIRONMENT (ZSH + P10K)
-echo -e "${YELLOW}[5/8] Configuring Zsh Environment...${NC}"
+echo -e "${YELLOW}[5/9] Configuring Zsh Environment...${NC}"
 
 # A. Install Oh-My-Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -165,7 +164,7 @@ fi
 
 
 # 6. UNBOUND DNS RESOLVER
-echo -e "${YELLOW}[6/8] Configuring Unbound DNS Resolver...${NC}"
+echo -e "${YELLOW}[6/9] Configuring Unbound DNS Resolver...${NC}"
 
 # A. Download latest root hints
 sudo mkdir -p /usr/share/dns
@@ -218,7 +217,7 @@ echo -e "${GREEN}✓ Unbound DNS configured and running on port 5335${NC}"
 
 
 # 7. RESTORE SYSTEM CONFIGURATIONS
-echo -e "${YELLOW}[7/8] Restoring System Configurations...${NC}"
+echo -e "${YELLOW}[7/9] Restoring System Configurations...${NC}"
 SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 
 if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
@@ -248,7 +247,7 @@ fi
 
 
 # 8. FIREWALL SETUP
-echo -e "${YELLOW}[8/8] Restoring Firewall Rules...${NC}"
+echo -e "${YELLOW}[8/9] Restoring Firewall Rules...${NC}"
 FIREWALL_SCRIPT="$HOME/scripts/run_once/setup-firewall.sh"
 if [ -f "$FIREWALL_SCRIPT" ]; then
     echo "🔥 Setting up firewall rules..."
@@ -257,6 +256,20 @@ if [ -f "$FIREWALL_SCRIPT" ]; then
 else
     echo "⚠️  Firewall script not found at: $FIREWALL_SCRIPT"
 fi
+
+
+# 9. CAPTURE BASE PACKAGES (for future backups)
+echo -e "${YELLOW}[9/9] Capturing Base Package Snapshot...${NC}"
+BASE_FILE="$HOME/scripts/run_once/system_configs/base-packages.txt"
+if [ ! -f "$BASE_FILE" ]; then
+    echo "Generating base package list from Docker..."
+    docker run --rm "ubuntu:$(lsb_release -cs)" bash -c "apt-mark showmanual | sort" \
+      > "$BASE_FILE"
+    echo -e "${GREEN}✓ Base package snapshot saved${NC}"
+else
+    echo -e "${GREEN}✓ Base package snapshot already exists${NC}"
+fi
+
 
 # ==============================================================================
 echo -e "${GREEN}=== BOOTSTRAP COMPLETE ===${NC}"
@@ -269,11 +282,13 @@ echo "   ✓ Dotfiles            - Restored automatically"
 echo "   ✓ Firewall Rules      - Restored automatically"
 echo "   ✓ Docker daemon.json  - Configured automatically"
 echo "   ✓ Unbound DNS         - Configured automatically"
+echo "   ✓ Installed Packages  - Restored from backup list"
+echo "   ✓ Base Package List   - Captured for future backups"
 echo ""
 echo "2. Nextcloud post-restore script:"
 echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh"
 echo "   (Ignore if no backup file or if nextcloud_data was restored)"
-echo "   (Run after `docker compose up -d` on Nextcloud)"
+echo "   (Run after 'docker compose up -d' on Nextcloud)"
 echo ""
 echo "3. REBOOT:"
 echo "   sudo reboot"
