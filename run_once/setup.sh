@@ -93,7 +93,7 @@ if [ -f "$PACKAGES_FILE" ]; then
     xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
 else
     echo -e "${RED}⚠️  Package list not found. Installing core tools...${NC}"
-    sudo apt-get install -y veracrypt btop dos2unix age zstd fastfetch unbound moreutils mariadb-client mosh ncdu zip unzip acl bindfs inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh
+    sudo apt-get install -y veracrypt btop age zstd fastfetch unbound mariadb-client ncdu zip unzip acl inotify-tools samba python3 python3-pip python3-venv fzf bat zsh
 fi
 
 
