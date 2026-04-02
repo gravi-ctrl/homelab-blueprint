@@ -43,8 +43,11 @@ if [ -f "$TARGET_DIR/script_indexer.py" ]; then
     python3 "$TARGET_DIR/script_indexer.py"
 fi
 
-# B. Installed Packages
-apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
+# B. Installed Packages (only user-installed, not base OS)
+comm -23 \
+  <(apt-mark showmanual | sort) \
+  <(gzip -dc /var/log/installer/initial-status.gz | sed -n 's/^Package: //p' | sort) \
+  > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
 # C. Dotfiles
 [ -f ~/.zshrc ] && cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
