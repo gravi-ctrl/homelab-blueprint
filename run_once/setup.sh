@@ -41,6 +41,7 @@ sudo timedatectl set-timezone Africa/Cairo
 sudo apt-get update
 sudo apt-get install -y software-properties-common curl git rsync ufw
 
+# Restoring the custom repos from the backed up file
 REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
 if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
     echo "Restoring PPAs from backup list..."
