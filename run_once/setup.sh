@@ -41,8 +41,17 @@ sudo timedatectl set-timezone Africa/Cairo
 sudo apt-get update
 sudo apt-get install -y software-properties-common curl git rsync ufw
 
-sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
-sudo add-apt-repository -y ppa:unit193/encryption
+REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
+if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
+    echo "Restoring PPAs from backup list..."
+    while IFS= read -r ppa; do
+        sudo add-apt-repository -y "$ppa"
+    done < "$REPOS_FILE"
+else
+    echo -e "${RED}⚠️  Repo list not found. Adding PPAs manually...${NC}"
+    sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
+    sudo add-apt-repository -y ppa:unit193/encryption
+fi
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Grant current user read-only access to root crontab (for backups without full sudo)
