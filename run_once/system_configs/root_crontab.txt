@@ -10,9 +10,6 @@ A=/data/assets
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# RESCUE: Ensure Docker is unmasked and started on every boot
-@reboot systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service 
-
 # Emergency shutdown if battery is discharging and below 20%
 */5 * * * * $S/battery_monitor.sh > /dev/null 2>&1
 
