@@ -16,7 +16,6 @@
 ## ⚡ Root Cron
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **RESCUE: Ensure Docker is unmasked and started on every boot** | On every boot/restart | `systemctl unmask docker.socket; systemctl start containerd docker.socket docker.service` |
 | **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/self-ho...` |
 | **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Thursday | `$S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
