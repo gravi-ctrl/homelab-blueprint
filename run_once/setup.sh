@@ -32,28 +32,25 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 
 # 1. SYSTEM UPDATE & DEPENDENCIES
-echo -e "${YELLOW}[1/8] Updating System & Installing Tools...${NC}"
+echo -e "${YELLOW}[1/9] Updating System & Installing Tools...${NC}"
 
 # Correct timezone
 sudo timedatectl set-timezone Africa/Cairo
 
-# Fix for minimal installs missing add-apt-repository
+# Fix for minimal installs missing add-apt-repository (and install base script requirements)
 sudo apt-get update
-sudo apt-get install -y software-properties-common
+sudo apt-get install -y software-properties-common curl git rsync ufw
 
 sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
 sudo add-apt-repository -y ppa:unit193/encryption
 sudo apt-get update && sudo apt-get upgrade -y
-
-# Core tools  (rsync added — used later for dotfiles)
-sudo apt-get install -y veracrypt btop curl dos2unix age zstd fastfetch unbound moreutils mariadb-client mosh ncdu git zip unzip acl bindfs ufw inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh rsync
 
 # Grant current user read-only access to root crontab (for backups without full sudo)
 echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null && sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
 
 
 # 2. DOCKER INSTALLATION & CONFIGURATION
-echo -e "${YELLOW}[2/8] Installing & Configuring Docker...${NC}"
+echo -e "${YELLOW}[2/9] Installing & Configuring Docker...${NC}"
 
 if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com | sh
@@ -87,8 +84,21 @@ sudo systemctl restart docker
 echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
 
 
-# 3. DIRECTORY SKELETON
-echo -e "${YELLOW}[3/8] Creating Directory Structure...${NC}"
+# 3. RESTORE INSTALLED PACKAGES
+echo -e "${YELLOW}[3/9] Restoring Installed Packages...${NC}"
+
+PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_installed_apps.txt"
+if [ -f "$PACKAGES_FILE" ]; then
+    echo "Installing packages from backup list..."
+    xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
+else
+    echo -e "${RED}⚠️  Package list not found. Installing core tools...${NC}"
+    sudo apt-get install -y veracrypt btop dos2unix age zstd fastfetch unbound moreutils mariadb-client mosh ncdu zip unzip acl bindfs inotify-tools ntfs-3g samba python3 python3-pip python3-venv fzf bat zsh
+fi
+
+
+# 4. DIRECTORY SKELETON
+echo -e "${YELLOW}[4/9] Creating Directory Structure...${NC}"
 sudo mkdir -p /data/borg_backup
 sudo mkdir -p /data/paperless
 sudo mkdir -p /data/assets/torrents
@@ -107,13 +117,13 @@ sudo setfacl -R -d -m u:33:rwx /data/assets
 echo -e "${GREEN}✓ Data directories ready${NC}"
 
 
-# 4. PYTHON REQUIREMENTS
-echo -e "${YELLOW}[4/8] Installing Python Libs...${NC}"
+# 5. PYTHON REQUIREMENTS
+echo -e "${YELLOW}[5/9] Installing Python Libs...${NC}"
 pip3 install python-dotenv git-filter-repo cron-descriptor python-telegram-bot selenium flask --break-system-packages
 
 
-# 5. SHELL ENVIRONMENT (ZSH + P10K)
-echo -e "${YELLOW}[5/8] Configuring Zsh Environment...${NC}"
+# 6. SHELL ENVIRONMENT (ZSH + P10K)
+echo -e "${YELLOW}[6/9] Configuring Zsh Environment...${NC}"
 
 # A. Install Oh-My-Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -157,8 +167,8 @@ if [ "$SHELL" != "/usr/bin/zsh" ]; then
 fi
 
 
-# 6. UNBOUND DNS RESOLVER
-echo -e "${YELLOW}[6/8] Configuring Unbound DNS Resolver...${NC}"
+# 7. UNBOUND DNS RESOLVER
+echo -e "${YELLOW}[7/9] Configuring Unbound DNS Resolver...${NC}"
 
 # A. Download latest root hints
 sudo mkdir -p /usr/share/dns
@@ -210,8 +220,8 @@ sudo systemctl restart unbound
 echo -e "${GREEN}✓ Unbound DNS configured and running on port 5335${NC}"
 
 
-# 7. RESTORE SYSTEM CONFIGURATIONS
-echo -e "${YELLOW}[7/8] Restoring System Configurations...${NC}"
+# 8. RESTORE SYSTEM CONFIGURATIONS
+echo -e "${YELLOW}[8/9] Restoring System Configurations...${NC}"
 SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 
 if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
@@ -240,8 +250,8 @@ if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
 fi
 
 
-# 8. FIREWALL SETUP
-echo -e "${YELLOW}[8/8] Restoring Firewall Rules...${NC}"
+# 9. FIREWALL SETUP
+echo -e "${YELLOW}[9/9] Restoring Firewall Rules...${NC}"
 FIREWALL_SCRIPT="$HOME/scripts/run_once/setup-firewall.sh"
 if [ -f "$FIREWALL_SCRIPT" ]; then
     echo "🔥 Setting up firewall rules..."
@@ -262,15 +272,12 @@ echo "   ✓ Dotfiles            - Restored automatically"
 echo "   ✓ Firewall Rules      - Restored automatically"
 echo "   ✓ Docker daemon.json  - Configured automatically"
 echo "   ✓ Unbound DNS         - Configured automatically"
+echo "   ✓ Installed Packages  - Restored automatically"
 echo ""
 echo "2. Nextcloud post-restore script:"
 echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh"
 echo "   (Ignore if no backup file or if nextcloud_data was restored)"
-echo "   (Run after `docker compose up -d` on Nextcloud)"
+echo "   (Run after 'docker compose up -d' on Nextcloud)"
 echo ""
-echo "3. OPTIONAL - Restore Installed Packages:"
-echo "   cat $HOME/scripts/run_once/system_configs/my_installed_apps.txt"
-echo "   (Review, then: sudo apt-get install <packages>)"
-echo ""
-echo "4. REBOOT:"
+echo "3. REBOOT:"
 echo "   sudo reboot"
