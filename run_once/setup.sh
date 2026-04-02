@@ -6,79 +6,111 @@
 # Run this after cloning the repo to ~/scripts on a fresh OS.
 # ==============================================================================
 
-# Colors
+# ── Init ──────────────────────────────────────────────────────
+LOGFILE="/tmp/bootstrap-$(date +%Y%m%d_%H%M%S).log"
+CURRENT="preflight"; IN_TASK=false
+PASS_COUNT=0; SKIP_COUNT=0
+START_TIME=$SECONDS
+
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+DIM='\033[2m'
+BOLD='\033[1m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 set -e
-trap 'echo -e "${RED}❌ Script failed at line $LINENO${NC}"; exit 1' ERR
+trap '
+    $IN_TASK && printf "${RED}✗${NC}\n"
+    printf "\n${RED}  ❌ FAILED → %s (line %d)${NC}\n" "$CURRENT" "$LINENO"
+    printf "${RED}     See: %s${NC}\n" "$LOGFILE"
+    exit 1
+' ERR
 
+# ── Helpers ───────────────────────────────────────────────────
+header()  { printf "\n${CYAN}${BOLD} [%s] %s${NC}\n" "$1" "$2"; }
+task()    { CURRENT="$1"; IN_TASK=true; printf "   %-52s " "$1"; echo -e "\n==> $1" >> "$LOGFILE"; }
+pass()    { IN_TASK=false; PASS_COUNT=$((PASS_COUNT+1)); printf "${GREEN}✓${NC}"; [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"; printf "\n"; }
+skip()    { IN_TASK=false; SKIP_COUNT=$((SKIP_COUNT+1)); printf "${YELLOW}—${NC}"; [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"; printf "\n"; }
+quietly() { "$@" >> "$LOGFILE" 2>&1; }
+
+# ══════════════════════════════════════════════════════════════
+# PREFLIGHT
+# ══════════════════════════════════════════════════════════════
 if [[ $EUID -eq 0 ]]; then
-    echo -e "${RED}ERROR: Do not run this script as root. Run as your normal user.${NC}"
-    exit 1
+    echo -e "${RED}ERROR: Do not run this script as root.${NC}"; exit 1
 fi
 
-echo -e "${GREEN}=== STARTING SERVER BOOTSTRAP ===${NC}"
+printf "\n${BOLD} 🛡️  SERVER BOOTSTRAP${NC}\n"
+printf "    ${DIM}Log → %s${NC}\n" "$LOGFILE"
 
-# 0. SUDO VALIDATION
 if ! sudo -v; then
-    echo -e "${RED}❌ Error: Sudo authentication failed.${NC}"
-    exit 1
+    echo -e "${RED}❌ Sudo authentication failed.${NC}"; exit 1
 fi
-# Keep sudo alive
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 
-# 1. SYSTEM UPDATE & DEPENDENCIES
-echo -e "${YELLOW}[1/9] Updating System & Installing Tools...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [1/9] SYSTEM UPDATE & DEPENDENCIES
+# ══════════════════════════════════════════════════════════════
+header "1/9" "System Update & Dependencies"
 
-# Correct timezone
-sudo timedatectl set-timezone Africa/Cairo
+task "Set timezone → Africa/Cairo"
+quietly sudo timedatectl set-timezone Africa/Cairo
+pass
 
-# Fix for minimal installs missing add-apt-repository (and install base script requirements)
-sudo apt-get update
-sudo apt-get install -y software-properties-common curl git rsync ufw
+task "Install base packages (curl, git, rsync, ufw)"
+quietly sudo apt-get update
+quietly sudo apt-get install -y software-properties-common curl git rsync ufw
+pass
 
-# Restoring the custom repos from the backed up file
+task "Restore custom PPAs"
 REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
 if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
-    echo "Restoring PPAs from backup list..."
     while IFS= read -r ppa; do
-        sudo add-apt-repository -y --no-update "$ppa"
+        quietly sudo add-apt-repository -y --no-update "$ppa"
     done < "$REPOS_FILE"
+    pass
 else
-    echo -e "${RED}⚠️  Repo list not found at: $REPOS_FILE${NC}"
+    skip "not found"
 fi
 
-# Repos update and upgrade after adding the custom repos
-sudo apt-get update && sudo apt-get upgrade -y
+task "Full system upgrade"
+quietly sudo apt-get update
+quietly sudo apt-get upgrade -y
+pass
 
-# Grant current user read-only access to root crontab (for backups without full sudo)
-echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null && sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
+task "Configure sudoers for backup cron"
+echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null
+sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
+pass
 
 
-# 2. DOCKER INSTALLATION & CONFIGURATION
-echo -e "${YELLOW}[2/9] Installing & Configuring Docker...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [2/9] DOCKER INSTALLATION & CONFIGURATION
+# ══════════════════════════════════════════════════════════════
+header "2/9" "Docker Installation & Configuration"
 
+task "Install Docker engine"
 if ! command -v docker &> /dev/null; then
-    curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker "$USER"
-    echo "Docker installed."
+    curl -fsSL https://get.docker.com 2>>"$LOGFILE" | sh >>"$LOGFILE" 2>&1
+    quietly sudo usermod -aG docker "$USER"
+    pass "installed"
 else
-    echo "Docker already installed."
+    pass "already installed"
 fi
 
-# Install regctl (for dockcheck container update checks)
+task "Install regctl"
 if ! command -v regctl &> /dev/null; then
-    sudo curl -fsSL https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl && sudo chmod +x /usr/local/bin/regctl
-    echo "regctl installed."
+    quietly sudo curl -fsSL https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+    sudo chmod +x /usr/local/bin/regctl
+    pass "installed"
 else
-    echo "regctl already installed."
+    pass "already installed"
 fi
 
-# Docker daemon settings (DNS + log rotation)
+task "Write Docker daemon.json"
 sudo mkdir -p /etc/docker
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
 {
@@ -90,24 +122,34 @@ cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
     }
 }
 EOF
-sudo systemctl restart docker
-echo -e "${GREEN}✓ Docker daemon configured & restarted${NC}"
+pass
+
+task "Restart Docker daemon"
+quietly sudo systemctl restart docker
+pass
 
 
-# 3. RESTORE INSTALLED PACKAGES
-echo -e "${YELLOW}[3/9] Restoring Installed Packages...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [3/9] RESTORE INSTALLED PACKAGES
+# ══════════════════════════════════════════════════════════════
+header "3/9" "Restore Installed Packages"
 
+task "Install packages from backup list"
 PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_installed_apps.txt"
 if [ -f "$PACKAGES_FILE" ]; then
-    echo "Installing packages from backup list..."
-    xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
+    quietly xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
+    pass
 else
-    echo -e "${RED}⚠️  Package list not found at: $PACKAGES_FILE${NC}"
+    skip "list not found"
 fi
 
 
-# 4. DIRECTORY SKELETON
-echo -e "${YELLOW}[4/9] Creating Directory Structure...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [4/9] DIRECTORY STRUCTURE & PERMISSIONS
+# ══════════════════════════════════════════════════════════════
+header "4/9" "Directory Structure & Permissions"
+
+task "Create /data directory tree"
 sudo mkdir -p /data/borg_backup
 sudo mkdir -p /data/paperless
 sudo mkdir -p /data/assets/torrents
@@ -116,80 +158,107 @@ sudo mkdir -p /data/assets/downloads
 sudo mkdir -p /data/assets/romm/{library,resources}
 sudo mkdir -p /data/assets/nextcloud_data
 sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM,Movies,Music,My_Shit,Shared}
+pass
 
-# ── Prepare Data Directories & Permissions ─────────────────────
-echo -e "${YELLOW}   Fixing directory permissions...${NC}"
+task "Set ownership & ACLs"
 sudo chown -R "$(id -u):$(id -g)" /data
 sudo chown -R 33:33 /data/assets/nextcloud_data
-sudo setfacl -R -m u:33:rwx /data/assets
-sudo setfacl -R -d -m u:33:rwx /data/assets
-echo -e "${GREEN}✓ Data directories ready${NC}"
+quietly sudo setfacl -R -m u:33:rwx /data/assets
+quietly sudo setfacl -R -d -m u:33:rwx /data/assets
+pass
 
 
-# 5. PYTHON REQUIREMENTS
-echo -e "${YELLOW}[5/9] Installing Python Libs...${NC}"
-pip3 install python-dotenv git-filter-repo cron-descriptor python-telegram-bot selenium flask --break-system-packages
+# ══════════════════════════════════════════════════════════════
+# [5/9] PYTHON LIBRARIES
+# ══════════════════════════════════════════════════════════════
+header "5/9" "Python Libraries"
+
+task "pip install requirements"
+quietly pip3 install python-dotenv git-filter-repo cron-descriptor \
+    python-telegram-bot selenium flask --break-system-packages
+pass
 
 
-# 6. SHELL ENVIRONMENT (ZSH + P10K)
-echo -e "${YELLOW}[6/9] Configuring Zsh Environment...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [6/9] SHELL ENVIRONMENT (ZSH + P10K)
+# ══════════════════════════════════════════════════════════════
+header "6/9" "Shell Environment (Zsh + P10k)"
 
-# A. Install Oh-My-Zsh
+task "Install Oh My Zsh"
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended >>"$LOGFILE" 2>&1
+    pass "installed"
+else
+    pass "already installed"
 fi
 
-# B. Install Powerlevel10k
+task "Install Powerlevel10k theme"
 if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]; then
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+    quietly git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \
+        "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+    pass "cloned"
+else
+    pass "already installed"
 fi
 
-# C. Install Plugins
+task "Install zsh-autosuggestions"
 if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]; then
-    git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+    quietly git clone https://github.com/zsh-users/zsh-autosuggestions \
+        "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+    pass "cloned"
+else
+    pass "already installed"
 fi
+
+task "Install zsh-syntax-highlighting"
 if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]; then
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
+    quietly git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
+        "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
+    pass "cloned"
+else
+    pass "already installed"
 fi
 
-# D. Restore Config Files
+task "Restore dotfiles"
 DOTFILES_DIR="$HOME/scripts/run_once/dotfiles"
-
 if [ -d "$DOTFILES_DIR" ]; then
-    echo "Restoring dotfiles from backup..."
-
     [ -f "$DOTFILES_DIR/zshrc" ]     && cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     [ -f "$DOTFILES_DIR/p10k.zsh" ]  && cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
     [ -f "$DOTFILES_DIR/hushlogin" ] && cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
     [ -f "$DOTFILES_DIR/nanorc" ]    && sudo cp "$DOTFILES_DIR/nanorc" "/etc/nanorc"
-
     mkdir -p "$HOME/.config"
-    rsync -av "$DOTFILES_DIR/config/" "$HOME/.config/"
+    quietly rsync -av "$DOTFILES_DIR/config/" "$HOME/.config/"
+    pass
 else
-    echo -e "${RED}Warning: Dotfiles backup not found. Skipping.${NC}"
+    skip "dotfiles dir not found"
 fi
 
-# E. Set Default Shell
+task "Set default shell → zsh"
 if [ "$SHELL" != "/usr/bin/zsh" ]; then
-    echo "Changing default shell to Zsh..."
     sudo chsh -s "$(which zsh)" "$USER"
+    pass "changed"
+else
+    pass "already zsh"
 fi
 
 
-# 7. UNBOUND DNS RESOLVER
-echo -e "${YELLOW}[7/9] Configuring Unbound DNS Resolver...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [7/9] UNBOUND DNS RESOLVER
+# ══════════════════════════════════════════════════════════════
+header "7/9" "Unbound DNS Resolver"
 
-# A. Download latest root hints
+task "Download root hints"
 sudo mkdir -p /usr/share/dns
 wget https://www.internic.net/domain/named.root -qO- | sudo tee /usr/share/dns/root.hints > /dev/null
+pass
 
-# B. Write Unbound configuration
+task "Write Unbound config"
 sudo mkdir -p /etc/unbound/unbound.conf.d
 sudo tee /etc/unbound/unbound.conf.d/pi-hole.conf > /dev/null <<EOF
 server:
     # BASICS
     verbosity: 0
-    interface: 0.0.0.0  # Listen on all interfaces (Critical)
+    interface: 0.0.0.0
     port: 5335
     do-ip4: yes
     do-udp: yes
@@ -205,88 +274,89 @@ server:
     harden-dnssec-stripped: yes
     use-caps-for-id: no
 
-    # PRIVACY (Hide network topology)
+    # PRIVACY
     private-address: 192.168.0.0/16
     private-address: 169.254.0.0/16
     private-address: 172.16.0.0/12
     private-address: 10.0.0.0/8
 
-    # ACCESS CONTROL (Who can use this?)
-    # 1. Localhost
+    # ACCESS CONTROL
     access-control: 127.0.0.0/8 allow
-    # 2. Home LAN
     access-control: 192.168.0.0/16 allow
-    # 3. Docker Containers (Standard Range)
     access-control: 172.16.0.0/12 allow
-    # 4. Docker Containers (Alternative Range / VPN)
     access-control: 10.0.0.0/8 allow
 EOF
+pass
 
-# C. Validate, enable & start
-sudo unbound-checkconf
-sudo systemctl enable unbound
-sudo systemctl restart unbound
-echo -e "${GREEN}✓ Unbound DNS configured and running on port 5335${NC}"
+task "Validate & start Unbound"
+quietly sudo unbound-checkconf
+quietly sudo systemctl enable unbound
+quietly sudo systemctl restart unbound
+pass "port 5335"
 
 
-# 8. RESTORE SYSTEM CONFIGURATIONS
-echo -e "${YELLOW}[8/9] Restoring System Configurations...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [8/9] SYSTEM CONFIGURATIONS
+# ══════════════════════════════════════════════════════════════
+header "8/9" "System Configurations"
+
 SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 
-if [ -d "$SYSTEM_CONFIGS_DIR" ]; then
-    # A. Hosts
-    if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
-        if ! cmp -s "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts; then
-            sudo cp /etc/hosts "/etc/hosts.backup.$(date +%Y%m%d_%H%M%S)"
-            sudo cp "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts
-            sudo chown root:root /etc/hosts
-            sudo chmod 644 /etc/hosts
-            echo -e "${GREEN}✓ /etc/hosts restored${NC}"
-        else
-            echo -e "${GREEN}✓ /etc/hosts already up to date${NC}"
-        fi
+task "Restore /etc/hosts"
+if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
+    if ! cmp -s "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts; then
+        sudo cp /etc/hosts "/etc/hosts.backup.$(date +%Y%m%d_%H%M%S)"
+        sudo cp "$SYSTEM_CONFIGS_DIR/hosts.txt" /etc/hosts
+        sudo chown root:root /etc/hosts
+        sudo chmod 644 /etc/hosts
+        pass "updated"
+    else
+        pass "already current"
     fi
-    # B. User Crontab
-    if [ -f "$SYSTEM_CONFIGS_DIR/user_crontab.txt" ]; then
-        crontab "$SYSTEM_CONFIGS_DIR/user_crontab.txt"
-        echo -e "${GREEN}✓ User crontab restored${NC}"
-    fi
-    # C. Root Crontab
-    if [ -f "$SYSTEM_CONFIGS_DIR/root_crontab.txt" ] && ! grep -q "Root crontab skipped" "$SYSTEM_CONFIGS_DIR/root_crontab.txt"; then
-        sudo crontab "$SYSTEM_CONFIGS_DIR/root_crontab.txt"
-        echo -e "${GREEN}✓ Root crontab restored${NC}"
-    fi
+else
+    skip "not found"
+fi
+
+task "Restore user crontab"
+if [ -f "$SYSTEM_CONFIGS_DIR/user_crontab.txt" ]; then
+    crontab "$SYSTEM_CONFIGS_DIR/user_crontab.txt"
+    pass
+else
+    skip "not found"
+fi
+
+task "Restore root crontab"
+if [ -f "$SYSTEM_CONFIGS_DIR/root_crontab.txt" ] && ! grep -q "Root crontab skipped" "$SYSTEM_CONFIGS_DIR/root_crontab.txt"; then
+    sudo crontab "$SYSTEM_CONFIGS_DIR/root_crontab.txt"
+    pass
+else
+    skip "not found or empty"
 fi
 
 
-# 9. FIREWALL SETUP
-echo -e "${YELLOW}[9/9] Restoring Firewall Rules...${NC}"
+# ══════════════════════════════════════════════════════════════
+# [9/9] FIREWALL
+# ══════════════════════════════════════════════════════════════
+header "9/9" "Firewall Rules"
+
+task "Run firewall setup script"
 FIREWALL_SCRIPT="$HOME/scripts/run_once/setup-firewall.sh"
 if [ -f "$FIREWALL_SCRIPT" ]; then
-    echo "🔥 Setting up firewall rules..."
-    bash "$FIREWALL_SCRIPT"
-    echo "✅ Firewall configured."
+    quietly bash "$FIREWALL_SCRIPT"
+    pass
 else
-    echo "⚠️  Firewall script not found at: $FIREWALL_SCRIPT"
+    skip "script not found"
 fi
 
-# ==============================================================================
-echo -e "${GREEN}=== BOOTSTRAP COMPLETE ===${NC}"
-echo -e "${YELLOW}⚠️  CRITICAL NEXT STEPS:${NC}"
-echo ""
-echo "1. VERIFY RESTORED ITEMS:"
-echo "   ✓ /etc/hosts          - Restored automatically"
-echo "   ✓ Crontabs            - Restored automatically"
-echo "   ✓ Dotfiles            - Restored automatically"
-echo "   ✓ Firewall Rules      - Restored automatically"
-echo "   ✓ Docker daemon.json  - Configured automatically"
-echo "   ✓ Unbound DNS         - Configured automatically"
-echo "   ✓ Installed Packages  - Restored automatically"
-echo ""
-echo "2. Nextcloud post-restore:"
-echo "   Run after 'docker compose up -d' on Nextcloud:"
-echo "   $HOME/scripts/run_once/nextcloud_post-restore_fix.sh"
-echo "   (Safe to run anytime — skips automatically if not needed)"
-echo ""
-echo "3. REBOOT:"
-echo "   sudo reboot"
+
+# ══════════════════════════════════════════════════════════════
+# DONE
+# ══════════════════════════════════════════════════════════════
+ELAPSED=$(( SECONDS - START_TIME ))
+printf "\n${GREEN}${BOLD} ✅ BOOTSTRAP COMPLETE${NC} ${DIM}(%dm %ds)${NC}\n" "$((ELAPSED/60))" "$((ELAPSED%60))"
+printf "    ${GREEN}%d passed${NC} · ${YELLOW}%d skipped${NC}\n\n" "$PASS_COUNT" "$SKIP_COUNT"
+printf "    ${DIM}Full log → %s${NC}\n\n" "$LOGFILE"
+printf " ${BOLD}Next steps:${NC}\n"
+printf "    1. ${BOLD}Reboot:${NC}  sudo reboot\n"
+printf "    2. After Nextcloud ${DIM}docker compose up -d${NC}, run:\n"
+printf "       ~/scripts/run_once/nextcloud_post-restore_fix.sh\n\n"
