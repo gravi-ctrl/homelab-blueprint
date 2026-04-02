@@ -48,9 +48,7 @@ if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
         sudo add-apt-repository -y "$ppa"
     done < "$REPOS_FILE"
 else
-    echo -e "${RED}⚠️  Repo list not found. Adding PPAs manually...${NC}"
-    sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
-    sudo add-apt-repository -y ppa:unit193/encryption
+    echo -e "${RED}⚠️  Repo list not found at: $REPOS_FILE${NC}"
 fi
 sudo apt-get update && sudo apt-get upgrade -y
 
@@ -101,8 +99,7 @@ if [ -f "$PACKAGES_FILE" ]; then
     echo "Installing packages from backup list..."
     xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
 else
-    echo -e "${RED}⚠️  Package list not found. Installing core tools...${NC}"
-    sudo apt-get install -y veracrypt btop age zstd fastfetch unbound mariadb-client ncdu zip unzip acl inotify-tools samba python3 python3-pip python3-venv fzf bat zsh
+    echo -e "${RED}⚠️  Package list not found at: $PACKAGES_FILE${NC}"
 fi
 
 
