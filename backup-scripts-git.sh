@@ -44,29 +44,7 @@ if [ -f "$TARGET_DIR/script_indexer.py" ]; then
 fi
 
 # B. Installed Packages
-BASE_FILE="$SNAPSHOT_DIR/base-packages.txt"
-
-# 1. Generate the baseline if it doesn't exist (Runs ONLY ONCE)
-if [ ! -f "$BASE_FILE" ]; then
-    echo "Generating base package list via Docker (first run only)..."
-    if command -v docker &> /dev/null && systemctl is-active --quiet docker; then
-        docker run --rm "ubuntu:$(lsb_release -cs)" bash -c "apt-mark showmanual | sort" > "$BASE_FILE"
-    else
-        echo "⚠️  Docker is not running or installed. Cannot generate baseline."
-    fi
-fi
-
-# 2. Subtract baseline from current installed packages
-if [ -f "$BASE_FILE" ]; then
-    comm -23 \
-      <(apt-mark showmanual | sort) \
-      <(sort "$BASE_FILE") \
-      > "$SNAPSHOT_DIR/my_installed_apps.txt"
-else
-    # Fallback just in case the Docker command failed
-    echo "⚠️  No baseline found — saving full list"
-    apt-mark showmanual | sort > "$SNAPSHOT_DIR/my_installed_apps.txt"
-fi
+apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
 # C. Dotfiles
 [ -f ~/.zshrc ] && cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
