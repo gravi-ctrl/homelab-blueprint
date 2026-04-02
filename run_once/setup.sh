@@ -45,11 +45,13 @@ REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
 if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
     echo "Restoring PPAs from backup list..."
     while IFS= read -r ppa; do
-        sudo add-apt-repository -y "$ppa"
+        sudo add-apt-repository -y --no-update "$ppa"
     done < "$REPOS_FILE"
 else
     echo -e "${RED}⚠️  Repo list not found at: $REPOS_FILE${NC}"
 fi
+
+# Repos update and upgrade after adding the custom repos
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Grant current user read-only access to root crontab (for backups without full sudo)
