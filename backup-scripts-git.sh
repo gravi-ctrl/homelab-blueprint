@@ -43,11 +43,20 @@ if [ -f "$TARGET_DIR/script_indexer.py" ]; then
     python3 "$TARGET_DIR/script_indexer.py"
 fi
 
-# B. Installed Packages (only user-installed, not base OS)
-comm -23 \
-  <(apt-mark showmanual | sort) \
-  <(gzip -dc /var/log/installer/initial-status.gz | sed -n 's/^Package: //p' | sort) \
-  > "$SNAPSHOT_DIR/my_installed_apps.txt"
+# B. Installed Packages (subtract base OS)
+apt-mark showmanual | sort > ~/scripts/run_once/system_configs/base-packages.txt
+
+BASE_FILE="$SNAPSHOT_DIR/base-packages.txt"
+
+if [ -f "$BASE_FILE" ]; then
+    comm -23 \
+      <(apt-mark showmanual | sort) \
+      <(sort "$BASE_FILE") \
+      > "$SNAPSHOT_DIR/my_installed_apps.txt"
+else
+    echo "⚠️  No baseline found — saving full list"
+    apt-mark showmanual | sort > "$SNAPSHOT_DIR/my_installed_apps.txt"
+fi
 
 # C. Dotfiles
 [ -f ~/.zshrc ] && cp ~/.zshrc "$TARGET_DIR/run_once/dotfiles/zshrc"
