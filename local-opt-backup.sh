@@ -4,7 +4,7 @@
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
-#   2. Decrypt & Extract:   sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C /
+#   2. Decrypt & Extract:   sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C /
 #   3. Restart SSH:         sudo systemctl restart ssh
 #   4. Start Docker:        sudo systemctl start docker
 # ==============================================================================
