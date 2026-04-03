@@ -127,12 +127,12 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 
 *   Extract a specific directory from the backup:
     ```bash
-    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C / 'opt/stacks/nextcloud/html/extra-apps'
+    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / 'opt/stacks/nextcloud/html/extra-apps'
     ```
 
 *   Extract only `.env` files (secrets) from the backup:
     ```bash
-    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --use-compress-program=zstd -xf - -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
+    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
     ```
 
 ---
