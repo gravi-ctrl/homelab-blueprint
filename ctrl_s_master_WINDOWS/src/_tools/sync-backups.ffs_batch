@@ -20,6 +20,7 @@
             <Item>\RECYCLE?\</Item>
             <Item>*\thumbs.db</Item>
             <Item>*\desktop.ini</Item>
+            <Item>*\.git</Item>
             <Item>*\.stfolder\</Item>
             <Item>*\.stversions\</Item>
             <Item>\_pvt\</Item>
