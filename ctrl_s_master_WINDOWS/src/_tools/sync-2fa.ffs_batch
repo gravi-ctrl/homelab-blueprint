@@ -21,6 +21,7 @@
             <Item>*\thumbs.db</Item>
             <Item>*\desktop.ini</Item>
             <Item>\aegis-decrypt.py</Item>
+            <Item>*\.git</Item>
             <Item>*\.stfolder\</Item>
             <Item>*\.stversions\</Item>
         </Exclude>
