@@ -1,4 +1,5 @@
-# Personal Data & Vault Automation Suite
+# ctrl_s_master
+> *Named after the universal shortcut for saving: CTRL + S.*
 
 A robust, automated suite for creating local archives of critical data from services like Bitwarden, and for syncing other key files (like Raindrop.io, Obsidian notes, etc.). The entire process is orchestrated, logged, and sends email notifications upon completion or failure.
 
@@ -170,7 +171,8 @@ The suite is designed for maximum reliability using a "Supervisor and Engine" mo
 
 ## Project Structure
 
-This tree shows the clean, organized layout of the project, with application code neatly separated into the `src` directory.
+This tree shows the clean, organized layout of the project, with application code neatly separated into the `src` directory.
+
 
 ```
 ctrl_s_master/
@@ -208,7 +210,8 @@ ctrl_s_master/
 │
 └── 📁 venv/                              # (Hidden & Gitignored) The Python virtual environment.
 ```
-
+
+
 ---
 
 ### Author  
