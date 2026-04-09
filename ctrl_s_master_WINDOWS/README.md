@@ -1,4 +1,4 @@
-# ctrl_s_master `windows`
+# ctrl_s_master *(windows)*
 > *Named after the universal shortcut for saving: CTRL + S.*
 
 A robust, automated suite for creating local archives of critical data from services like Bitwarden, and for syncing other key files (like Raindrop.io, Obsidian notes, etc.). The entire process is orchestrated, logged, and sends email notifications upon completion or failure.
