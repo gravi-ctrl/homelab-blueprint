@@ -32,12 +32,12 @@
     <FolderPairs>
         <Pair>
             <Left>D:\x\@Sync\My_Shit\aegis</Left>
-            <Right>../2fa</Right>
+            <Right>%AUTOMATION_ROOT%/2fa</Right>
         </Pair>
     </FolderPairs>
     <Errors Ignore="true" Retry="3" Delay="5"/>
     <PostSyncCommand Condition="Completion"/>
-    <LogFolder>../_logs/</LogFolder>
+    <LogFolder>%AUTOMATION_ROOT%/_logs/</LogFolder>
     <EmailNotification Condition="Always"/>
     <GridViewType>Action</GridViewType>
     <Batch>
