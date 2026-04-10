@@ -34,6 +34,21 @@ Make sure you have the following software installed on your system:
 2. **Configure the Auto-Unlocker:** The script looks for a plain-text file in your user directory containing your container password. 
    * Open Notepad, type **only** your `vaults.hc` password, and save it as `.vc_secret` inside your `C:\Users\<YourUsername>\` folder.
 
+### 🛡️ Hardening the Secret File (Recommended)
+While your user directory is private, you can further secure the `.vc_secret` file using Windows native tools. Open a Command Prompt and run these three commands to hide, lock down, and encrypt the secret:
+
+```cmd
+:: 1. Hide it from normal view and system searches
+attrib +h +s "%USERPROFILE%\.vc_secret"
+
+:: 2. Restrict access exclusively to your account (and the SYSTEM)
+icacls "%USERPROFILE%\.vc_secret" /inheritance:r /grant "%USERNAME%:R" /grant "SYSTEM:F"
+
+:: 3. Encrypt the file content using Windows EFS (tied to your login)
+cipher /e "%USERPROFILE%\.vc_secret"
+```
+*Note: The file remains readable by the `run.bat` script as long as it runs under your user account.*
+
 ### 3. Container Initialization
 
 **Critical Step:** You must configure the internal structure of your encrypted container once before automation can run.
@@ -186,10 +201,10 @@ ctrl_s_master/
 ├── 🔑 .env.example                       # Template for all configuration variables.
 ├── 📦 requirements.txt                   # Python dependencies.
 │
-├── ⚙️ setup.bat                      # One-time script to build the entire environment.
+├── ⚙️ setup.bat                          # One-time script to build the entire environment.
 ├── 🔄 update.bat                         # Updates all dependencies.
-├── ▶️ run.bat                 # The Supervisor: Handles mounting, running, and rotating.
-├── 🧪 tests.bat                      # Launcher for the automated test suite.
+├── ▶️ run.bat                            # The Supervisor: Handles mounting, running, and rotating.
+├── 🧪 tests.bat                          # Launcher for the automated test suite.
 │
 ├── 📁 src/                               # Core Application Code.
 │   ├── 🐍 master_automation.py           # The Engine.
