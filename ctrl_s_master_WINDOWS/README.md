@@ -38,14 +38,16 @@ Make sure you have the following software installed on your system:
 While your user directory is private, you can further secure the `.vc_secret` file using Windows native tools. Open a Command Prompt and run these three commands to hide, lock down, and encrypt the secret:
 
 ```cmd
+:: Win+R then %USERPROFILE% and open a CMD here
+
 :: 1. Hide it from normal view and system searches
-attrib +h +s "%USERPROFILE%\.vc_secret"
+attrib +h +s ".vc_secret"
 
 :: 2. Restrict access exclusively to your account (and the SYSTEM)
-icacls "%USERPROFILE%\.vc_secret" /inheritance:r /grant "%USERNAME%:R" /grant "SYSTEM:F"
+icacls ".vc_secret" /inheritance:r /grant "%USERNAME%:R" /grant "SYSTEM:F"
 
 :: 3. Encrypt the file content using Windows EFS (tied to your login)
-cipher /e "%USERPROFILE%\.vc_secret"
+cipher /e ".vc_secret"
 ```
 *Note: The file remains readable by the `run.bat` script as long as it runs under your user account.*
 
