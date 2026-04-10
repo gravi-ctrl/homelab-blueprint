@@ -49,7 +49,7 @@ BITWARDEN_PERSONAL_PASSWORD = os.getenv("BITWARDEN_PERSONAL_PASSWORD")
 BITWARDEN_WORK_PASSWORD = os.getenv("BITWARDEN_WORK_PASSWORD")
 KDBX_PERSONAL_PASSWORD = os.getenv("KDBX_PERSONAL_PASSWORD")
 KDBX_WORK_PASSWORD = os.getenv("KDBX_WORK_PASSWORD")
-FFS_PATH = os.getenv("FFS_PATH")
+FFS_PATH = str(ROOT_DIR / os.getenv("FFS_PATH")) if os.getenv("FFS_PATH") else None
 BW_EXPORT_SCRIPT_PATH = ROOT_DIR / os.getenv("BW_EXPORT_SCRIPT_PATH", "")
 RAINDROP_BACKUP_SCRIPT_PATH = ROOT_DIR / os.getenv("RAINDROP_BACKUP_SCRIPT_PATH", "")
 EMAIL_HOST, EMAIL_PORT, EMAIL_SENDER, EMAIL_PASSWORD, EMAIL_RECIPIENT = (
@@ -162,6 +162,8 @@ def run_ffs_batch(filename: str, dry_run=False):
     batch_path = TOOLS_DIR / filename
     if not batch_path.exists(): msg = f"FATAL: Batch file not found at '{batch_path}'"; print(msg); return False, msg
     ffs_executable = FFS_PATH
+    print(f"DEBUG FFS path: {ffs_executable}")
+    print(f"DEBUG exists: {Path(ffs_executable).exists() if ffs_executable else 'N/A'}")
     if not ffs_executable or not Path(ffs_executable).exists(): msg = f"FATAL: FreeFileSync executable not found or not configured in .env (FFS_PATH)."; print(msg); return False, msg
     
     full_command = f'"{ffs_executable}" "{batch_path}"'
