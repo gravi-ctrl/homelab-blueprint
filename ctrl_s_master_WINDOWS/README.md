@@ -224,3 +224,8 @@ ctrl_s_master/
 │
 └── C:\Users\<User>\.vc_secret            # [EXTERNAL] Secure Keyfile for auto-unlock.
 ```
+
+---
+
+### Author
+This project was created and is maintained by myself - [gravi-ctrl](https://github.com/gravi-ctrl).
