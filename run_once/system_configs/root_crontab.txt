@@ -20,4 +20,4 @@ A=/data/assets
 30 5 * * 4 $S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"
 
 # ctrl_s_master Project
-0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/linux/run.sh"
+0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/run.sh"
