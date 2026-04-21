@@ -19,5 +19,5 @@
 | **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/self-ho...` |
 | **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Thursday | `$S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
-| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/linux/run.sh"` |
+| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/run.sh"` |
 
