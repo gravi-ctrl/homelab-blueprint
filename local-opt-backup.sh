@@ -223,7 +223,15 @@ fi
 if [ $TAR_EXIT_CODE -eq 0 ]; then
     echo "✅ Backup successful."
     echo "Verifying backup integrity..."
-    if age -d -i /root/.backup-key.txt "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t; then
+    if age -d -i /root/.backup-key.txt "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t 2>&1 | \
+    sed "s|/\*stdin\*\\\\|$DOCKER_FILENAME|" | \
+    awk 'match($0, /([0-9]+) bytes/, a) {
+        b = a[1]+0
+        if (b >= 2^30) hr = sprintf("%.2f GiB", b/2^30)
+        else if (b >= 2^20) hr = sprintf("%.2f MiB", b/2^20)
+        else hr = sprintf("%.2f KiB", b/2^10)
+        sub(/[0-9]+ bytes/, hr)
+    } 1'; then
         echo "✅ Backup verified (decryption + integrity)"
         ls -1t "$BACKUP_DIR"/docker-stacks-*.tar.zst.age \
             | tail -n +3 \
