@@ -56,26 +56,63 @@ source $ZSH/oh-my-zsh.sh
 # 1. WELCOME MESSAGE (Function)
 # ==============================================================================
 function actual_show_welcome_msg() {
-    # Define Colors
-    local P="\e[1;35m"  # Purple
-    local R="\e[1;31m"  # Red
-    local G="\e[32m"    # Green
-    local Y="\e[33m"    # Yellow
-    local C="\e[36m"    # Cyan
-    local W="\e[0m"     # White/Reset
-    local D="\e[90m"    # Dark Gray
+    local P="\e[1;35m" R="\e[1;31m" G="\e[32m" Y="\e[33m"
+    local C="\e[36m"   W="\e[0m"    D="\e[90m"
 
     echo -e "\n${P}🚀 System Briefing for${W} ${R}$USER${W}"
     echo -e "${D}------------------------------------------------------------------${W}"
-
     printf "  \e[1;4m%-18s\e[0m               \e[1;4m%-20s\e[0m\n\n" "Quick Aliases" "Shortcuts & Nano"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "welcome" "Briefing" "Ctrl+R" "FZF History"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "guestwifi" "WiFi Toggle" "Ctrl+T" "FZF Files"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dps" "Docker Table" "Alt+C" "FZF Jump"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} %-18s\n" "dc" "Update Check" "→ / End" "Accept Suggest"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "extract" "Unzip/Tar" "Ctrl+Spc"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "stamp" "Timestamp" "Alt+N" "Nano Line #s"
-    printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${C}%-10s${W} ${D}→${W} %-18s\n" "cht" "Cmd Help" "Alt+M" "Nano Mouse"
+
+    # Left column — "alias|description"  (all green, add/remove rows freely)
+    local -a L=(
+        "welcome|Briefing"
+        "guestwifi|WiFi Toggle"
+        "dps|Docker Table"
+        "dc|Update Check"
+        "extract|Unzip/Tar"
+        "vc-mount|Mount Vault"
+        "vc-umount|Unmount Vault"
+        "stamp|Timestamp"
+        "cht|Cmd Help"
+    )
+
+    # Right column — "key|description|color"  (Y=yellow, C=cyan, EXECUTE triggers red special case)
+    local -a R=(
+        "Ctrl+R|FZF History|Y"
+        "Ctrl+T|FZF Files|Y"
+        "Alt+C|FZF Jump|Y"
+        "→ / End|Accept Suggest|Y"
+        "Ctrl+Spc|EXECUTE|Y"
+        "Alt+N|Nano Line #s|C"
+        "Alt+M|Nano Mouse|C"
+    )
+
+    local i lk lv rk rv rc color
+    local max=$(( ${#L[@]} > ${#R[@]} ? ${#L[@]} : ${#R[@]} ))
+
+    for (( i=1; i<=max; i++ )); do
+        lk="${L[$i]%%|*}"
+        lv="${L[$i]#*|}"
+        rk="${R[$i]%%|*}"
+        rv="${${R[$i]#*|}%%|*}"
+        rc="${R[$i]##*|}"
+
+        case "$rc" in Y) color="$Y" ;; C) color="$C" ;; *) color="$W" ;; esac
+
+        if [[ -n "${L[$i]}" ]]; then
+            printf "  ${G}%-10s${W} ${D}→${W} %-14s" "$lk" "$lv"
+        else
+            printf "  %-28s" ""
+        fi
+
+        if [[ "$rv" == "EXECUTE" ]]; then
+            printf "  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "$rk"
+        elif [[ -n "${R[$i]}" ]]; then
+            printf "  ${color}%-10s${W} ${D}→${W} %-18s\n" "$rk" "$rv"
+        else
+            printf "\n"
+        fi
+    done
 
     echo -e "${D}------------------------------------------------------------------${W}\n"
 }
@@ -165,6 +202,9 @@ bindkey '^ ' autosuggest-execute
 # ==============================================================================
 # 6. CUSTOM FUNCTIONS
 # ==============================================================================
+# VeraCrypt mount and unmount
+vc-mount() { sudo veracrypt --text --pim=0 --keyfiles="" --protect-hidden=no "$1" "$2" }
+vc-umount() { sudo veracrypt --text --dismount "$1" }
 
 # Universal Archive Extractor
 extract() {
@@ -237,3 +277,4 @@ chpwd() {
         echo -e "  ↻ \033[3;97m$line\033[0m"
     done
 }
+
