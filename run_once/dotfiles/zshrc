@@ -63,54 +63,37 @@ function actual_show_welcome_msg() {
     echo -e "${D}------------------------------------------------------------------${W}"
     printf "  \e[1;4m%-18s\e[0m               \e[1;4m%-20s\e[0m\n\n" "Quick Aliases" "Shortcuts & Nano"
 
-    # Left column — "alias|description"  (all green, add/remove rows freely)
-    local -a L=(
-        "welcome|Briefing"
-        "guestwifi|WiFi Toggle"
-        "dps|Docker Table"
-        "dc|Update Check"
-        "extract|Unzip/Tar"
-        "vc-mount|Mount Vault"
-        "vc-umount|Unmount Vault"
-        "stamp|Timestamp"
-        "cht|Cmd Help"
+    # Format: "left_alias|left_desc|right_key|right_desc|right_color"
+    # right_color: Y=yellow  C=cyan  X=EXECUTE special
+    # Omit right fields entirely for left-only rows
+    local -a rows=(
+        "welcome|Briefing|Ctrl+R|FZF History|Y"
+        "guestwifi|WiFi Toggle|Ctrl+T|FZF Files|Y"
+        "dps|Docker Table|Alt+C|FZF Jump|Y"
+        "dc|Update Check|→ / End|Accept Suggest|Y"
+        "extract|Unzip/Tar|Ctrl+Spc|EXECUTE|X"
+        "vc-mount|Mount Vault|Alt+N|Nano Line #s|C"
+        "vc-umount|Unmount Vault|Alt+M|Nano Mouse|C"
+        "stamp|Timestamp|||"
+        "cht|Cmd Help|||"
     )
 
-    # Right column — "key|description|color"  (Y=yellow, C=cyan, EXECUTE triggers red special case)
-    local -a R=(
-        "Ctrl+R|FZF History|Y"
-        "Ctrl+T|FZF Files|Y"
-        "Alt+C|FZF Jump|Y"
-        "→ / End|Accept Suggest|Y"
-        "Ctrl+Spc|EXECUTE|Y"
-        "Alt+N|Nano Line #s|C"
-        "Alt+M|Nano Mouse|C"
-    )
-
-    local i lk lv rk rv rc color
-    local max=$(( ${#L[@]} > ${#R[@]} ? ${#L[@]} : ${#R[@]} ))
-
-    for (( i=1; i<=max; i++ )); do
-        lk="${L[$i]%%|*}"
-        lv="${L[$i]#*|}"
-        rk="${R[$i]%%|*}"
-        rv="${${R[$i]#*|}%%|*}"
-        rc="${R[$i]##*|}"
+    local row rest lk lv rk rv rc color
+    for row in "${rows[@]}"; do
+        lk="${row%%|*}";  rest="${row#*|}"
+        lv="${rest%%|*}"; rest="${rest#*|}"
+        rk="${rest%%|*}"; rest="${rest#*|}"
+        rv="${rest%%|*}"
+        rc="${rest##*|}"
 
         case "$rc" in Y) color="$Y" ;; C) color="$C" ;; *) color="$W" ;; esac
 
-        if [[ -n "${L[$i]}" ]]; then
-            printf "  ${G}%-10s${W} ${D}→${W} %-14s" "$lk" "$lv"
-        else
-            printf "  %-28s" ""
-        fi
-
         if [[ "$rv" == "EXECUTE" ]]; then
-            printf "  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "$rk"
-        elif [[ -n "${R[$i]}" ]]; then
-            printf "  ${color}%-10s${W} ${D}→${W} %-18s\n" "$rk" "$rv"
+            printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${Y}%-10s${W} ${D}→${W} ${R}EXECUTE${W} ${D}Sug${W}\n" "$lk" "$lv" "$rk"
+        elif [[ -n "$rk" ]]; then
+            printf "  ${G}%-10s${W} ${D}→${W} %-14s  ${color}%-10s${W} ${D}→${W} %-18s\n" "$lk" "$lv" "$rk" "$rv"
         else
-            printf "\n"
+            printf "  ${G}%-10s${W} ${D}→${W} %-14s\n" "$lk" "$lv"
         fi
     done
 
