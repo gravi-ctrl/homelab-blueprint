@@ -189,6 +189,36 @@ bindkey '^ ' autosuggest-execute
 vc-mount() { sudo veracrypt --text --pim=0 --keyfiles="" --protect-hidden=no "$1" "$2" }
 vc-umount() { sudo veracrypt --text --dismount "$1" }
 
+# INSULTS
+sudo() {
+    # Step 1: Try to authenticate FIRST.
+    # 'sudo -v' only checks the password and updates the timestamp.
+    if ! command sudo -v; then
+        local insults=(
+            "I'd explain why that's wrong, but I'm fresh out of crayons."
+            "Did you type that with your forehead?"
+            "I am literally a rock that humanity tricked into thinking, and I am still disappointed in you."
+            "If you were a hacker in a movie, you'd be the guy who gets caught in the first five minutes."
+            "Error 404: User's brain cells not found."
+            "Every time you get this wrong, a tiny piece of my RAM weeps."
+            "Speak friend and enter. Or just mash your meaty paws on the keyboard again, whatever."
+            "[Sighs heavily in binary]"
+            "I'm not saying you're dumb, but my password hash has more entropy than your thoughts."
+            "Please step away from the keyboard and rethink your life choices."
+            "Even my random number generator is more predictable than your typing."
+            "I've seen better hand-eye coordination from a roomba."
+        )
+        local random_index=$(( RANDOM % ${#insults[@]} + 1 ))
+        print -P "%B%F{red}${insults[$random_index]}%f%b"
+        return 1
+    fi
+
+    # Step 2: Run the actual command.
+    # Because 'sudo -v' already authenticated you, this skips the password prompt.
+    # If you misspell the command here, you get a normal error, NOT an insult.
+    command sudo "$@"
+}
+
 # Universal Archive Extractor
 extract() {
     if [[ -f "$1" ]]; then
