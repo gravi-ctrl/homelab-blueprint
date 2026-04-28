@@ -191,8 +191,6 @@ vc-umount() { sudo veracrypt --text --dismount "$1" }
 
 # INSULTS
 sudo() {
-    # Step 1: Try to authenticate FIRST.
-    # 'sudo -v' only checks the password and updates the timestamp.
     if ! command sudo -v; then
         local insults=(
             "I'd explain why that's wrong, but I'm fresh out of crayons."
@@ -213,9 +211,6 @@ sudo() {
         return 1
     fi
 
-    # Step 2: Run the actual command.
-    # Because 'sudo -v' already authenticated you, this skips the password prompt.
-    # If you misspell the command here, you get a normal error, NOT an insult.
     command sudo "$@"
 }
 
