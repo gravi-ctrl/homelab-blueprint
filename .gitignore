@@ -16,13 +16,9 @@
 **/*.bak
 
 # ctrl_s_master
-**/bw/
-**/FreeFileSync/
 **/_logs/
 **/_dry_run_output/
 **/vaults.hc
-.temp_env_handoff
-**/.temp_env_handoff
 **/vaults/
 **/2fa/
 **/backups/
