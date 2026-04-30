@@ -8,7 +8,6 @@
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
 | `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |
 | `cleanup_script.py` | Cleans folders (files AND subdirs), keeping recent or deleting all | Daily 1am and 1pm |
-| `cron-guard` | Runs a command, captures output, and Telegrams on failure with logs | On Failure |
 | `cron-guard.py` | Runs a command, captures output safely, and Telegrams on failure with logs | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
