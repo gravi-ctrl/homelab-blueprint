@@ -12,6 +12,7 @@ bsdutils
 btop
 btrfs-progs
 ca-certificates
+chrony
 containerd.io
 cryptsetup
 curl
@@ -34,9 +35,11 @@ grep
 grub-pc
 gzip
 hostname
+hwctl
 init
 inotify-tools
 jq
+kdump-tools
 libnss3-tools
 linux-generic
 login
@@ -63,8 +66,10 @@ python3-venv
 rsync
 samba
 snapd
+software-properties-common
 sqlite3
 sudo
+sudo-rs
 systemd
 systemd-resolved
 systemd-sysv
