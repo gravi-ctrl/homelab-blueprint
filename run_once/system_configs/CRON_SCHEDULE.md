@@ -4,20 +4,20 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `$S/cron-guard "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "...` |
-| **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard "Obsidian Notes Sync" "python3 $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal' 'Obsid...` |
-| **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `$S/cron-guard "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_backup $...` |
-| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `$S/cron-guard "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com...` |
-| **Apply file renaming rules to Paperless-ngx documents** | At 04:15 | `$S/cron-guard "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
-| **Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git** | At 05:00 | `$S/cron-guard "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
-| **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"` |
+| **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `python3 $S/cron-guard.py "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVE...` |
+| **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `python3 $S/cron-guard.py "Obsidian Notes Sync" "python3 $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/perso...` |
+| **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `python3 $S/cron-guard.py "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calenda...` |
+| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `python3 $S/cron-guard.py "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubuser...` |
+| **Apply file renaming rules to Paperless-ngx documents** | At 04:15 | `python3 $S/cron-guard.py "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
+| **Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git** | At 05:00 | `python3 $S/cron-guard.py "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
+| **Check for available Docker container updates and notify** | At 09:00 | `python3 $S/cron-guard.py "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"` |
 
 
 ## ⚡ Root Cron
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
 | **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
-| **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/self-ho...` |
-| **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Thursday | `$S/cron-guard "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
-| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard "ctrl_s_master" "$S/ctrl_s_master/run.sh"` |
+| **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `python3 $S/cron-guard.py "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Bac...` |
+| **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Thursday | `python3 $S/cron-guard.py "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
+| **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && python3 $S/cron-guard.py "ctrl_s_master" "$S/ctrl_s_master/run.sh"` |
 
