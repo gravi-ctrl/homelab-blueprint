@@ -63,7 +63,8 @@ def main():
         sys.exit(1)
 
     job_name = sys.argv[1]
-    command = " ".join(sys.argv[2:])
+    
+    command = subprocess.list2cmdline(sys.argv[2:])
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
@@ -75,6 +76,7 @@ def main():
     child_env = os.environ.copy()
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
+    child_env["PYTHONUNBUFFERED"] = "1"
 
     log_queue = collections.deque(maxlen=10)
     
@@ -85,9 +87,9 @@ def main():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8', # Force cron-guard to read output as UTF-8
+            encoding='utf-8', 
             errors='replace', 
-            env=child_env     # Inject the UTF-8 environment
+            env=child_env     
         ) as process:
             for line in process.stdout:
                 log_queue.append(line.rstrip('\n'))
