@@ -11,22 +11,22 @@ A=/data/assets
 # | | | | |
 # * * * * *
 # Update NextDNS IP and monitor server/internet health
-*/5 * * * * python3 $S/cron-guard.py "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
+*/5 * * * * $S/cron-guard.py "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
 
 # Sync Personal and Work Obsidian vaults to Git
-*/15 * * * * python3 $S/cron-guard.py "Obsidian Notes Sync" "python3 $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; python3 $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
+*/15 * * * * $S/cron-guard.py "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
 # Rotate backups (retain recent) and purge download watch folder
-0 0,12 * * * python3 $S/cron-guard.py "Cleanup Job" "python3 $S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_backup $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
+0 0,12 * * * $S/cron-guard.py "Cleanup Job" "$S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_backup $A/syncthing/Backup/antennapod $A/downloads/watch::DELETE_ALL"
 
 # Update Pi-hole Gravity (adlists) and apply mmotti regex rules
-0 1 * * * python3 $S/cron-guard.py "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
+0 1 * * * $S/cron-guard.py "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Apply file renaming rules to Paperless-ngx documents
-15 4 * * * python3 $S/cron-guard.py "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
+15 4 * * * $S/cron-guard.py "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
 # Snapshot system configs/dotfiles and sync '~/scripts' & '/opt/stacks' to Git
-0 5 * * * python3 $S/cron-guard.py "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
+0 5 * * * $S/cron-guard.py "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
 # Check for available Docker container updates and notify
-0 9 * * * python3 $S/cron-guard.py "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"
+0 9 * * * $S/cron-guard.py "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"
