@@ -7,7 +7,6 @@
 
 import sys
 import os
-import io
 import subprocess
 import urllib.request
 import urllib.parse
@@ -15,9 +14,6 @@ import datetime
 import time
 import html
 import collections
-
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def load_dotenv(filepath):
     """Minimal, dependency-free .env parser."""
@@ -86,20 +82,21 @@ def main():
 
     # --- 4. EXECUTION ---
     log_queue = collections.deque(maxlen=10)
+    
     try:
         with subprocess.Popen(
             command,
             shell=True,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.STDOUT, # Equivalent to bash 2>&1
             text=True,
-            encoding='utf-8',
-            errors='replace'
+            errors='replace' 
         ) as process:
             # Stream output live, discarding old lines automatically
             for line in process.stdout:
                 log_queue.append(line.rstrip('\n'))
-        exit_code = process.returncode
+                
+        exit_code = process.wait()
     except Exception as e:
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
