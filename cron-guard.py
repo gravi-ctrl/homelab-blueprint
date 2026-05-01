@@ -89,12 +89,13 @@ def main():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding='utf-8',
             errors='replace'
         ) as process:
             # Stream output live, discarding old lines automatically
             for line in process.stdout:
                 log_queue.append(line.rstrip('\n'))
-        exit_code = process.wait()
+        exit_code = process.returncode
     except Exception as e:
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
