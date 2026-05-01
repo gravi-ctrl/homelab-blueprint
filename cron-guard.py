@@ -16,27 +16,23 @@ import html
 import collections
 
 def load_dotenv(filepath):
-    """Minimal, dependency-free .env parser."""
     if not os.path.isfile(filepath):
         return
     with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
-            # Ignore comments and empty lines
             if not line or line.startswith('#'):
                 continue
             if '=' in line:
                 key, val = line.split('=', 1)
                 key = key.strip()
-                # Strip out possible surrounding quotes
                 val = val.strip().strip('"\'')
-                # Only set if not already in the environment
                 if key not in os.environ:
                     os.environ[key] = val
 
 def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail):
-    """Sends an HTML formatted alert to Telegram with retry logic."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
+    
     text = (
         f"🚨 <b>CRON FAILURE</b>\n\n"
         f"📂 <b>Job:</b> {html.escape(job_name)}\n"
@@ -69,18 +65,17 @@ def main():
     job_name = sys.argv[1]
     command = " ".join(sys.argv[2:])
 
-    # --- 1. CONFIG LOADER ---
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
 
-    # --- 2. VARIABLE MAPPING ---
     token = os.environ.get("TELEGRAM_DANTE_BOT_TOKEN", "YOUR_HARDCODED_TOKEN_HERE")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_HARDCODED_CHAT_ID_HERE")
-
-    # --- 3. SAFETY CHECK ---
     skip_telegram = token.startswith("YOUR_HARDCODED")
 
-    # --- 4. EXECUTION ---
+    child_env = os.environ.copy()
+    child_env["PYTHONIOENCODING"] = "utf-8"
+    child_env["PYTHONUTF8"] = "1"
+
     log_queue = collections.deque(maxlen=10)
     
     try:
@@ -88,11 +83,12 @@ def main():
             command,
             shell=True,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT, # Equivalent to bash 2>&1
+            stderr=subprocess.STDOUT,
             text=True,
-            errors='replace' 
+            encoding='utf-8', # Force cron-guard to read output as UTF-8
+            errors='replace', 
+            env=child_env     # Inject the UTF-8 environment
         ) as process:
-            # Stream output live, discarding old lines automatically
             for line in process.stdout:
                 log_queue.append(line.rstrip('\n'))
                 
@@ -101,7 +97,6 @@ def main():
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
 
-    # --- 5. FAILURE HANDLING ---
     if exit_code != 0:
         if skip_telegram:
             sys.exit(exit_code)
