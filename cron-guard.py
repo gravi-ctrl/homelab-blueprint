@@ -64,7 +64,13 @@ def main():
 
     job_name = sys.argv[1]
     
-    command = subprocess.list2cmdline(sys.argv[2:])
+    if os.name == 'nt':
+        # Windows (cmd.exe) escaping
+        command = subprocess.list2cmdline(sys.argv[2:])
+    else:
+        # Linux / macOS (/bin/sh) escaping
+        import shlex
+        command = shlex.join(sys.argv[2:])
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
