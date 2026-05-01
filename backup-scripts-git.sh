@@ -34,13 +34,13 @@ fi
 # --- GENERATE HUMAN READABLE SCHEDULE ---
 if [ -f "$TARGET_DIR/cron_translator.py" ]; then
     echo "Generating cron schedule..."
-    python3 "$TARGET_DIR/cron_translator.py"
+    "$TARGET_DIR/cron_translator.py"
 fi
 
 # --- GENERATE SCRIPT INVENTORY ---
 if [ -f "$TARGET_DIR/script_indexer.py" ]; then
     echo "Indexing Scripts..."
-    python3 "$TARGET_DIR/script_indexer.py"
+    "$TARGET_DIR/script_indexer.py"
 fi
 
 # B. Installed Packages
@@ -71,7 +71,7 @@ for tool in "${TOOLS[@]}"; do
 done
 
 # --- 2. HANDOFF TO MASTER SCRIPT ---
-python3 "$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
+"$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
 
 # --- 3. Sync /opt/stacks ---
-python3 "$MASTER_SCRIPT" "$STACKS_DIR" "Server Stacks"
+"$MASTER_SCRIPT" "$STACKS_DIR" "Server Stacks"
