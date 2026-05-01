@@ -7,6 +7,7 @@
 
 import sys
 import os
+import io
 import subprocess
 import urllib.request
 import urllib.parse
@@ -14,6 +15,9 @@ import datetime
 import time
 import html
 import collections
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def load_dotenv(filepath):
     """Minimal, dependency-free .env parser."""
