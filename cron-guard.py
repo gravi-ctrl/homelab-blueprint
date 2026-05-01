@@ -63,14 +63,17 @@ def main():
         sys.exit(1)
 
     job_name = sys.argv[1]
-    
-    if os.name == 'nt':
-        # Windows (cmd.exe) escaping
-        command = subprocess.list2cmdline(sys.argv[2:])
+
+    args = sys.argv[2:]
+
+    if len(args) == 1:
+        command = args[0]
     else:
-        # Linux / macOS (/bin/sh) escaping
-        import shlex
-        command = shlex.join(sys.argv[2:])
+        if os.name == 'nt':
+            command = subprocess.list2cmdline(args)
+        else:
+            import shlex
+            command = shlex.join(args)
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
