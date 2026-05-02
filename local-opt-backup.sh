@@ -40,10 +40,10 @@ if [ -t 0 ]; then
     fi
 fi
 
-LOCKFILE="/tmp/local-opt-backup.lock"
-AGE_PUBKEY="age192nt2pxwatnndc9592h7dzgya77tl3hfgpx7kdqqrhhpednll9ts3ytrq9"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
+AGE_PUBKEY="age192nt2pxwatnndc9592h7dzgya77tl3hfgpx7kdqqrhhpednll9ts3ytrq9"
+LOCKFILE="/tmp/local-opt-backup.lock"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STACKS_ROOT="/opt/stacks"
 DATE=$(date +%F)
 DOCKER_FILENAME="docker-stacks-$DATE.tar.zst.age"
