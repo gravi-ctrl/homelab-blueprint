@@ -62,7 +62,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     ```bash
     cd ~/scripts
     git init
-    git remote add origin git@codeberg.org:gravi-ctrl/server-scripts.git
+    git remote add origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git
     git fetch origin
     git checkout -f -B main origin/main
     ```
