@@ -14,13 +14,3 @@
 **/*.log
 **/*.tmp
 **/*.bak
-
-# ctrl_s_master
-**/_logs/
-**/_dry_run_output/
-**/vaults.hc
-**/vaults/
-**/2fa/
-**/backups/
-**/status_dashboard.md
-**/status.json
