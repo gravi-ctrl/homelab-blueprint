@@ -186,6 +186,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     -C / \
     opt/stacks \
     "home/$BACKUP_USER/scripts" \
+    "home/$BACKUP_USER/ctrl_s_master" \
     "home/$BACKUP_USER/.ssh" \
     etc/ssh \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
