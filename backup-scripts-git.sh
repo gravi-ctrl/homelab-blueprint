@@ -9,6 +9,7 @@
 # Load BACKUP_USER and TOOLS from .env
 BACKUP_USER=$(grep '^BACKUP_USER=' "$(dirname "$(readlink -f "$0")")/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'")
 TARGET_DIR="/home/$BACKUP_USER/scripts"
+CTRL_S_DIR="/home/$BACKUP_USER/ctrl_s_master"
 SNAPSHOT_DIR="$TARGET_DIR/run_once/system_configs"
 MASTER_SCRIPT="$TARGET_DIR/git-auto-sync.py"
 STACKS_DIR="/opt/stacks"
@@ -73,5 +74,8 @@ done
 # --- 2. HANDOFF TO MASTER SCRIPT ---
 "$MASTER_SCRIPT" "$TARGET_DIR" "Scripts & System Configs"
 
-# --- 3. Sync /opt/stacks ---
+# --- 3. Sync ctrl_s_master ---
+"$MASTER_SCRIPT" "$CTRL_S_DIR" "Security Master Update"
+
+# --- 4. Sync /opt/stacks ---
 "$MASTER_SCRIPT" "$STACKS_DIR" "Server Stacks"
