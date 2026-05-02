@@ -156,3 +156,21 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 | 1 | Extract backup, re-link Git & run setup.sh | ✅ Full | Handles ~95% of restoration |
 | 2 | Docker stacks | ⚠️ Minimal | Re-link Git, launch Dockge, deploy stacks |
 | 3 | Finalize | ⚠️ Manual | Path verification & reboot |
+
+---
+
+## 🔄 Mirroring Workflow
+
+This repository is primary-hosted on **Codeberg** and mirrored to **GitHub**. To maintain synchronicity with a single `git push`, the local `origin` is configured with multiple push URLs.
+
+### Setup Dual-Push (Optional)
+If you are contributing or mirroring this setup:
+```bash
+# Set the primary push URL (Codeberg)
+git remote set-url --add --push origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git
+
+# Add the mirror push URL (GitHub)
+git remote set-url --add --push origin git@github.com:gravi-ctrl/homelab-blueprint.git
+
+# Verify configuration
+git remote -v
