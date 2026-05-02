@@ -1,6 +1,7 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 S=/home/gravi-ctrl/scripts
+C=/home/gravi-ctrl/ctrl_s_master
 A=/data/assets
 
 # .------------ minute (0 - 59)
@@ -20,4 +21,4 @@ A=/data/assets
 30 5 * * 4 $S/cron-guard.py "Docker Stacks Backup" "$S/local-opt-backup.sh"
 
 # ctrl_s_master Project
-0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && $S/cron-guard.py "ctrl_s_master" "$S/ctrl_s_master/run.sh"
+0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && $S/cron-guard.py "ctrl_s_master" "$C/run.sh"
