@@ -1,4 +1,6 @@
-# 🛠️ Server Scripts & Automation Blueprint
+# 🛠️ Homelab Blueprint
+
+> **Mirror Status:** This repository is mirrored across [Codeberg](https://codeberg.org/gravi-ctrl/homelab-blueprint) (Primary) and [GitHub](https://github.com/gravi-ctrl/homelab-blueprint).
 
 This repository contains the "Brain" of the homelab: automation scripts, system configurations, and recovery tools.
 
