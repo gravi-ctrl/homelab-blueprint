@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 VERSION="v0.7.7"
+
+# @DESCRIPTION: (External: mag37) Checks Docker registries for container updates by comparing local hashes against upstream without pulling images.
+# @FREQUENCY: Daily 9am
+
 # ChangeNotes: xmpp template added, ranges for selection possible, restart-stack and -s reworked.
 Github="https://github.com/mag37/dockcheck"
 RawUrl="https://raw.githubusercontent.com/mag37/dockcheck/main/dockcheck.sh"

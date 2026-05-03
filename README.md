@@ -36,7 +36,7 @@ If the server is wiped, follow this order to restore functionality.
 The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to restore:
 *   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
 *   `~/scripts` — Automation scripts with `.env` files
-*   `~/ctrl_s_master` - A personal project that can be found [here](https://codeberg.org/gravi-ctrl/ctrl-s-master)
+*   `~/ctrl_s_master` - Cross-platform secure archival engine (Standalone Repository). Can be found [here](https://codeberg.org/gravi-ctrl/ctrl-s-master)
 *   `~/.ssh` — Codeberg and server deploy keys
 *   `/etc/ssh` — Host keys
 
