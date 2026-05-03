@@ -6,10 +6,12 @@
 | `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
-| `calcardbackup` | Extracts and backs up Nextcloud contacts and calendars | Daily 4am (root crontab) |
+| `calcardbackup` | (External: Bernhard Ostertag) Extracts and backs up Nextcloud contacts and calendars to .vcf/.ics files. | Daily 4am (root crontab) |
+| `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager. | On Demand |
 | `cleanup_script.py` | Cleans folders (files AND subdirs), keeping recent or deleting all | Daily 1am and 1pm |
 | `cron-guard.py` | Runs a command, captures output safely, and Telegrams on failure with logs | On Failure |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
+| `dockcheck/dockcheck.sh` | (External: mag37) Checks Docker registries for container updates by comparing local hashes against upstream without pulling images. | Daily 9am |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
 | `guestwifi` | Triggers the running wifi_robot container via HTTP | On Demand |
 | `local-opt-backup.sh` | Backs up Docker stacks, ~/scripts, ~/ctrl_s_master, ~/.ssh and /etc/ssh to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) |
