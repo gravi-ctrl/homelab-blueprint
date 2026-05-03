@@ -5,6 +5,7 @@
 | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) |
+| `bootstrap.sh` | Phase 1 Bootstrap: Installs recovery tools, decrypts the Day-0 archive, restores filesystem state, and preps SSH. | Run Once (Disaster Recovery) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
 | `calcardbackup` | (External: Bernhard Ostertag) Extracts and backs up Nextcloud contacts and calendars to .vcf/.ics files. | Daily 4am (root crontab) |
 | `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager. | On Demand |
