@@ -27,6 +27,7 @@ These indices are **automatically updated** by the system's internal crawlers:
 - **Hardware Guard:** Real-time monitoring of CPU thermals and UPS/Battery states with automated failsafe shutdowns.
 - **Self-Healing Backups:** Multi-tier backup strategy using `age` encryption, `zstd` compression, and automated health-check heartbeats.
 - **Service Orchestration:** Integrated management of Docker stacks (Pi-hole, Nextcloud, Paperless-ngx) with dynamic filesystem watching.
+- **Automated PKI & SSL:** Local Certificate Authority management (mkcert) with dynamic SAN generation and automated API deployment to Nginx Proxy Manager.
 - **Failure Transparency:** Every task is wrapped in `cron-guard.py`, providing immediate Telegram alerts and execution logs upon any non-zero exit code.
 
 ---
@@ -38,7 +39,7 @@ If the server is wiped, follow this order to restore functionality.
 The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to restore:
 *   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
 *   `~/scripts` — Automation scripts with `.env` files
-*   `~/ctrl_s_master` - Cross-platform secure archival engine (Standalone Repository). Can be found [here](https://codeberg.org/gravi-ctrl/ctrl-s-master)
+*   `~/ctrl_s_master` — Cross-platform secure archival engine (Standalone Repository). Can be found [here](https://codeberg.org/gravi-ctrl/ctrl-s-master)
 *   `~/.ssh` — Codeberg and server deploy keys
 *   `/etc/ssh` — Host keys
 
@@ -72,7 +73,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     >
     > 3. **Clone the repo:**
     >    ```bash
-    >    git clone git@codeberg.org:gravi-ctrl/server-scripts.git ~/scripts
+    >    git clone git@codeberg.org:gravi-ctrl/homelab-blueprint.git ~/scripts
     >    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
     >    ```
     >
@@ -115,7 +116,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
 
 ### Phase 2: Restore Docker Stacks
 
-The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://codeberg.org/gravi-ctrl/server-scripts#phase-1-bootstrap-system).
+The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://codeberg.org/gravi-ctrl/homelab-blueprint#phase-1-bootstrap-system).
 
 > **No backup?** You'll be starting fresh — application data (databases,
 > uploads, container configs) is unrecoverable.
