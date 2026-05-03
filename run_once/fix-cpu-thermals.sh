@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade
+# @DESCRIPTION: Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific)
 # @FREQUENCY: Run Once
 # Restores CPU max frequency and restarts TLP after an OS upgrade
 
