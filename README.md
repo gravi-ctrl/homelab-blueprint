@@ -16,6 +16,7 @@ This isn't just a collection of scripts; it is a self-maintaining ecosystem. The
 These indices are **automatically updated** by the system's internal crawlers:
 
 *   **[📜 Script Inventory](./SCRIPTS_INVENTORY.md):** A detailed breakdown of every custom automation tool, its purpose, and execution frequency.
+*"Note: This system integrates several high-quality open-source tools (marked as External) into a unified automation and monitoring pipeline."*
 *   **[📅 Automation Schedule](run_once/system_configs/CRON_SCHEDULE.md):** A human-readable view of the server's heartbeat—from security patches to encrypted vault synchronization.
 
 ---
