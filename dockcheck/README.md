@@ -1,3 +1,5 @@
+<h3 align="left">Source="https://github.com/mag37/dockcheck"</h3>
+
 <h2 align="center">CLI tool to automate docker image updates or notifying when updates are available.</h2>
 <h3 align="center">selective updates, include/exclude containers, image backups, custom labels, notification plugins, prune when done etc.</h3>
 
