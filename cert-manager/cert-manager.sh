@@ -1,5 +1,8 @@
 #!/bin/bash
-#
+
+# @DESCRIPTION: Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager.
+# @FREQUENCY: On Demand
+
 # Usage:
 #   ./cert-manager.sh init              One-time: install mkcert, create CA
 #   ./cert-manager.sh export-ca         Copy CA to shared folder for devices
