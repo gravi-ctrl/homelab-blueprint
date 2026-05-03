@@ -8,6 +8,27 @@ This repository contains the "Brain" of the homelab: automation scripts, system 
 
 ---
 
+## 🧠 Autonomous System Design
+
+This isn't just a collection of scripts; it is a self-maintaining ecosystem. The server handles its own security, backups, hardware monitoring, and even documents its own schedule daily.
+
+### 📊 Live System Dashboards
+These indices are **automatically updated** by the system's internal crawlers:
+
+*   **[📜 Script Inventory](./SCRIPTS_INVENTORY.md):** A detailed breakdown of every custom automation tool, its purpose, and execution frequency.
+*   **[📅 Automation Schedule](./CRON_SCHEDULE.md):** A human-readable view of the server's heartbeat—from security patches to encrypted vault synchronization.
+
+---
+
+## 🛠️ Core Capabilities
+
+- **Hardware Guard:** Real-time monitoring of CPU thermals and UPS/Battery states with automated failsafe shutdowns.
+- **Self-Healing Backups:** Multi-tier backup strategy using `age` encryption, `zstd` compression, and automated health-check heartbeats.
+- **Service Orchestration:** Integrated management of Docker stacks (Pi-hole, Nextcloud, Paperless-ngx) with dynamic filesystem watching.
+- **Failure Transparency:** Every task is wrapped in `cron-guard.py`, providing immediate Telegram alerts and execution logs upon any non-zero exit code.
+
+---
+
 ## 🚨 Disaster Recovery Protocol (Day 0)
 
 If the server is wiped, follow this order to restore functionality.
