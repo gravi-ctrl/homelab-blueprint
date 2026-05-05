@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh`
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/custom repos and syncs '~/scripts', '~/ctrl_s_master' & '/opt/stacks' to Git using `git-auto-sync.sh`
 # @FREQUENCY: Daily 5am
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
