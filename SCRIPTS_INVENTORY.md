@@ -3,7 +3,7 @@
 
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
-| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts and syncs '~/scripts' & '/opt/stacks' to Git using `git-auto-sync.sh` | Daily 5am |
+| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) |
 | `bootstrap.sh` | Phase 1 Bootstrap: Installs recovery tools, decrypts the Day-0 archive, restores filesystem state, and preps SSH. | Run Once (Disaster Recovery) |
 | `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram |
@@ -15,7 +15,7 @@
 | `dockcheck/dockcheck.sh` | (External: mag37) Checks Docker registries for container updates by comparing local hashes against upstream without pulling images. | Daily 9am |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
 | `guestwifi` | Triggers the running wifi_robot container via HTTP | On Demand |
-| `local-opt-backup.sh` | Backs up Docker stacks, ~/scripts, ~/ctrl_s_master, ~/.ssh and /etc/ssh to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) |
+| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh` and /etc/ssh to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific) | Run Once |
 | `run_once/nextcloud_post-restore_fix.sh` | Recreates missing markers, user data directories, and appdata_ folders. Safe to run anytime — exits gracefully if not needed. | Run Once |
