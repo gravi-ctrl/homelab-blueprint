@@ -126,8 +126,8 @@ HEARTBEAT_PID=$!
 # Snapshot running stacks before shutdown
 > "$RUNNING_STACKS_FILE"
 for stack_dir in "$STACKS_ROOT"/*/; do
-    if [ -f "$stack_dir/docker-compose.yml" ]; then
-        if docker compose -f "$stack_dir/docker-compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
+    if [ -f "$stack_dir/compose.yml" ]; then
+        if docker compose -f "$stack_dir/compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
             echo "$stack_dir" >> "$RUNNING_STACKS_FILE"
         fi
     fi
@@ -211,9 +211,9 @@ fi
 echo "Starting previously-running stacks..."
 if [ -f "$RUNNING_STACKS_FILE" ]; then
     while IFS= read -r stack_dir; do
-        if [ -f "$stack_dir/docker-compose.yml" ]; then
+        if [ -f "$stack_dir/compose.yml" ]; then
             echo "  → $(basename "$stack_dir")"
-            docker compose -f "$stack_dir/docker-compose.yml" up -d
+            docker compose -f "$stack_dir/compose.yml" up -d
         fi
     done < "$RUNNING_STACKS_FILE"
 else
@@ -260,8 +260,8 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
     STUCK=""
     if [ -f "$RUNNING_STACKS_FILE" ]; then
         while IFS= read -r stack_dir; do
-            if [ -f "$stack_dir/docker-compose.yml" ]; then
-                PROBLEMS=$(docker compose -f "$stack_dir/docker-compose.yml" ps -a \
+            if [ -f "$stack_dir/compose.yml" ]; then
+                PROBLEMS=$(docker compose -f "$stack_dir/compose.yml" ps -a \
                     --format '{{.Name}} {{.Status}}' 2>/dev/null \
                     | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
                 [ -n "$PROBLEMS" ] && STUCK+="$PROBLEMS"$'\n'
