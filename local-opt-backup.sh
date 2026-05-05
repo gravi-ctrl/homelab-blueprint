@@ -41,7 +41,7 @@ if [ -t 0 ]; then
 fi
 
 BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
-AGE_PUBKEY="age192nt2pxwatnndc9592h7dzgya77tl3hfgpx7kdqqrhhpednll9ts3ytrq9"
+AGE_KEYFILE="/root/.backup-key.txt"
 LOCKFILE="/tmp/local-opt-backup.lock"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STACKS_ROOT="/opt/stacks"
@@ -65,6 +65,11 @@ else
     exit 1
 fi
 
+if [ ! -f "$AGE_KEYFILE" ]; then
+    echo "❌ Age key file not found at $AGE_KEYFILE"
+    exit 1
+fi
+
 if [ -z "$KUMA_HC_URL" ] || [ -z "$BACKUP_USER" ]; then
     echo "❌ Missing configuration in .env"
     exit 1
@@ -84,7 +89,12 @@ if ! command -v age &> /dev/null; then
     apt-get update && apt-get install -y age
 fi
 
+# Derive public key from identity file (age must be installed first)
+AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public key from $AGE_KEYFILE"; exit 1; }
+
 mkdir -p "$BACKUP_DIR"
+
+
 
 # HEARTBEAT FUNCTION
 keep_kuma_alive() {
@@ -224,7 +234,7 @@ fi
 if [ $TAR_EXIT_CODE -eq 0 ]; then
     echo "✅ Backup successful."
     echo "Verifying backup integrity..."
-    if age -d -i /root/.backup-key.txt "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t 2>&1 | \
+    if age -d -i "$AGE_KEYFILE" "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t 2>&1 | \
     sed "s|/\*stdin\*\\\\|$DOCKER_FILENAME|" | \
     awk 'match($0, /([0-9]+) bytes/, a) {
         b = a[1]+0
