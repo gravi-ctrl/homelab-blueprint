@@ -40,7 +40,7 @@ NC_MOUNT_NAME="assets"
 REAL_ASSETS_DIR="/data/assets"
 HOST_DATA_DIR="/data/assets/nextcloud_data"
 # Path to your docker-compose file:
-COMPOSE_FILE="/opt/stacks/nextcloud/docker-compose.yml"
+COMPOSE_FILE="/opt/stacks/nextcloud/compose.yml"
 
 WATCH_LIST="${HOST_DATA_DIR}/${NC_USER}/files ${REAL_ASSETS_DIR}"
 QUEUE_FILE="/tmp/nextcloud_events.log"
