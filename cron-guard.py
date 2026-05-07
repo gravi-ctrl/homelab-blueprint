@@ -79,8 +79,12 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    # Join command parts correctly for Windows vs Linux
-    full_cmd = " ".join(args.command) if os.name == 'nt' else " ".join(args.command)
+    # Join command parts correctly, preserving quotes for arguments with spaces
+    if os.name == 'nt':
+        full_cmd = subprocess.list2cmdline(args.command)
+    else:
+        import shlex
+        full_cmd = shlex.join(args.command)
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
