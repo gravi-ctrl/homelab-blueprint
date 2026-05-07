@@ -10,7 +10,7 @@
 | `calcardbackup` | (External: Bernhard Ostertag) Extracts and backs up Nextcloud contacts and calendars to .vcf/.ics files. | Daily 4am (root crontab) |
 | `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager. | On Demand |
 | `cleanup_script.py` | Cleans folders (files AND subdirs), keeping recent or deleting all | Daily 1am and 1pm |
-| `cron-guard.py` | Runs a command, captures output safely, and Telegrams on failure with logs | On Failure |
+| `cron-guard.py` | Executes commands on Linux/Windows with real-time log tailing and Telegram alerts for job success or failure. | Varies |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `dockcheck/dockcheck.sh` | (External: mag37) Checks Docker registries for container updates by comparing local hashes against upstream without pulling images. | Daily 9am |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
