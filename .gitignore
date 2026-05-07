@@ -1,10 +1,5 @@
-# --- PYTHON GARBAGE ---
-**/venv/
-**/__pycache__/
-**/*.pyc
-**/.pytest_cache/
 
-# Ignore sensitive env files
+# sensitive env files
 .env
 **/.env
 **/dockcheck.config
