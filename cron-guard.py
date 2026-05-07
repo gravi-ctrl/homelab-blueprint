@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+
 """
-# @DESCRIPTION: Runs a command, captures output safely, and Telegrams on failure with logs
-# @FREQUENCY: On Failure
+# @DESCRIPTION: Executes commands on Linux/Windows with real-time log tailing and Telegram alerts for job success or failure.
+# @FREQUENCY: Varies
 """
-# USAGE: python cron-guard.py "NAME OF JOB" "command_to_run"
+# USAGE:
+# python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
+# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)
+# python cron-guard.py --mode success "Health Check" "curl ..." (Only notify if it works)
 
 import sys
 import os
@@ -14,31 +18,38 @@ import datetime
 import time
 import html
 import collections
+import argparse
 
 def load_dotenv(filepath):
-    if not os.path.isfile(filepath):
-        return
+    if not os.path.isfile(filepath): return
     with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
-            if not line or line.startswith('#'):
-                continue
+            if not line or line.startswith('#'): continue
             if '=' in line:
                 key, val = line.split('=', 1)
-                key = key.strip()
-                val = val.strip().strip('"\'')
-                if key not in os.environ:
-                    os.environ[key] = val
+                os.environ[key.strip()] = val.strip().strip('"\'')
 
-def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail):
+def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    
+
+
+    if exit_code == 0:
+        status_header = "✅ <b>TASK SUCCESSFUL</b>"
+        status_label = "Success"
+    else:
+        status_header = "🚨 <b>TASK FAILURE</b>"
+        status_label = "Failed"
+
     text = (
-        f"🚨 <b>CRON FAILURE</b>\n\n"
+        f"{status_header}\n"
+        f"━━━━━━━━━━━━━━━\n"
         f"📂 <b>Job:</b> {html.escape(job_name)}\n"
-        f"⏰ <b>Time:</b> {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-        f"🔢 <b>Exit Code:</b> {exit_code}\n\n"
-        f"📜 <b>Log:</b>\n<pre>{html.escape(log_tail)}</pre>"
+        f"📊 <b>Status:</b> {status_label} (Code {exit_code})\n"
+        f"⏱️ <b>Duration:</b> {duration}\n"
+        f"⏰ <b>Finished:</b> {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"━━━━━━━━━━━━━━━\n"
+        f"📜 <b>Last Logs:</b>\n<pre>{html.escape(log_tail)}</pre>"
     )
 
     data = urllib.parse.urlencode({
@@ -50,73 +61,75 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail):
     for _ in range(3):
         try:
             req = urllib.request.Request(url, data=data, method='POST')
-            with urllib.request.urlopen(req, timeout=30) as response:
-                if response.getcode() == 200:
-                    return True
-        except Exception:
-            time.sleep(2)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                if resp.getcode() == 200: return True
+        except: time.sleep(2)
     return False
 
 def main():
-    if len(sys.argv) < 3:
-        print('USAGE: python cron-guard.py "NAME OF JOB" "command_to_run"')
+    parser = argparse.ArgumentParser(description="Run a command and notify via Telegram.")
+    parser.add_argument("--mode", choices=["fail", "success", "all"], default="fail", 
+                        help="When to send notification (default: fail)")
+    parser.add_argument("job_name", help="Name of the job for the report")
+    parser.add_argument("command", nargs=argparse.REMAINDER, help="The command to execute")
+
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
         sys.exit(1)
 
-    job_name = sys.argv[1]
-
-    args = sys.argv[2:]
-
-    if len(args) == 1:
-        command = args[0]
-    else:
-        if os.name == 'nt':
-            command = subprocess.list2cmdline(args)
-        else:
-            import shlex
-            command = shlex.join(args)
+    # Join command parts correctly for Windows vs Linux
+    full_cmd = " ".join(args.command) if os.name == 'nt' else " ".join(args.command)
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
 
-    token = os.environ.get("TELEGRAM_DANTE_BOT_TOKEN", "YOUR_HARDCODED_TOKEN_HERE")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_HARDCODED_CHAT_ID_HERE")
-    skip_telegram = token.startswith("YOUR_HARDCODED")
+    token = os.environ.get("TELEGRAM_DANTE_BOT_TOKEN", "YOUR_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_ID")
 
-    child_env = os.environ.copy()
-    child_env["PYTHONIOENCODING"] = "utf-8"
-    child_env["PYTHONUTF8"] = "1"
-    child_env["PYTHONUNBUFFERED"] = "1"
+    # Capture start time
+    start_time = time.time()
+    log_queue = collections.deque(maxlen=15) # Increased to 15 lines
 
-    log_queue = collections.deque(maxlen=10)
-    
     try:
-        with subprocess.Popen(
-            command,
+        process = subprocess.Popen(
+            full_cmd,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8', 
-            errors='replace', 
-            env=child_env     
-        ) as process:
-            for line in process.stdout:
-                log_queue.append(line.rstrip('\n'))
-                
+            encoding='utf-8',
+            errors='replace',
+            env=os.environ.copy()
+        )
+
+        # Better log capture: stream output in real-time
+        for line in iter(process.stdout.readline, ''):
+            clean_line = line.rstrip('\n')
+            print(clean_line) # Still print to local console/logs
+            log_queue.append(clean_line)
+
         exit_code = process.wait()
     except Exception as e:
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
 
-    if exit_code != 0:
-        if skip_telegram:
-            sys.exit(exit_code)
+    duration_seconds = int(time.time() - start_time)
+    duration_str = str(datetime.timedelta(seconds=duration_seconds))
 
-        log_tail = "\n".join(log_queue)
-        if not log_tail.strip():
-            log_tail = "No output."
+    # Logic to determine if we should send the alert
+    should_send = False
+    if args.mode == "all":
+        should_send = True
+    elif args.mode == "fail" and exit_code != 0:
+        should_send = True
+    elif args.mode == "success" and exit_code == 0:
+        should_send = True
 
-        send_telegram_alert(token, chat_id, job_name, exit_code, log_tail)
+    if should_send:
+        log_tail = "\n".join(log_queue) or "No output."
+        send_telegram_alert(token, chat_id, args.job_name, exit_code, log_tail, duration_str)
 
     sys.exit(exit_code)
 
