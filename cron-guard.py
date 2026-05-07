@@ -92,6 +92,11 @@ def main():
     start_time = time.time()
     log_queue = collections.deque(maxlen=15) # Increased to 15 lines
 
+    child_env = os.environ.copy()
+    child_env["PYTHONIOENCODING"] = "utf-8"
+    child_env["PYTHONUTF8"] = "1"
+    child_env["PYTHONUNBUFFERED"] = "1"
+
     try:
         process = subprocess.Popen(
             full_cmd,
@@ -101,7 +106,7 @@ def main():
             text=True,
             encoding='utf-8',
             errors='replace',
-            env=os.environ.copy()
+            env=child_env
         )
 
         # Better log capture: stream output in real-time
