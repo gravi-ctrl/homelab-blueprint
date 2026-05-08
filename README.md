@@ -31,7 +31,7 @@ These indices are **automatically updated** by the system's internal crawlers:
 - **Self-Healing Backups:** Multi-tier backup strategy using `age` encryption, `zstd` compression, and automated health-check heartbeats.
 - **Service Orchestration:** Integrated management of Docker stacks (Pi-hole, Nextcloud, Paperless-ngx) with dynamic filesystem watching.
 - **Automated PKI & SSL:** Local Certificate Authority management (mkcert) with dynamic SAN generation and automated API deployment to Nginx Proxy Manager.
-- **Failure Transparency:** Every task is wrapped in `cron-guard.py`, providing immediate Telegram alerts and execution logs upon any non-zero exit code.
+- **Monitoring & Alerts:** Every task is wrapped in `cron-guard.py`, providing customizable Telegram notifications (on failure, success, or always) complete with execution logs and duration tracking.
 
 ---
 
