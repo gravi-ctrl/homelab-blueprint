@@ -30,6 +30,11 @@ def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     )
 
 def main():
+    if os.name == 'nt':
+        # -q (quiet) stops the banner exchange crash. BatchMode stops interactive prompts.
+        os.environ["GIT_SSH_COMMAND"] = "ssh -q -o BatchMode=yes"
+        os.environ["GIT_TERMINAL_PROMPT"] = "0"
+
     # 1. Safety Check: Ensure a path was provided
     if len(sys.argv) < 2:
         print("❌ Error: No directory path provided.")
@@ -81,22 +86,25 @@ def main():
         while count < max_retries:
             print(f"⬇️  Pulling changes from origin/{current_branch} (Attempt {count+1}/{max_retries})...")
             
-            # Do NOT capture output so it flows directly to cron-guard.py's logs
             pull_proc = run_command(["git", "pull", "origin", current_branch, "--no-edit", "--rebase", "--autostash"])
             
             if pull_proc.returncode == 0:
                 success = True
                 break
                 
-            # Git returns exit code 1 for merge/rebase conflicts.
-            if pull_proc.returncode == 1:
+            # BULLETPROOF CONFLICT CHECK
+            # Don't guess the exit code. Ask Git directly if it's stuck.
+            status_proc = run_command(["git", "status"], capture_output=True)
+            status_out = status_proc.stdout.lower()
+            
+            if "rebase in progress" in status_out or "unmerged paths" in status_out:
                 print("❌ Git Conflict detected during rebase.")
                 print("⚠️ Attempting to abort stuck rebase to restore clean state...")
                 run_command(["git", "rebase", "--abort"], suppress_errors=True)
                 sys.exit(1)
             
-            # Git returns 128 (and others) for network/SSH aborts
-            print(f"⚠️ Pull failed with network/fatal error (Code {pull_proc.returncode}). Retrying in 10s...")
+            # If not a conflict, it is a network error. Trigger the retry!
+            print(f"⚠️ Pull failed (Network/SSH Error). Retrying in 10s...")
             time.sleep(10)
             count += 1
             
