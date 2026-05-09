@@ -145,7 +145,7 @@ HEARTBEAT_PID=$!
 
 # Snapshot running stacks before shutdown
 > "$RUNNING_STACKS_FILE"
-for stack_dir in "$STACKS_ROOT"/*/; do
+for stack_dir in "$STACKS_DIR"/*/; do
     if [ -f "$stack_dir/compose.yml" ]; then
         if docker compose -f "$stack_dir/compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
             echo "$stack_dir" >> "$RUNNING_STACKS_FILE"
