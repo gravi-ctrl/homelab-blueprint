@@ -8,7 +8,7 @@
 #   3. Restart SSH:         sudo systemctl restart ssh
 #   4. Start Docker:        sudo systemctl start docker
 # ==============================================================================
-set -euo pipefail
+set -o pipefail
 shopt -s nullglob
 
 # Get Script Dir
@@ -33,7 +33,7 @@ if [ -t 0 ]; then
         UNIT_NAME="docker-backup-manual"
 
         # Clean up any previous failed run
-        systemctl reset-failed "$UNIT_NAME" 2>/dev/null || true
+        systemctl reset-failed "$UNIT_NAME" 2>/dev/null
 
         systemd-run --unit="$UNIT_NAME" \
                     --quiet \
@@ -68,6 +68,13 @@ fi
 echo $$ > "$LOCKFILE"
 
 # --- CONFIGURATION ---
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    source "$SCRIPT_DIR/.env"
+else
+    echo "❌ .env file not found in $SCRIPT_DIR"
+    exit 1
+fi
+
 if [ ! -f "$AGE_KEYFILE" ]; then
     echo "❌ Age key file not found at $AGE_KEYFILE"
     exit 1
@@ -85,13 +92,11 @@ fi
 
 # Install dependencies if missing
 if ! command -v zstd &> /dev/null; then
-    apt-get update || true
-    apt-get install -y zstd
+    apt-get update && apt-get install -y zstd
 fi
 
 if ! command -v age &> /dev/null; then
-    apt-get update || true
-    apt-get install -y age
+    apt-get update && apt-get install -y age
 fi
 
 # Derive public key from identity file (age must be installed first)
@@ -99,10 +104,12 @@ AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public 
 
 mkdir -p "$BACKUP_DIR"
 
+
+
 # HEARTBEAT FUNCTION
 keep_kuma_alive() {
     while true; do
-        curl -fsS --retry 3 "$KUMA_HC_URL" > /dev/null || true
+        curl -fsS --retry 3 "$KUMA_HC_URL" > /dev/null
         sleep 240
     done
 }
@@ -114,17 +121,17 @@ cleanup() {
     rm -f "$RUNNING_STACKS_FILE"
 
     # 2. Kill Heartbeat
-    if [ -n "${HEARTBEAT_PID:-}" ]; then
-        kill $HEARTBEAT_PID 2>/dev/null || true
-        wait $HEARTBEAT_PID 2>/dev/null || true
+    if [ -n "$HEARTBEAT_PID" ]; then
+        kill $HEARTBEAT_PID 2>/dev/null
+        wait $HEARTBEAT_PID 2>/dev/null
     fi
 
     # 3. Ensure Docker is unmasked and started
     # Only restore Docker if it's not already running
     if ! docker info &>/dev/null; then
         echo "Restoring Docker Services..."
-        systemctl unmask docker.socket 2>/dev/null || true
-        systemctl start containerd docker.socket docker.service 2>/dev/null || true
+        systemctl unmask docker.socket 2>/dev/null
+        systemctl start containerd docker.socket docker.service 2>/dev/null
     fi
 }
 
@@ -138,9 +145,9 @@ HEARTBEAT_PID=$!
 
 # Snapshot running stacks before shutdown
 > "$RUNNING_STACKS_FILE"
-for stack_dir in "$STACKS_DIR"/*/; do
+for stack_dir in "$STACKS_ROOT"/*/; do
     if [ -f "$stack_dir/compose.yml" ]; then
-        if docker compose -f "$stack_dir/compose.yml" ps -q --status running 2>/dev/null | grep -q . || [ $? -eq 1 ]; then
+        if docker compose -f "$stack_dir/compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
             echo "$stack_dir" >> "$RUNNING_STACKS_FILE"
         fi
     fi
@@ -153,7 +160,6 @@ systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
 
-set +e
 timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='.git' \
     --exclude='__pycache__' \
@@ -206,7 +212,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
 
 TAR_EXIT_CODE=${PIPESTATUS[0]}
-set -e
 
 # Explicit restart for immediate healthchecks
 systemctl unmask docker.socket
@@ -249,7 +254,7 @@ if [ $TAR_EXIT_CODE -eq 0 ]; then
         sub(/[0-9]+ bytes/, hr)
     } 1'; then
         echo "✅ Backup verified (decryption + integrity)"
-        (ls -1t "$BACKUP_DIR"/docker-stacks-*.tar.zst.age || true) \
+        ls -1t "$BACKUP_DIR"/docker-stacks-*.tar.zst.age \
             | tail -n +3 \
             | xargs -r rm -f
     else
@@ -278,7 +283,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
             if [ -f "$stack_dir/compose.yml" ]; then
                 PROBLEMS=$(docker compose -f "$stack_dir/compose.yml" ps -a \
                     --format '{{.Name}} {{.Status}}' 2>/dev/null \
-                    | grep -iE "exited|unhealthy|restarting" | awk '{print $1}' || true)
+                    | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
                 [ -n "$PROBLEMS" ] && STUCK+="$PROBLEMS"$'\n'
             fi
         done < "$RUNNING_STACKS_FILE"
