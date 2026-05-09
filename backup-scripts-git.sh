@@ -27,7 +27,6 @@ IFS=$'\n\t'
 CTRL_S_DIR="/home/$BACKUP_USER/ctrl_s_master"
 SNAPSHOT_DIR="$SCRIPT_DIR/run_once/system_configs"
 MASTER_SCRIPT="$SCRIPT_DIR/git-auto-sync.py"
-STACKS_DIR="/opt/stacks"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
@@ -82,6 +81,8 @@ for tool in "${TOOLS_ARRAY[@]}"; do
     fi
 done
 
+echo "🚀 Syncing Repositories..."
+
 # --- 2. HANDOFF TO MASTER SCRIPT ---
 "$MASTER_SCRIPT" "$SCRIPT_DIR" "Scripts & System Configs"
 
@@ -90,3 +91,5 @@ done
 
 # --- 4. Sync /opt/stacks ---
 "$MASTER_SCRIPT" "$STACKS_DIR" "Server Stacks"
+
+echo "✅ Backup process completed successfully."

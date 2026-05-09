@@ -8,7 +8,20 @@
 #   3. Restart SSH:         sudo systemctl restart ssh
 #   4. Start Docker:        sudo systemctl start docker
 # ==============================================================================
-set -o pipefail
+set -euo pipefail
+
+# Get Script Dir
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- .ENV ---
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+else
+    echo "❌ .env file not found in $SCRIPT_DIR"
+    exit 1
+fi
 
 # --- INTERACTIVITY CHECK ---
 # If running manually, switch to SystemD background service.
@@ -40,11 +53,7 @@ if [ -t 0 ]; then
     fi
 fi
 
-BACKUP_DIR="/data/assets/syncthing/Backup/self-hosted/docker-containers-backup"
-AGE_KEYFILE="/root/.backup-key.txt"
 LOCKFILE="/tmp/local-opt-backup.lock"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STACKS_ROOT="/opt/stacks"
 DATE=$(date +%F)
 DOCKER_FILENAME="docker-stacks-$DATE.tar.zst.age"
 RUNNING_STACKS_FILE="/tmp/running-stacks.list"
@@ -58,13 +67,6 @@ fi
 echo $$ > "$LOCKFILE"
 
 # --- CONFIGURATION ---
-if [ -f "$SCRIPT_DIR/.env" ]; then
-    source "$SCRIPT_DIR/.env"
-else
-    echo "❌ .env file not found in $SCRIPT_DIR"
-    exit 1
-fi
-
 if [ ! -f "$AGE_KEYFILE" ]; then
     echo "❌ Age key file not found at $AGE_KEYFILE"
     exit 1
@@ -93,8 +95,6 @@ fi
 AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public key from $AGE_KEYFILE"; exit 1; }
 
 mkdir -p "$BACKUP_DIR"
-
-
 
 # HEARTBEAT FUNCTION
 keep_kuma_alive() {
@@ -135,7 +135,7 @@ HEARTBEAT_PID=$!
 
 # Snapshot running stacks before shutdown
 > "$RUNNING_STACKS_FILE"
-for stack_dir in "$STACKS_ROOT"/*/; do
+for stack_dir in "$STACKS_DIR"/*/; do
     if [ -f "$stack_dir/compose.yml" ]; then
         if docker compose -f "$stack_dir/compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
             echo "$stack_dir" >> "$RUNNING_STACKS_FILE"
