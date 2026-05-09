@@ -71,21 +71,30 @@ def main():
         if branch_proc.returncode != 0:
             print("❌ Error: Not a git repository or no HEAD found.")
             sys.exit(1)
-
+        
         current_branch = branch_proc.stdout.strip()
         print(f"⬇️  Pulling changes from origin/{current_branch}...")
-
-        # Added --autostash to safely tuck away uncommitted tweaks during pull
-        pull_result = run_command(["git", "pull", "origin", current_branch, "--no-edit", "--rebase", "--autostash"])
-
-        if pull_result.returncode != 0:
-            raise Exception("Pull/Rebase encountered a conflict.")
-
+        
+        # Capture output so we can check it for errors
+        pull_proc = run_command(
+            ["git", "pull", "origin", current_branch, "--no-edit", "--rebase", "--autostash"],
+            capture_output=True
+        )
+        
+        if pull_proc.returncode != 0:
+            # Check if this is a real Git conflict
+            if "conflict" in pull_proc.stdout.lower() or "conflict" in pull_proc.stderr.lower():
+                print("❌ Git Conflict detected during rebase.")
+                print("⚠️ Attempting to abort stuck rebase to restore clean state...")
+                run_command(["git", "rebase", "--abort"], suppress_errors=True)
+            else:
+                # This is likely the SSH error you are seeing
+                print(f"❌ Pull failed with exit code {pull_proc.returncode}")
+                if pull_proc.stderr: print(pull_proc.stderr)
+            sys.exit(1)
+        
     except Exception as e:
-        print(f"❌ Error during pull: {e}")
-        # --- NEW RECOVERY LOGIC ---
-        print("⚠️ Attempting to abort stuck rebase to restore clean state...")
-        run_command(["git", "rebase", "--abort"], suppress_errors=True)
+        print(f"❌ Unexpected logic error during pull: {e}")
         sys.exit(1)
 
     # 6. Push changes with Retry Logic
