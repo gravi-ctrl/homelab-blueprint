@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Recreates missing markers, user data directories, and appdata_ folders. Safe to run anytime — exits gracefully if not needed.
 # @FREQUENCY: Run Once
-CONTAINER="nextcloud-app-1"
+CONTAINER="nextcloud"
 USERNAME="not-admin"
 
 # --- Guard: Is the container even running? ---

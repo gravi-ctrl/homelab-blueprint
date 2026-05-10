@@ -30,7 +30,7 @@ These indices are **automatically updated** by the system's internal crawlers:
 - **Hardware Guard:** Real-time monitoring of CPU thermals and UPS/Battery states with automated failsafe shutdowns.
 - **Self-Healing Backups:** Multi-tier backup strategy using `age` encryption, `zstd` compression, and automated health-check heartbeats.
 - **Service Orchestration:** Integrated management of Docker stacks (Pi-hole, Nextcloud, Paperless-ngx) with dynamic filesystem watching.
-- **Automated PKI & SSL:** Local Certificate Authority management (mkcert) with dynamic SAN generation and automated API deployment to Nginx Proxy Manager.
+- **Automated PKI & SSL:** Local Certificate Authority management (mkcert) with dynamic SAN generation and automated API deployment to Nginx Proxy Manager. All services are served exclusively over HTTPS with Force SSL — there is no `http://ip:port` fallback. **Every device that needs access must trust the local CA**, otherwise all services will be inaccessible with no way to bypass the error. See `cert-manager/` for the setup guide.
 - **Monitoring & Alerts:** Every task is wrapped in `cron-guard.py`, providing customizable Telegram notifications (on failure, success, or always) complete with execution logs and duration tracking.
 
 ---
