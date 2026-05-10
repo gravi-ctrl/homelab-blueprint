@@ -4,7 +4,8 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Update NextDNS IP and monitor server/internet health** | Every 5 minutes | `$S/cron-guard.py --mode fail "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$S...` |
+| **Monitor server/internet health** | Every 5 minutes | `$S/cron-guard.py --mode fail "HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL"'` |
+| **Update NextDNS IP** | Every 5 minutes | `$S/cron-guard.py --mode fail "NextDNS IP Update" '. $S/.env && curl -Z -fsS --retry 3 "$NEXTDNS_URL"'` |
 | **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard.py --mode fail "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal'...` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `$S/cron-guard.py --mode fail "Cleanup Job" "$S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_b...` |
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `$S/cron-guard.py --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.github...` |
