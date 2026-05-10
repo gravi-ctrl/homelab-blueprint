@@ -3,15 +3,15 @@
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 import os
 import re
+import getpass
 from cron_descriptor import get_description, Options
 
-# Load BACKUP_USER from .env
-with open(os.path.join(os.path.dirname(__file__), ".env")) as f:
-    BACKUP_USER = next(l.split('=')[1].strip().strip("'\"") for l in f if l.startswith('BACKUP_USER='))
-
 # --- CONFIG ---
-SOURCE_DIR = f"/home/{BACKUP_USER}/scripts/run_once/system_configs"
-OUTPUT_FILE = f"{SOURCE_DIR}/CRON_SCHEDULE.md"
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+SOURCE_DIR = os.path.join(SCRIPT_DIR, "run_once", "system_configs")
+OUTPUT_FILE = os.path.join(SOURCE_DIR, "CRON_SCHEDULE.md")
+# Gets the current user for the metadata
+BACKUP_USER = getpass.getuser()
 
 opts = Options()
 opts.use_24hour_time_format = True

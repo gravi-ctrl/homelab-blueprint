@@ -24,7 +24,7 @@ fi
 IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
 
-CTRL_S_DIR="/home/$BACKUP_USER/ctrl_s_master"
+CTRL_S_DIR="$HOME/ctrl_s_master"
 SNAPSHOT_DIR="$SCRIPT_DIR/run_once/system_configs"
 MASTER_SCRIPT="$SCRIPT_DIR/git-auto-sync.py"
 
