@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles
-# @FREQUENCY: Run Once
+# @FREQUENCY: Run Once (Disaster Recovery)
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.

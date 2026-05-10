@@ -42,7 +42,7 @@
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific) | Run Once |
 | `run_once/nextcloud_post-restore_fix.sh` | Recreates missing markers, user data directories, and appdata_ folders. Safe to run anytime — exits gracefully if not needed. | Run Once |
 | `run_once/setup-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
-| `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles | Run Once |
+| `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles | Run Once (Disaster Recovery) |
 
 
 ## ⚠️ Undocumented Scripts
