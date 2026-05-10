@@ -54,6 +54,11 @@ if [ -t 0 ]; then
     fi
 fi
 
+# 1. Find script owner
+SCRIPT_OWNER=$(stat -c '%U' "${BASH_SOURCE[0]}")
+# 2. Get that owner's home directory
+USER_HOME=$(getent passwd "$SCRIPT_OWNER" | cut -d: -f6)
+
 LOCKFILE="/tmp/local-opt-backup.lock"
 DATE=$(date +%F)
 DOCKER_FILENAME="docker-stacks-$DATE.tar.zst.age"
@@ -68,25 +73,18 @@ fi
 echo $$ > "$LOCKFILE"
 
 # --- CONFIGURATION ---
-if [ -f "$SCRIPT_DIR/.env" ]; then
-    source "$SCRIPT_DIR/.env"
-else
-    echo "❌ .env file not found in $SCRIPT_DIR"
-    exit 1
-fi
-
 if [ ! -f "$AGE_KEYFILE" ]; then
     echo "❌ Age key file not found at $AGE_KEYFILE"
     exit 1
 fi
 
-if [ -z "$KUMA_HC_URL" ] || [ -z "$BACKUP_USER" ]; then
+if [ -z "$KUMA_HC_URL" ] || [ -z "$AGE_KEYFILE" ] || [ -z "$STACKS_DIR" ] || [ -z "$BACKUP_DIR" ]; then
     echo "❌ Missing configuration in .env"
     exit 1
 fi
 
-if [ ! -d "/home/$BACKUP_USER/.ssh" ]; then
-    echo "❌ /home/$BACKUP_USER/.ssh does not exist"
+if [ ! -d "$USER_HOME" ]; then
+    echo "❌ $USER_HOME does not exist"
     exit 1
 fi
 
@@ -103,7 +101,6 @@ fi
 AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public key from $AGE_KEYFILE"; exit 1; }
 
 mkdir -p "$BACKUP_DIR"
-
 
 
 # HEARTBEAT FUNCTION
@@ -198,16 +195,11 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='opt/stacks/jdownloader/config/logs' \
     --exclude='opt/stacks/jdownloader/config/tmp' \
     --exclude='opt/stacks/borg-ui/borg_cache' \
-    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/venv" \
-    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/_logs" \
-    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/vaults.hc" \
-    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/status.json" \
-    --exclude="home/$BACKUP_USER/scripts/ctrl_s_master/status_dashboard.md" \
     -C / \
     opt/stacks \
-    "home/$BACKUP_USER/scripts" \
-    "home/$BACKUP_USER/ctrl_s_master" \
-    "home/$BACKUP_USER/.ssh" \
+    "$SCRIPT_DIR" \
+    "$USER_HOME/ctrl_s_master" \
+    "$USER_HOME/.ssh" \
     etc/ssh \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
 
