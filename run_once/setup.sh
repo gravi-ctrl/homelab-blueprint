@@ -129,7 +129,7 @@ quietly sudo systemctl restart docker
 pass
 
 task "Create the shared network"
-quietly docker network create proxy
+quietly docker network create --subnet=172.20.0.0/16 proxy
 pass
 
 # ══════════════════════════════════════════════════════════════
@@ -363,3 +363,6 @@ printf " ${BOLD}Next steps:${NC}\n"
 printf "    1. ${BOLD}Reboot:${NC}  sudo reboot\n"
 printf "    2. After Nextcloud ${DIM}docker compose up -d${NC}, run:\n"
 printf "       ~/scripts/run_once/nextcloud_post-restore_fix.sh\n\n"
+printf "    3. After deploying the Pi-hole stack, set upstream DNS in the dashboard:\n"
+printf "       ${DIM}Settings → DNS → Custom 1 → 172.20.0.1#5335${NC}\n"
+printf "       To verify: ${DIM}docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' pihole${NC}\n"
