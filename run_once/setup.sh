@@ -128,6 +128,9 @@ task "Restart Docker daemon"
 quietly sudo systemctl restart docker
 pass
 
+task "Create the shared network"
+quietly docker network create proxy
+pass
 
 # ══════════════════════════════════════════════════════════════
 # [3/9] RESTORE INSTALLED PACKAGES
