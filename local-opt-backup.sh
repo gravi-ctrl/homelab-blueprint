@@ -178,25 +178,25 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='GPUCache' \
     --exclude='CachedImages' \
     --exclude='Crash Reports' \
-    --exclude='opt/stacks/jellyfin/config/transcodes' \
-    --exclude='opt/stacks/jellyfin/config/cache' \
-    --exclude='opt/stacks/jellyfin/config/log' \
-    --exclude='opt/stacks/arrs/config/*/MediaCover' \
-    --exclude='opt/stacks/arrs/config/*/Backups' \
-    --exclude='opt/stacks/arrs/config/*/logs' \
-    --exclude='opt/stacks/arrs/config/*/UpdateLogs' \
-    --exclude='opt/stacks/scrutiny/influxdb' \
-    --exclude='opt/stacks/audiobookshelf/backups' \
-    --exclude='opt/stacks/audiobookshelf/metadata/cache' \
-    --exclude='opt/stacks/pihole/etc-pihole/pihole-FTL.db' \
-    --exclude='opt/stacks/pihole/etc-pihole/gravity_old.db' \
-    --exclude='opt/stacks/qbittorrent/config/qBittorrent/data/logs' \
-    --exclude='opt/stacks/qbittorrent/config/qBittorrent/data/GeoDB' \
-    --exclude='opt/stacks/jdownloader/config/logs' \
-    --exclude='opt/stacks/jdownloader/config/tmp' \
-    --exclude='opt/stacks/borg-ui/borg_cache' \
+    --exclude="$STACKS_DIR/jellyfin/config/transcodes" \
+    --exclude="$STACKS_DIR/jellyfin/config/cache" \
+    --exclude="$STACKS_DIR/jellyfin/config/log" \
+    --exclude="$STACKS_DIR/arrs/config/*/MediaCover" \
+    --exclude="$STACKS_DIR/arrs/config/*/Backups" \
+    --exclude="$STACKS_DIR/arrs/config/*/logs" \
+    --exclude="$STACKS_DIR/arrs/config/*/UpdateLogs" \
+    --exclude="$STACKS_DIR/scrutiny/influxdb" \
+    --exclude="$STACKS_DIR/audiobookshelf/backups" \
+    --exclude="$STACKS_DIR/audiobookshelf/metadata/cache" \
+    --exclude="$STACKS_DIR/pihole/etc-pihole/pihole-FTL.db" \
+    --exclude="$STACKS_DIR/pihole/etc-pihole/gravity_old.db" \
+    --exclude="$STACKS_DIR/qbittorrent/config/qBittorrent/data/logs" \
+    --exclude="$STACKS_DIR/qbittorrent/config/qBittorrent/data/GeoDB" \
+    --exclude="$STACKS_DIR/jdownloader/config/logs" \
+    --exclude="$STACKS_DIR/jdownloader/config/tmp" \
+    --exclude="$STACKS_DIR/borg-ui/borg_cache" \
     -C / \
-    opt/stacks \
+    "$STACKS_DIR" \
     "$SCRIPT_DIR" \
     "$USER_HOME/ctrl_s_master" \
     "$USER_HOME/.ssh" \
