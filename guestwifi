@@ -12,7 +12,7 @@ fi
 
 echo "Sending signal '$1' to Wi-Fi Robot..."
 
-curl -s "http://localhost:5050/$1"
+docker exec wifi-robot curl -s "http://localhost:5000/$1"
 
 
 
