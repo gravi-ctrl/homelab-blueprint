@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-VERSION="v0.7.7"
 
 # @DESCRIPTION: (External: mag37) Checks Docker registries for container updates by comparing local hashes against upstream without pulling images.
 # @FREQUENCY: Daily 9am
 
-# ChangeNotes: xmpp template added, ranges for selection possible, restart-stack and -s reworked.
+VERSION="v0.7.8"
+# ChangeNotes: bugfixes in apprise and file notifications. New option -o to only print updateable containers.
 Github="https://github.com/mag37/dockcheck"
 RawUrl="https://raw.githubusercontent.com/mag37/dockcheck/main/dockcheck.sh"
 
@@ -38,7 +38,7 @@ Help() {
   echo
   echo "Options:"
   echo "-a|y   Automatic updates, without interaction."
-  echo "-b N   Enable image backups and sets number of days to keep from pruning."
+  echo "-b N   Enable image backups and sets number of days to keep from pruning. Ignores -p auto-prune."
   echo "-B     List currently backed up images, then exit."
   echo "-c D   Exports metrics as prom file for the prometheus node_exporter. Provide the collector textfile directory."
   echo "-d N   Only update to new images that are N+ days old. Lists too recent with +prefix and age. 2xSlower."
@@ -52,7 +52,8 @@ Help() {
   echo "-m     Monochrome mode, no printf colour codes and hides progress bar."
   echo "-M     Prints custom releasenote urls as markdown (requires template support)."
   echo "-n     No updates; only checking availability without interaction."
-  echo "-p     Auto-prune dangling images after update."
+  echo "-o     Hides the \"No updates available\" message" and only shows updateable images
+  echo "-p     Auto-prune dangling images after update. Ignored when -b is used."
   echo "-r     Allow checking/updating images created by 'docker run', containers need to be recreated manually."
   echo "-R     Skip container recreation after pulling images."
   echo "-s     Include stopped containers, returns to stopped state after recreation."
@@ -90,6 +91,7 @@ CollectorTextFileDirectory=${CollectorTextFileDirectory:-}
 Exclude=${Exclude:-}
 DaysOld=${DaysOld:-}
 BackupForDays=${BackupForDays:-}
+OnlyShowUpdateable=${OnlyShowUpdateable:-false}
 OnlySpecific=${OnlySpecific:-false}
 SpecificContainer=${SpecificContainer:-""}
 SkipRecreate=${SkipRecreate:-false}
@@ -114,7 +116,7 @@ c_reset="\033[0m"
 RunTimestamp=$(date +'%Y-%m-%d_%H%M')
 RunEpoch=$(date +'%s')
 
-while getopts "ayb:BfFhiIlmMnprsuvc:e:d:t:x:R" options; do
+while getopts "ayb:BfFhiIlmMnoprsuvc:e:d:t:x:R" options; do
   case "${options}" in
     a|y) AutoMode=true ;;
     b)   BackupForDays="${OPTARG}" ;;
@@ -130,6 +132,7 @@ while getopts "ayb:BfFhiIlmMnprsuvc:e:d:t:x:R" options; do
     m)   MonoMode=true ;;
     M)   PrintMarkdownURL=true ;;
     n)   DontUpdate=true; AutoMode=true;;
+    o)   OnlyShowUpdateable=true ;;
     p)   AutoPrune=true ;;
     R)   SkipRecreate=true ;;
     r)   DRunUp=true ;;
@@ -570,7 +573,7 @@ fi
 UpdCount="${#GotUpdates[@]}"
 
 # List what containers got updates or not
-if [[ -n ${NoUpdates[*]:-} ]]; then
+if [[ -n ${NoUpdates[*]:-} && "$OnlyShowUpdateable" != true ]]; then
   printf "\n%bContainers on latest version:%b\n" "$c_green" "$c_reset"
   printf "%s\n" "${NoUpdates[@]}"
 fi
@@ -722,7 +725,9 @@ if [[ -n "${GotUpdates:-}" ]]; then
     printf "\nNo updates installed.\n"
   fi
 else
-  printf "\nNo updates available.\n"
+  if [[ "$OnlyShowUpdateable" != true ]]; then
+    printf "\nNo updates available.\n"
+  fi
 fi
 
 # Clean up old backup image tags if -b is used otherwise prune if auto-prune is set
