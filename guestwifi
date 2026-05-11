@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Triggers the running wifi_robot container via HTTP
+# @DESCRIPTION: Triggers the running wifi-robot container via HTTP
 # @FREQUENCY: On Demand
 
 # -------------------
