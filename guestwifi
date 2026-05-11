@@ -12,7 +12,11 @@ fi
 
 echo "Sending signal '$1' to Wi-Fi Robot..."
 
-docker exec wifi-robot curl -s "http://localhost:5000/$1"
+if docker exec wifi-robot curl -s "http://localhost:5000/$1" > /dev/null; then
+    echo "✅ Wi-Fi is $1"
+else
+    echo "❌ Failed to reach Wi-Fi Robot"
+fi
 
 
 
