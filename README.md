@@ -192,7 +192,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
 This repository is primary-hosted on **Codeberg** and mirrored to **GitHub**. To maintain synchronicity with a single `git push`, the local `origin` is configured with multiple push URLs.
 
 ### Setup Dual-Push (Optional)
-If you are contributing or mirroring this setup:
+
 ```bash
 # Set the primary push URL (Codeberg)
 git remote set-url --add --push origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git
@@ -202,3 +202,4 @@ git remote set-url --add --push origin git@github.com:gravi-ctrl/homelab-bluepri
 
 # Verify configuration
 git remote -v
+```
