@@ -9,7 +9,7 @@ from cron_descriptor import get_description, Options
 # --- CONFIG ---
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 SOURCE_DIR = os.path.join(SCRIPT_DIR, "run_once", "system_configs")
-OUTPUT_FILE = os.path.join(SOURCE_DIR, "CRON_SCHEDULE.md")
+OUTPUT_FILE = os.path.join(SCRIPT_DIR, "CRON_SCHEDULE.md")
 # Gets the current user for the metadata
 BACKUP_USER = getpass.getuser()
 
