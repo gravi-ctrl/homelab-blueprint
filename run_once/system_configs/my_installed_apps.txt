@@ -8,6 +8,8 @@ bash
 bat
 bcache-tools
 bindfs
+borgbackup
+borgmatic
 bsdutils
 btop
 btrfs-progs
