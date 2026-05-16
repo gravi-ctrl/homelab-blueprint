@@ -12,6 +12,7 @@
 | **Apply file renaming rules to Paperless-ngx documents** | At 04:15 | `$S/cron-guard.py --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
 | **Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git** | At 05:00 | `$S/cron-guard.py --mode all "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
 | **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"` |
+| **Runs a Borgmatic backup** | At 02:00, only on Sunday | `$S/cron-guard.py --mode all "Borg Backup" "borgmatic"` |
 
 
 ## ⚡ Root Cron

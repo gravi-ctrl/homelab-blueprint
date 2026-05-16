@@ -75,6 +75,8 @@ sudo-rs
 systemd
 systemd-resolved
 systemd-sysv
+tailscale
+tailscale-archive-keyring
 ubuntu-drivers-common
 ubuntu-minimal
 ubuntu-release-upgrader-core
