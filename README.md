@@ -147,12 +147,10 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
    ```bash
    cd /opt/stacks/dockge && docker compose up -d
    ```
-   Then deploy remaining stacks via Dockge, or spin up everything at once:
+   Then deploy remaining stacks via Dockge, **or** spin up everything at once:
    ```bash
    find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
    ```
-   > Stacks in `_archive` are skipped automatically (`compose.yml.disabled` convention).
-
 
 **Useful extraction tips:**
 
