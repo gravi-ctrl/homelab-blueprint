@@ -82,9 +82,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     >
     > 4. **Create `.env` files from examples** and fill in the secrets (from your password manager):
     >    ```bash
-    >    cp --update=none ~/scripts/.env.example ~/scripts/.env
-    >    cp --update=none ~/scripts/bot-telegram/.env.example ~/scripts/bot-telegram/.env
-    >    cp --update=none ~/scripts/cert-manager/.env.example ~/scripts/cert-manager/.env
+    >    find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
     >    cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
     >    ```
 
