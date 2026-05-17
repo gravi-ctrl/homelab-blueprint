@@ -143,7 +143,7 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
     git checkout -f -B main origin/main
     ```
 
-2. **Launch Dockge:**
+2. **Launch Dockge or spin up everything:**
    ```bash
    cd /opt/stacks/dockge && docker compose up -d
    ```
@@ -153,7 +153,6 @@ The backup already extracted `/opt/stacks/` with all compose files, configs, and
    ```
    > Stacks in `_archive` are skipped automatically (`compose.yml.disabled` convention).
 
-4.  **Deploy remaining stacks via Dockge Web UI.**
 
 **Useful extraction tips:**
 
