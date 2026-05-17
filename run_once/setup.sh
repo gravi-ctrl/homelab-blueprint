@@ -129,7 +129,7 @@ quietly sudo systemctl restart docker
 pass
 
 task "Create the shared network"
-quietly sudo docker network create --subnet=172.20.0.0/16 proxy
+quietly sudo docker network create --subnet=172.20.0.0/16 proxy || true
 pass
 
 # ══════════════════════════════════════════════════════════════
