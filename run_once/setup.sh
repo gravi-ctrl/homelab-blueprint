@@ -368,4 +368,3 @@ printf "    4. ${BOLD}Borg:${NC} borg key import /mnt/external_hdd/borg-repo ~/b
 printf "    5. ${BOLD}Tailscale Auth Key:${NC} If connection fails, regenerate at ${DIM}https://login.tailscale.com/admin/settings/keys${NC}\n"
 printf "       ${DIM}Generate auth key → tick Reusable + Tags → select tag → update TS_AUTHKEY in .env${NC}\n"
 printf "    6. ${BOLD}Tailscale Funnel for n8n:${NC} docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678\n"
-printf "       ${DIM}Then deactivate/activate Telegram workflow(s) in n8n${NC}\n"
