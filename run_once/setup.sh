@@ -297,6 +297,10 @@ quietly sudo systemctl enable unbound
 quietly sudo systemctl restart unbound
 pass "port 5335"
 
+task "Disable systemd-resolved stub listener"
+quietly sudo sed -i 's/#DNSStubListener=yes/DNSStubListener=no/' /etc/systemd/resolved.conf
+quietly sudo systemctl restart systemd-resolved
+pass
 
 # ══════════════════════════════════════════════════════════════
 # [8/9] SYSTEM CONFIGURATIONS
