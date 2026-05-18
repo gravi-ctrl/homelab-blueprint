@@ -392,6 +392,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
     # 🔹 TASK: TAILSCALE
     if [ "\$DONE_TAILSCALE" = false ] && is_running "tailscaled"; then
         sleep 5
+        docker exec tailscaled tailscale serve reset
         docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678
 
         # Broadcast message to all active terminal sessions
