@@ -52,9 +52,9 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 
 # ══════════════════════════════════════════════════════════════
-# [1/9] SYSTEM UPDATE & DEPENDENCIES
+# [1/10] SYSTEM UPDATE & DEPENDENCIES
 # ══════════════════════════════════════════════════════════════
-header "1/9" "System Update & Dependencies"
+header "1/10" "System Update & Dependencies"
 
 task "Set timezone → Africa/Cairo"
 quietly sudo timedatectl set-timezone Africa/Cairo
@@ -88,9 +88,9 @@ pass
 
 
 # ══════════════════════════════════════════════════════════════
-# [2/9] DOCKER INSTALLATION & CONFIGURATION
+# [2/10] DOCKER INSTALLATION & CONFIGURATION
 # ══════════════════════════════════════════════════════════════
-header "2/9" "Docker Installation & Configuration"
+header "2/10" "Docker Installation & Configuration"
 
 task "Install Docker engine"
 if ! command -v docker &> /dev/null; then
@@ -133,9 +133,9 @@ quietly sudo docker network create --subnet=172.20.0.0/16 proxy || true
 pass
 
 # ══════════════════════════════════════════════════════════════
-# [3/9] RESTORE INSTALLED PACKAGES
+# [3/10] RESTORE INSTALLED PACKAGES
 # ══════════════════════════════════════════════════════════════
-header "3/9" "Restore Installed Packages"
+header "3/10" "Restore Installed Packages"
 
 task "Install packages from backup list"
 PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_installed_apps.txt"
@@ -148,9 +148,9 @@ fi
 
 
 # ══════════════════════════════════════════════════════════════
-# [4/9] DIRECTORY STRUCTURE & PERMISSIONS
+# [4/10] DIRECTORY STRUCTURE & PERMISSIONS
 # ══════════════════════════════════════════════════════════════
-header "4/9" "Directory Structure & Permissions"
+header "4/10" "Directory Structure & Permissions"
 
 task "Create /data directory tree"
 sudo mkdir -p /data/borg_backup
@@ -172,9 +172,9 @@ pass
 
 
 # ══════════════════════════════════════════════════════════════
-# [5/9] PYTHON LIBRARIES
+# [5/10] PYTHON LIBRARIES
 # ══════════════════════════════════════════════════════════════
-header "5/9" "Python Libraries"
+header "5/10" "Python Libraries"
 
 task "pip install requirements"
 quietly pip3 install python-dotenv git-filter-repo cron-descriptor \
@@ -183,9 +183,9 @@ pass
 
 
 # ══════════════════════════════════════════════════════════════
-# [6/9] SHELL ENVIRONMENT (ZSH + P10K)
+# [6/10] SHELL ENVIRONMENT (ZSH + P10K)
 # ══════════════════════════════════════════════════════════════
-header "6/9" "Shell Environment (Zsh + P10k)"
+header "6/10" "Shell Environment (Zsh + P10k)"
 
 task "Install Oh My Zsh"
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -246,9 +246,9 @@ fi
 
 
 # ══════════════════════════════════════════════════════════════
-# [7/9] UNBOUND DNS RESOLVER
+# [7/10] UNBOUND DNS RESOLVER
 # ══════════════════════════════════════════════════════════════
-header "7/9" "Unbound DNS Resolver"
+header "7/10" "Unbound DNS Resolver"
 
 task "Download root hints"
 sudo mkdir -p /usr/share/dns
@@ -303,9 +303,9 @@ quietly sudo systemctl restart systemd-resolved
 pass
 
 # ══════════════════════════════════════════════════════════════
-# [8/9] SYSTEM CONFIGURATIONS
+# [8/10] SYSTEM CONFIGURATIONS
 # ══════════════════════════════════════════════════════════════
-header "8/9" "System Configurations"
+header "8/10" "System Configurations"
 
 SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
 
@@ -342,9 +342,9 @@ fi
 
 
 # ══════════════════════════════════════════════════════════════
-# [9/9] FIREWALL
+# [9/10] FIREWALL
 # ══════════════════════════════════════════════════════════════
-header "9/9" "Firewall Rules"
+header "9/10" "Firewall Rules"
 
 task "Run firewall setup script"
 FIREWALL_SCRIPT="$HOME/scripts/run_once/configure-firewall.sh"
@@ -354,6 +354,84 @@ if [ -f "$FIREWALL_SCRIPT" ]; then
 else
     skip "script not found"
 fi
+
+# ══════════════════════════════════════════════════════════════
+# [10/10] POST-BOOTSTRAP BACKGROUND WATCHER
+# ══════════════════════════════════════════════════════════════
+header "10/10" "Background Tasks"
+task "Create Docker watcher daemon"
+
+# 1. Create the Watcher Script
+# Note: We use \$ for variables we want evaluated inside the daemon,
+# and $USER for variables we want evaluated right now.
+cat << EOF | sudo tee /usr/local/bin/bootstrap-watcher.sh > /dev/null
+#!/bin/bash
+# ==============================================================================
+# 👻 GHOST WATCHER: Auto-configures containers once they are manually started
+# ==============================================================================
+
+# ── 1. Task States ────────────────────────────────────────────────────────────
+DONE_NEXTCLOUD=false
+DONE_TAILSCALE=false
+
+# ── 2. Helper Functions ───────────────────────────────────────────────────────
+is_running() {
+    docker container inspect -f '{{.State.Status}}' "\$1" 2>/dev/null | grep -q "running"
+}
+
+# ── 3. Main Watcher Loop ──────────────────────────────────────────────────────
+while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
+
+    # 🔹 TASK: NEXTCLOUD
+    if [ "\$DONE_NEXTCLOUD" = false ] && is_running "nextcloud"; then
+        sleep 15 # Give DB time to settle
+        su - $USER -c "/home/$USER/scripts/run_once/nextcloud_post-restore_fix.sh"
+        DONE_NEXTCLOUD=true
+    fi
+
+    # 🔹 TASK: TAILSCALE
+    if [ "\$DONE_TAILSCALE" = false ] && is_running "tailscaled"; then
+        sleep 5
+        docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678
+
+        # Broadcast message to all active terminal sessions
+        wall "🛡️ [TAILSCALE WATCHER]: Funnel configured! If connection fails, regenerate key at https://login.tailscale.com/admin/settings/keys (Tick Reusable + Tags -> select tag -> update TS_AUTHKEY in .env)"
+
+        DONE_TAILSCALE=true
+    fi
+
+    # Pause for 10 seconds before checking again
+    sleep 10
+done
+
+# ── 4. Self-Destruct Sequence ─────────────────────────────────────────────────
+systemctl disable bootstrap-watcher.service
+rm /etc/systemd/system/bootstrap-watcher.service
+rm /usr/local/bin/bootstrap-watcher.sh
+systemctl daemon-reload
+EOF
+
+sudo chmod +x /usr/local/bin/bootstrap-watcher.sh
+
+# 2. Create the Systemd Service
+cat << 'EOF' | sudo tee /etc/systemd/system/bootstrap-watcher.service > /dev/null
+[Unit]
+Description=Post-Bootstrap Docker Watcher
+After=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/bootstrap-watcher.sh
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable it to start on boot
+sudo systemctl enable bootstrap-watcher.service >/dev/null 2>&1
+pass "ghost watcher installed"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -365,8 +443,8 @@ printf "    ${GREEN}%d passed${NC} · ${YELLOW}%d skipped${NC}\n\n" "$PASS_COUNT
 printf "    ${DIM}Full log → %s${NC}\n\n" "$LOGFILE"
 printf " ${BOLD}Next steps:${NC}\n"
 printf "    1. ${BOLD}Reboot:${NC} sudo reboot\n"
-printf "    2. ${BOLD}Nextcloud:${NC} docker compose up -d → ~/scripts/run_once/nextcloud_post-restore_fix.sh\n"
-printf "    3. ${BOLD}Borgmatic:${NC} borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt → borgmatic check\n"
-printf "    4. ${BOLD}Tailscale Auth Key:${NC} If connection fails, regenerate at ${DIM}https://login.tailscale.com/admin/settings/keys${NC}\n"
-printf "       ${DIM}Generate auth key → tick Reusable + Tags → select tag → update TS_AUTHKEY in .env${NC}\n"
-printf "    5. ${BOLD}Tailscale Funnel for n8n:${NC} docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678\n"
+printf "    2. ${BOLD}Start Containers:${NC} Go to /opt/stacks and start your containers whenever you're ready.\n"
+printf "       ${DIM}(A background service will detect when they start and auto-configure them!)${NC}\n"
+printf "    3. ${BOLD}Borgmatic:${NC} Mount external HDD, then run:\n"
+printf "       borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt\n"
+printf "       borgmatic check\n"
