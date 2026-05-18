@@ -31,6 +31,23 @@ sudo apt-get purge -y -qq cloud-init
 sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
 sudo systemctl restart ssh
 
+echo ">>> Re-linking the repos..."
+setup_repo() {
+    local target_dir=$1
+    local repo_url=$2
+    
+    echo "Linking $target_dir with $repo_url..."
+    (cd "$target_dir" && \
+     git init && \
+     git remote add origin "$repo_url" && \
+     git fetch origin && \
+     git checkout -f -B main origin/main)
+}
+
+setup_repo "$HOME/scripts" "git@codeberg.org:gravi-ctrl/homelab-blueprint.git"
+setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git"
+setup_repo "/opt/stacks" "git@codeberg.org:gravi-ctrl/server-docker-backup.git"
+
 echo ">>> Cleaning up..."
 rm -- "$0" "$BACKUP"
 
@@ -39,10 +56,7 @@ cat <<'EOF'
 ✅ Bootstrap complete!
 
 Next steps:
-  1. Re-link scripts repo:
-       cd ~/scripts && git init && git remote add origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git && git fetch origin && git checkout -f -B main origin/main
+  1. Run the installer:  ~/scripts/run_once/setup.sh
 
-  2. Run the installer:  ~/scripts/run_once/setup.sh
-
-  3. Re-open your SSH session.
+  2. Re-open your SSH session.
 EOF
