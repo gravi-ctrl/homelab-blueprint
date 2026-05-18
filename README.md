@@ -94,7 +94,7 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     *   `/etc/hosts` restoration
     *   User & Root crontabs restoration
     *   Cloud-init removal & SSH restart
-    *   Firewall rules (`setup-firewall.sh`)
+    *   Firewall rules (`configure-firewall.sh`)
     *   `/data/assets` directory creation & permissions
 
     ```bash
