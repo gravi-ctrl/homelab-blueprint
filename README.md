@@ -86,6 +86,117 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to
     >    cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
     >    ```
 
+
+4.  **Run the Installer:**
+
+    This installs Docker, dependencies, configures Python, Shell environment, and **automatically handles:**
+    *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
+    *   `/etc/hosts` restoration
+    *   User & Root crontabs restoration
+    *   Cloud-init removal & SSH restart
+    *   Firewall rules (`setup-firewall.sh`)
+    *   `/data/assets` directory creation & permissions
+
+    ```bash
+    ~/scripts/run_once/setup.sh
+    ```
+
+5.  **Once the installer is done, just re-open the SSH session for changes to take effect**
+
+    *Reference files are located in:* `run_once/system_configs/`.
+
+---
+
+### Phase 2: Restore Docker Stacks
+
+The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://codeberg.org/gravi-ctrl/homelab-blueprint#phase-1-bootstrap-system).
+
+> **No backup?** You'll be starting fresh — application data (databases,
+> uploads, container configs) is unrecoverable.
+> Clone the [server-docker-backup](https://codeberg.org/gravi-ctrl/server-docker-backup) repo:
+> ```bash
+> sudo mkdir -p /opt/stacks
+> sudo chown -R $(id -u):$(id -g) /opt/stacks
+> git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
+> ```
+> Then generate new secrets for the stacks:
+> ```bash
+> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
+> ```
+> These are fresh containers — set new passwords, don't reuse old ones.
+> You can edit them manually or through the Dockge Web UI after launching it.
+
+
+* **Launch Dockge or spin up everything:**
+   ```bash
+   cd /opt/stacks/dockge && docker compose up -d
+   ```
+   Then deploy remaining stacks via Dockge, **or** spin up everything at once:
+   ```bash
+   find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
+   ```
+
+**Useful extraction tips:**
+
+*   Extract a specific directory from the backup:
+    ```bash
+    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / 'opt/stacks/nextcloud/html'
+    ```
+
+*   Extract only `.env` files (secrets) from the backup:
+    ```bash
+    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
+    ```
+
+---
+
+### Phase 3: Finalize
+
+*   **Verify Paths:** Most, if not all, of the scripts are working through crontabs. Just make sure the paths of the scripts are matching the ones in crontabs.
+*   **Reboot:**
+    ```bash
+    sudo reboot
+    ```
+
+---
+
+## 📋 Quick Reference
+
+| Phase | Task | Automation | Notes |
+|-------|------|-----------|-------|
+| 1 | Extract backup, re-link Git & run setup.sh | ✅ Full | Handles ~95% of restoration |
+| 2 | Docker stacks | ⚠️ Minimal | Re-link Git, launch Dockge, deploy stacks |
+| 3 | Finalize | ⚠️ Manual | Path verification & reboot |
+
+---
+
+## 🔄 Mirroring Workflow
+
+This repository is primary-hosted on **Codeberg** and mirrored to **GitHub**. To maintain synchronicity with a single `git push`, the local `origin` is configured with multiple push URLs.
+
+### Setup Dual-Push (Optional)
+
+```bash
+# Set the primary push URL (Codeberg)
+git remote set-url --add --push origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git
+
+# Add the mirror push URL (GitHub)
+git remote set-url --add --push origin git@github.com:gravi-ctrl/homelab-blueprint.git
+
+# Verify configuration
+git remote -v
+```
+```bash
+    >    git clone git@codeberg.org:gravi-ctrl/homelab-blueprint.git ~/scripts
+    >    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
+    >    ```
+    >
+    > 4. **Create `.env` files from examples** and fill in the secrets (from your password manager):
+    >    ```bash
+    >    find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
+    >    cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
+    >    ```
+
 4.  **Re-link Git and pull the latest code** *(skip if you cloned above)*:
     ```bash
     cd ~/scripts
