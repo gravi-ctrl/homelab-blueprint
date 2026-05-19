@@ -40,8 +40,8 @@ These indices are **automatically updated** by the system's internal crawlers:
 If the server is wiped, follow this order to restore functionality.
 
 The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to restore:
-*   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets
-*   `~/scripts` — Automation scripts with `.env` files
+*   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets. Can be found [here](https://codeberg.org/gravi-ctrl/server-docker-backup)
+*   `~/scripts` — Automation scripts with `.env` files. This repo
 *   `~/ctrl_s_master` — Cross-platform secure archival engine (Standalone Repository). Can be found [here](https://codeberg.org/gravi-ctrl/ctrl-s-master)
 *   `~/.ssh` — Codeberg and server deploy keys
 *   `/etc/ssh` — Host keys
