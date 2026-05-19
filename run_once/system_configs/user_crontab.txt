@@ -23,7 +23,7 @@ A=/data/assets
 0 1 * * * $S/cron-guard.py --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-0 4 * * * $S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "docker exec -u 33 nextcloud calcardbackup /var/www/html -o /mnt/external_files/syncthing/Backup/self-hosted/contacts-calendars_backup -oe -oc 'php occ' -s"
+0 4 * * * $S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
 
 # Apply file renaming rules to Paperless-ngx documents
 15 4 * * * $S/cron-guard.py --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
@@ -31,9 +31,8 @@ A=/data/assets
 # Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git
 0 5 * * * $S/cron-guard.py --mode all "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
-# nextcloud excluded — custom Dockerfile, update with: docker compose build --no-cache
 # Check for available Docker container updates and notify
-0 9 * * * $S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e nextcloud"
+0 9 * * * $S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"
 
 # Runs a Borgmatic backup
 0 2 * * 0 $S/cron-guard.py --mode all "Borg Backup" "borgmatic"
