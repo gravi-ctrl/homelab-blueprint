@@ -389,7 +389,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
         sleep 15
         su - $USER -c "/home/$USER/scripts/run_once/nextcloud_post-restore_fix.sh"
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=\${MY_TELEGRAM_CHAT_ID}" \
+            -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
 ✅ Nextcloud firewall configured." \
@@ -403,7 +403,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
         docker exec tailscaled tailscale serve reset
         docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=\${MY_TELEGRAM_CHAT_ID}" \
+            -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Tailscale
 ━━━━━━━━━━━━━━━
 ✅ Tailscale Funnel configured for n8n webhooks.
