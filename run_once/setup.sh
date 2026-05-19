@@ -168,6 +168,7 @@ sudo chown -R "$(id -u):$(id -g)" /data
 sudo chown -R 33:33 /data/assets/nextcloud_data
 quietly sudo setfacl -R -m u:33:rwx /data/assets
 quietly sudo setfacl -R -d -m u:33:rwx /data/assets
+quietly sudo setfacl -R -b /data/assets/nextcloud_data
 pass
 
 
