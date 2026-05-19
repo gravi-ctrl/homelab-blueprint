@@ -11,7 +11,7 @@
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "docker exec -u 33 nextcloud calcardbackup /var/www/html -o ...` |
 | **Apply file renaming rules to Paperless-ngx documents** | At 04:15 | `$S/cron-guard.py --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
 | **Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git** | At 05:00 | `$S/cron-guard.py --mode all "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
-| **nextcloud excluded — custom Dockerfile, update with: docker compose build --no-cache** | At 09:00 | `$S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e nextcloud"` |
+| **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e nextcloud"` |
 | **Runs a Borgmatic backup** | At 02:00, only on Sunday | `$S/cron-guard.py --mode all "Borg Backup" "borgmatic"` |
 | **cert-manager: regenerate & upload SSL certs to NPM** | At 03:00, on day 1 of the month | `$S/cron-guard.py --mode fail "cert-mgr: Renew SSL certs" "$S/cert-manager/cert-manager.sh regen"` |
 
