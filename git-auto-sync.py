@@ -11,6 +11,7 @@ import sys
 import os
 import subprocess
 import time
+import socket
 from datetime import datetime
 
 def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
@@ -34,6 +35,11 @@ def main():
         # -q (quiet) stops the banner exchange crash. BatchMode stops interactive prompts.
         os.environ["GIT_SSH_COMMAND"] = "ssh -q -o BatchMode=yes"
         os.environ["GIT_TERMINAL_PROMPT"] = "0"
+    hostname = socket.gethostname()
+    os.environ["GIT_AUTHOR_NAME"] = "AutoSync Bot"
+    os.environ["GIT_AUTHOR_EMAIL"] = f"auto-sync@{hostname}.local"
+    os.environ["GIT_COMMITTER_NAME"] = "AutoSync Bot"
+    os.environ["GIT_COMMITTER_EMAIL"] = f"auto-sync@{hostname}.local"
 
     # 1. Safety Check: Ensure a path was provided
     if len(sys.argv) < 2:
