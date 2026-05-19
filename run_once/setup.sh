@@ -384,7 +384,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
 
     # 🔹 TASK: NEXTCLOUD
     if [ "\$DONE_NEXTCLOUD" = false ] && is_running "nextcloud"; then
-        sleep 15 # Give DB time to settle
+        sleep 15
         su - $USER -c "/home/$USER/scripts/run_once/nextcloud_post-restore_fix.sh"
         DONE_NEXTCLOUD=true
     fi
@@ -394,14 +394,9 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
         sleep 5
         docker exec tailscaled tailscale serve reset
         docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678
-
-        # Broadcast message to all active terminal sessions
-        wall "🛡️ [TAILSCALE WATCHER]: Funnel configured! If connection fails, regenerate key at https://login.tailscale.com/admin/settings/keys (Tick Reusable + Tags -> select tag -> update TS_AUTHKEY in .env)"
-
         DONE_TAILSCALE=true
     fi
 
-    # Pause for 10 seconds before checking again
     sleep 10
 done
 
@@ -430,8 +425,9 @@ RestartSec=30
 WantedBy=multi-user.target
 EOF
 
-# Enable it to start on boot
-sudo systemctl enable bootstrap-watcher.service >/dev/null 2>&1
+# Enable it to start
+sudo systemctl daemon-reload
+sudo systemctl enable --now bootstrap-watcher.service >/dev/null 2>&1
 pass "ghost watcher installed"
 
 
