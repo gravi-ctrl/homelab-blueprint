@@ -1,6 +1,11 @@
 #!/bin/bash
 # @DESCRIPTION: Recreates missing markers, user data directories, and appdata_ folders. Safe to run anytime — exits gracefully if not needed.
 # @FREQUENCY: Run Once
+
+# Updated for Nextcloud 33+
+# .ncdata replaced .ocdata and requires specific content
+# .ocdata is legacy and no longer needed
+
 CONTAINER="nextcloud"
 USERNAME="not-admin"
 
