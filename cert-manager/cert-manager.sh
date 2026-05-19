@@ -464,6 +464,6 @@ case "${1:-}" in
     list)        cmd_list ;;
     status)      cmd_status ;;
     setup-cron)  cmd_setup_cron ;;
-    -h|--help|help) usage ;;
+    -h|--help|help|"") usage; exit 0 ;;
     *)           usage; exit 1 ;;
 esac
