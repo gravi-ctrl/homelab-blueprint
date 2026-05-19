@@ -31,8 +31,8 @@ A=/data/assets
 # Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git
 0 5 * * * $S/cron-guard.py --mode all "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
-# Check for available Docker container updates and notify
 # nextcloud excluded — custom Dockerfile, update with: docker compose build --no-cache
+# Check for available Docker container updates and notify
 0 9 * * * $S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e nextcloud"
 
 # Runs a Borgmatic backup
