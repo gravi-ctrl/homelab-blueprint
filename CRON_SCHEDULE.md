@@ -8,6 +8,7 @@
 | **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard.py --mode fail "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal'...` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `$S/cron-guard.py --mode fail "Cleanup Job" "$S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_b...` |
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `$S/cron-guard.py --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.github...` |
+| **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "docker exec -u 33 nextcloud calcardbackup /var/www/html -o ...` |
 | **Apply file renaming rules to Paperless-ngx documents** | At 04:15 | `$S/cron-guard.py --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
 | **Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git** | At 05:00 | `$S/cron-guard.py --mode all "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
 | **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5 -e wifi-robot"` |
@@ -19,7 +20,6 @@
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
 | **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$S/battery_monitor.sh > /dev/null 2>&1` |
-| **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing...` |
 | **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Thursday | `$S/cron-guard.py --mode all "Docker Stacks Backup" "$S/local-opt-backup.sh"` |
 | **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $S/cron-guard.py --mode fail "ctrl_s_master" "$C/run.sh"` |
 
