@@ -10,8 +10,8 @@ A=/data/assets
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# Update NextDNS IP and monitor server/internet health
-*/5 * * * * $S/cron-guard.py --mode fail "NextDNS IP Update & HC Server/Internet status" '. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"'
+# Update NextDNS IP and Healthchecks.io server/internet monitor
+*/5 * * * * . $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"
 
 # Sync Personal and Work Obsidian vaults to Git
 */15 * * * * $S/cron-guard.py --mode fail "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
