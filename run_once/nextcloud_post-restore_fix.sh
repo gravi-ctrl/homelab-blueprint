@@ -10,10 +10,9 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 0
 fi
 
-# --- Guard: Do .ocdata and .ncdata exist? (Means data is probably fine) ---
-if docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ocdata 2>/dev/null && \
-   docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/dev/null; then
-    echo "✅ .ocdata and .ncdata exist — data directory looks intact. Skipping."
+# --- Guard: Does .ncdata exist? (Means data is probably fine) ---
+if docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/dev/null; then
+    echo "✅ .ncdata exists — data directory looks intact. Skipping."
     exit 0
 fi
 
@@ -22,8 +21,7 @@ echo "⚠️  .ocdata missing — running post-restore fix..."
 # Create data directory first
 docker exec -u www-data "$CONTAINER" mkdir -p /var/www/html/data
 
-# Create .ocdata and .ncdata
-docker exec -u www-data "$CONTAINER" touch /var/www/html/data/.ocdata
+# Create .ncdata marker
 docker exec -u www-data "$CONTAINER" bash -c 'echo "# Nextcloud data directory" > /var/www/html/data/.ncdata'
 
 # Get instance ID
