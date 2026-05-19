@@ -388,6 +388,12 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
     if [ "\$DONE_NEXTCLOUD" = false ] && is_running "nextcloud"; then
         sleep 15
         su - $USER -c "/home/$USER/scripts/run_once/nextcloud_post-restore_fix.sh"
+        curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=\${MY_TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
+━━━━━━━━━━━━━━━
+✅ Nextcloud firewall configured." \
+            > /dev/null
         DONE_NEXTCLOUD=true
     fi
 
