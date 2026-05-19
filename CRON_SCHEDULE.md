@@ -5,7 +5,7 @@
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
 | **Update NextDNS IP and Healthchecks.io server/internet monitor** | Every 5 minutes | `. $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"` |
-| **Sync Personal and Work Obsidian vaults to Git** | Every 15 minutes | `$S/cron-guard.py --mode fail "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal'...` |
+| **Sync Personal and Work Obsidian vaults to Git** | Every 30 minutes | `$S/cron-guard.py --mode fail "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal'...` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `$S/cron-guard.py --mode fail "Cleanup Job" "$S/cleanup_script.py $A/syncthing/Backup/self-hosted/contacts-calendars_b...` |
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `$S/cron-guard.py --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.github...` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "docker exec -u 33 nextcloud calcardbackup /var/www/html -o ...` |
