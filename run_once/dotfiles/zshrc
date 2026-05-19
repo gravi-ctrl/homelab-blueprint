@@ -71,7 +71,7 @@ function actual_show_welcome_msg() {
         "welcome|Briefing|Ctrl+R|FZF History|Y"
         "guestwifi|WiFi Toggle|Ctrl+T|FZF Files|Y"
         "dps|Docker Table|Alt+C|FZF Jump|Y"
-        "dc|Update Check|→ / End|Accept Suggest|Y"
+        "cert|cert-manager|→ / End|Accept Suggest|Y"
         "extract|Unzip/Tar|Ctrl+Spc|EXECUTE|X"
         "vc-mount|Mount Vault|Alt+N|Nano Line #s|C"
         "vc-umount|Unmount Vault|Alt+M|Nano Mouse|C"
@@ -155,10 +155,12 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 # 5. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
-alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -IM -x 10 -d 5 -e nextcloud'
+
+# cert-manager
+alias cert='$HOME/scripts/cert-manager/cert-manager.sh'
 
 # Guest Wi-Fi script
-alias guestwifi='/home/gravi-ctrl/scripts/guestwifi'
+alias guestwifi='$HOME/scripts/guestwifi'
 
 # cheat.sh - a TLDR alternative
 cht() {
