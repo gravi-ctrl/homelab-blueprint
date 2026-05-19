@@ -374,6 +374,7 @@ cat << EOF | sudo tee /usr/local/bin/bootstrap-watcher.sh > /dev/null
 # ── 1. Task States ────────────────────────────────────────────────────────────
 DONE_NEXTCLOUD=false
 DONE_TAILSCALE=false
+source /home/$USER/scripts/.env
 
 # ── 2. Helper Functions ───────────────────────────────────────────────────────
 is_running() {
@@ -395,6 +396,18 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
         sleep 5
         docker exec tailscaled tailscale serve reset
         docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678
+        curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=\${MY_TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Tailscale
+━━━━━━━━━━━━━━━
+✅ Tailscale Funnel configured for n8n webhooks.
+
+⚠️ If Tailscale connection fails, regenerate the auth key:
+1. Go to https://login.tailscale.com/admin/settings/keys
+2. Click 'Generate auth key'
+3. Tick: Reusable + Tags → select a tag
+4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env" \
+            > /dev/null
         DONE_TAILSCALE=true
     fi
 
