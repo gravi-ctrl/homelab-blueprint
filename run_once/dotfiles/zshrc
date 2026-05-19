@@ -155,7 +155,7 @@ bindkey "^[[OB" down-line-or-beginning-search
 # ==============================================================================
 # 5. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
-alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -IM -x 10 -d 5 -e wifi-robot'
+alias dc='/home/gravi-ctrl/scripts/dockcheck/dockcheck.sh -IM -x 10 -d 5 -e nextcloud'
 
 # Guest Wi-Fi script
 alias guestwifi='/home/gravi-ctrl/scripts/guestwifi'
