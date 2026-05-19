@@ -38,4 +38,4 @@ A=/data/assets
 0 2 * * 0 $S/cron-guard.py --mode all "Borg Backup" "borgmatic"
 
 # cert-manager: regenerate & upload SSL certs to NPM
-0 3 1 * * $S/cron-guard.py --mode all "cert-mgr: Renew SSL certs" "$S/cert-manager/cert-manager.sh regen"
+0 3 1 * * $S/cron-guard.py --mode fail "cert-mgr: Renew SSL certs" "$S/cert-manager/cert-manager.sh regen"
