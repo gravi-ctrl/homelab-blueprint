@@ -46,7 +46,6 @@ libnss3-tools
 linux-generic
 login
 lvm2
-mariadb-client
 mdadm
 mkcert
 moreutils

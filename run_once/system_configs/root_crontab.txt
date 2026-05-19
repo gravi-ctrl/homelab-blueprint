@@ -14,9 +14,6 @@ A=/data/assets
 # Emergency shutdown if battery is discharging and below 20%
 */5 * * * * $S/battery_monitor.sh > /dev/null 2>&1
 
-# Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-0 4 * * * $S/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "$S/calcardbackup /opt/stacks/nextcloud/html -o $A/syncthing/Backup/self-hosted/contacts-calendars_backup -oe -oc 'docker exec -u 33 nextcloud-app-1 php occ'"
-
 # Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)
 30 5 * * 4 $S/cron-guard.py --mode all "Docker Stacks Backup" "$S/local-opt-backup.sh"
 
