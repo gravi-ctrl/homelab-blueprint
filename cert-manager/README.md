@@ -17,14 +17,6 @@ This script eliminates the manual "click-ops" of setting up new services. It man
 - A dedicated NPM user for API access (Administrator role, TOTP disabled)
 - `jq`, `curl`, `openssl`, and `mkcert` (installed automatically via `init`)
 
-## Setup
-
-```bash
-mkdir -p ~/scripts/cert-manager && cd ~/scripts/cert-manager
-# Place cert-manager.sh and your .env file here
-chmod +x cert-manager.sh
-```
-
 ### `.env`
 
 Create a `.env` file in the same directory:
