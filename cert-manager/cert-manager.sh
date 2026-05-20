@@ -499,8 +499,6 @@ cmd_setup_cron() {
     info "Logs will go to /var/log/cert-manager.log"
 }
 
-# ── Entry point ──
-
 usage() {
     cat << EOF
 
@@ -515,18 +513,20 @@ usage() {
     setup-cron              Install monthly auto-renewal cron job
 
   Day-to-day:
-    add <svc> [ip] [port]   Add a service to cert AND create NPM proxy (e.g., add jellyfin 192.168.1.50 8096)
+    add <svc> [ip port] [s] Add service to cert. If IP/Port provided, creates NPM proxy.
+                            [s] = scheme (http or https, defaults to http)
     remove <svc>            Delete NPM proxy host, remove from cert, and regenerate
     regen                   Regenerate the certificate for all services
     upload                  Push current certificate to NPM via API
     list                    Show all configured services
-    status                  Show certificate details, expiry & coverage
+    status                  Show certificate details, expiry & coverage audit
 
   Examples:
     $0 init
-    $0 add jellyfin grafana
+    $0 add jellyfin 192.168.1.50 8096
+    $0 add nextcloud 192.168.1.50 443 https
+    $0 add just-the-cert-domain
     $0 remove romm
-    $0 regen
     $0 status
 
 EOF
