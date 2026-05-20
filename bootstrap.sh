@@ -49,7 +49,7 @@ setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git"
 setup_repo "/opt/stacks" "git@codeberg.org:gravi-ctrl/server-docker-backup.git"
 
 echo ">>> Cleaning up..."
-rm -- "$0" "$BACKUP"
+rm -- "$BACKUP"
 
 cat <<'EOF'
 
