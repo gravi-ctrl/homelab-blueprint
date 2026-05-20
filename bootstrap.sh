@@ -38,7 +38,7 @@ setup_repo() {
     
     echo "Linking $target_dir with $repo_url..."
     (cd "$target_dir" && \
-     git init && \
+     git init -b main && \
      git remote add origin "$repo_url" 2>/dev/null || git remote set-url origin "$repo_url" && \
      git fetch origin && \
      git checkout -f -B main origin/main)
