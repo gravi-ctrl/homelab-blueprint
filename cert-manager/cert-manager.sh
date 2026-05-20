@@ -72,7 +72,6 @@ ensure_services_file() {
     cat > "$SERVICES_FILE" << 'EOF'
 audiobooks
 bazarr
-borg
 dockge
 glances
 jd
