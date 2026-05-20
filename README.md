@@ -76,7 +76,7 @@ Decrypts the backup, restores filesystem, fixes SSH, re-links git repos, self-de
 > chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
 >
 > git clone git@codeberg.org:gravi-ctrl/homelab-blueprint.git ~/scripts
-> find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
+> find ~/scripts -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} +
 >
 > # Fill in secrets
 > find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
