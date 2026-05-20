@@ -1,190 +1,157 @@
-![Static Badge](https://img.shields.io/badge/https%3A%2F%2Fimg.shields.io%2Fbadge%2Flicense-MIT-green?label=License)
-![Static Badge](https://img.shields.io/badge/https%3A%2F%2Fimg.shields.io%2Fbadge%2Fplatform-Linux-blue?label=Platform)
+![License](https://img.shields.io/badge/license-MIT-green?label=License)
+![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
+
+
 
 # 🛠️ Homelab Blueprint
 
-> **Mirror Status:** This repository is mirrored across [Codeberg](https://codeberg.org/gravi-ctrl/homelab-blueprint) (Primary) and [GitHub](https://github.com/gravi-ctrl/homelab-blueprint).
+> **Mirror Status:** Mirrored across [Codeberg](https://codeberg.org/gravi-ctrl/homelab-blueprint) (Primary) and [GitHub](https://github.com/gravi-ctrl/homelab-blueprint).
 
-This repository contains the "Brain" of the homelab: automation scripts, system configurations, and recovery tools.
+Automation scripts, system configurations, and recovery tooling for a self-hosted home server. Every scheduled task reports back via Telegram, every failure is logged, and the entire server can be rebuilt from a single encrypted archive.
 
-**Location on Server:** `/home/gravi-ctrl/scripts`.
-
----
-
-## 🧠 Autonomous System Design
-
-This isn't just a collection of scripts; it is a self-maintaining ecosystem. The server handles its own security, backups, hardware monitoring, and even documents its own schedule daily.
-
-### 📊 Live System Dashboards
-These indices are **automatically updated** by the system's internal crawlers:
-
-*   **[📜 Script Inventory](./SCRIPTS_INVENTORY.md):** A detailed breakdown of every custom automation tool, its purpose, and execution frequency.
-*   **[📅 Automation Schedule](./CRON_SCHEDULE.md):** A human-readable view of the server's heartbeat—from security patches to encrypted vault synchronization.
-
-***Note**: This system integrates several high-quality open-source tools (marked as External) into a unified automation and monitoring pipeline.*
+**Location on Server:** `~/scripts`
 
 ---
 
-## 🛠️ Core Capabilities
+## 📊 Live Indices
+Auto-generated daily — always current:
 
-- **Hardware Guard:** Real-time monitoring of CPU thermals and UPS/Battery states with automated failsafe shutdowns.
-- **Self-Healing Backups:** Multi-tier backup strategy using `age` encryption, `zstd` compression, and automated health-check heartbeats.
-- **Service Orchestration:** Integrated management of Docker stacks (Pi-hole, Nextcloud, Paperless-ngx) with dynamic filesystem watching.
-- **Automated PKI & SSL:** Local Certificate Authority management (mkcert) with dynamic SAN generation and automated API deployment to Nginx Proxy Manager. All services are served exclusively over HTTPS with Force SSL — there is no `http://ip:port` fallback. **Every device that needs access must trust the local CA**, otherwise all services will be inaccessible with no way to bypass the error. See `cert-manager/` for the setup guide.
-- **Monitoring & Alerts:** Every task is wrapped in `cron-guard.py`, providing customizable Telegram notifications (on failure, success, or always) complete with execution logs and duration tracking.
+- **[📜 Script Inventory](./SCRIPTS_INVENTORY.md)** — every script, its purpose, and run frequency
+- **[📅 Automation Schedule](./CRON_SCHEDULE.md)** — full cron schedule in human-readable form
 
 ---
 
-## 🚨 Disaster Recovery Protocol (Day 0)
+## 🧠 How it fits together
 
-If the server is wiped, follow this order to restore functionality.
+```
+Scheduled tasks → cron-guard.py → Telegram alerts
+                                           ↓
+                              success / failure / always
 
-The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed to restore:
-*   `/opt/stacks/` — Docker compose files, configs, and `.env` secrets. Can be found [here](https://codeberg.org/gravi-ctrl/server-docker-backup)
-*   `~/scripts` — Automation scripts with `.env` files. This repo
-*   `~/ctrl_s_master` — Cross-platform secure archival engine (Standalone Repository). Can be found [here](https://codeberg.org/gravi-ctrl/ctrl-s-master)
-*   `~/.ssh` — Codeberg and server deploy keys
-*   `/etc/ssh` — Host keys
-
-### Phase 1: Bootstrap System
-
-1.  **Upload the backup archive** to the server's home directory (`~/docker-stacks-*.tar.zst.age`).
-
-2.  **Set up the decryption key:**
-    ```bash
-    # Paste your (age) private key from your password manager
-    sudo nano /root/.backup-key.txt
-    sudo chmod 600 /root/.backup-key.txt
-    ```
-
-3.  **Run the bootstrap script:**
-    ```bash
-    curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o $HOME/bootstrap.sh
-    cd $HOME && cat bootstrap.sh   # verify contents before running
-    bash bootstrap.sh
-    ```
-
-    > **No backup?** Restore manually:
-    >
-    > 1. **Get the SSH keys from your password manager** and place them in `~/.ssh/`
-    >    (you need both the server host keys and the Codeberg deploy key).
-    >
-    > 2. **Fix permissions:**
-    >    ```bash
-    >    chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
-    >    ```
-    >
-    > 3. **Clone the repo:**
-    >    ```bash
-    >    git clone git@codeberg.org:gravi-ctrl/homelab-blueprint.git ~/scripts
-    >    find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
-    >    ```
-    >
-    > 4. **Create `.env` files from examples** and fill in the secrets (from your password manager):
-    >    ```bash
-    >    find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
-    >    cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
-    >    ```
-
-
-4.  **Run the Installer:**
-
-    This installs Docker, dependencies, configures Python, Shell environment, and **automatically handles:**
-    *   Dotfiles (`.zshrc`, `.p10k.zsh`, `.nanorc`, `.hushlogin`, `.config/*`)
-    *   `/etc/hosts` restoration
-    *   User & Root crontabs restoration
-    *   Cloud-init removal & SSH restart
-    *   Firewall rules (`configure-firewall.sh`)
-    *   `/data/assets` directory creation & permissions
-
-    ```bash
-    ~/scripts/run_once/setup.sh
-    ```
-
-5.  **Once the installer is done, just re-open the SSH session for changes to take effect**
-
-    *Reference files are located in:* `run_once/system_configs/`.
+SSL certs     → cert-manager.sh → auto-uploads to NPM
+DNS           → Pi-hole + Unbound (recursive, no upstream logging)
+Containers    → Docker + NPM reverse proxy (no exposed ports except NPM)
+Remote access → Tailscale (+ Funnel for n8n webhooks)
+Backups       → age-encrypted weekly archive + Borg for /data/assets
+```
 
 ---
 
-### Phase 2: Restore Docker Stacks
+## 🚨 Disaster Recovery
 
-The backup already extracted `/opt/stacks/` with all compose files, configs, and `.env` secrets in [Phase 1](https://codeberg.org/gravi-ctrl/homelab-blueprint#phase-1-bootstrap-system).
+The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 
-> **No backup?** You'll be starting fresh — application data (databases,
-> uploads, container configs) is unrecoverable.
-> Clone the [server-docker-backup](https://codeberg.org/gravi-ctrl/server-docker-backup) repo:
+| Path | What |
+|------|------|
+| `/opt/stacks/` | Docker compose files, configs, `.env` secrets → [server-docker-backup](https://codeberg.org/gravi-ctrl/server-docker-backup) |
+| `~/scripts` | This repo |
+| `~/ctrl_s_master` | Credential archival engine → [ctrl-s-master](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
+| `~/.ssh` | Deploy keys |
+| `/etc/ssh` | Host keys |
+
+---
+
+### Phase 1 — Bootstrap
+
+**1.** Upload backup archive to `~/docker-stacks-*.tar.zst.age`
+
+**2.** Set up decryption key:
+```bash
+sudo nano /root/.backup-key.txt
+sudo chmod 600 /root/.backup-key.txt
+```
+
+**3.** Run bootstrap:
+```bash
+curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o $HOME/bootstrap.sh
+cat bootstrap.sh
+bash bootstrap.sh
+```
+
+Decrypts the backup, restores filesystem, fixes SSH, re-links git repos, self-destructs.
+
+> **No backup?**
 > ```bash
-> sudo mkdir -p /opt/stacks
-> sudo chown -R $(id -u):$(id -g) /opt/stacks
-> git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
+> # Place SSH keys from password manager into ~/.ssh/
+> chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
+>
+> git clone git@codeberg.org:gravi-ctrl/homelab-blueprint.git ~/scripts
+> find ~/scripts -type f -name "*.sh" -exec chmod +x {} +
+>
+> # Fill in secrets
+> find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
+> cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
 > ```
-> Then generate new secrets for the stacks:
+
+**4.** Run the installer:
+```bash
+~/scripts/run_once/setup.sh
+```
+
+Covers: Docker, firewall, directory structure, permissions, Unbound, dotfiles, crontabs. Installs a background watcher that auto-configures containers as they come up.
+
+**5.** Reopen SSH session for shell changes to take effect.
+
+---
+
+### Phase 2 — Docker Stacks
+
+`/opt/stacks/` is already restored from Phase 1. Launch Dockge and deploy from its UI, or all at once:
+
+```bash
+cd /opt/stacks/dockge && docker compose up -d
+
+# All stacks at once
+find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
+```
+
+> **No backup?**
 > ```bash
+> sudo mkdir -p /opt/stacks && sudo chown -R $(id -u):$(id -g) /opt/stacks
+> git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
+>
+> # New secrets only - as configs at this point are... well, gone
 > for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
 > ```
-> These are fresh containers — set new passwords, don't reuse old ones.
-> You can edit them manually or through the Dockge Web UI after launching it.
 
+**Useful extraction commands:**
+```bash
+# Specific path
+sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / 'opt/stacks/nextcloud/html'
 
-* **Launch Dockge:**
-   ```bash
-   cd /opt/stacks/dockge && docker compose up -d
-   ```
-   Then deploy remaining stacks via Dockge, **or**
-
-* **Spin up everything at once:**
-   ```bash
-   find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
-   ```
-
-**Useful extraction tips:**
-
-*   Extract a specific directory from the backup:
-    ```bash
-    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / 'opt/stacks/nextcloud/html'
-    ```
-
-*   Extract only `.env` files (secrets) from the backup:
-    ```bash
-    sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
-    ```
+# .env files only
+sudo age -d -i /root/.backup-key.txt docker-stacks-*.tar.zst.age | sudo tar --zstd -xf - -C / --wildcards 'opt/stacks/*/.env' 'home/gravi-ctrl/scripts/*/.env'
+```
 
 ---
 
-### Phase 3: Finalize
+### Phase 3 — Finalize
 
-*   **Verify Paths:** Most, if not all, of the scripts are working through crontabs. Just make sure the paths of the scripts are matching the ones in crontabs.
-*   **Reboot:**
-    ```bash
-    sudo reboot
-    ```
+The background watcher handles most post-restore tasks automatically. What remains:
+
+- **Borg key** → once external HDD is mounted:
+  ```bash
+  borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt && borgmatic check
+  ```
+- **Tailscale** → if connection fails, regenerate auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) → Reusable + Tags → update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
+- **Reboot**
 
 ---
 
 ## 📋 Quick Reference
 
-| Phase | Task | Automation | Notes |
-|-------|------|-----------|-------|
-| 1 | Extract backup, re-link Git & run setup.sh | ✅ Full | Handles ~95% of restoration |
-| 2 | Docker stacks | ⚠️ Minimal | Re-link Git, launch Dockge, deploy stacks |
-| 3 | Finalize | ⚠️ Manual | Path verification & reboot |
+| Phase | Task | Automation |
+|-------|------|-----------|
+| 1 | Decrypt backup, bootstrap system | ✅ Full |
+| 2 | Deploy Docker stacks | ⚠️ Launch Dockge, rest is one command |
+| 3 | Post-restore config | ⚠️ Mostly via background watcher |
 
 ---
 
-## 🔄 Mirroring Workflow
-
-This repository is primary-hosted on **Codeberg** and mirrored to **GitHub**. To maintain synchronicity with a single `git push`, the local `origin` is configured with multiple push URLs.
-
-### Setup Dual-Push (Optional)
+## 🔄 Dual-push mirror setup
 
 ```bash
-# Set the primary push URL (Codeberg)
 git remote set-url --add --push origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git
-
-# Add the mirror push URL (GitHub)
 git remote set-url --add --push origin git@github.com:gravi-ctrl/homelab-blueprint.git
-
-# Verify configuration
 git remote -v
 ```
