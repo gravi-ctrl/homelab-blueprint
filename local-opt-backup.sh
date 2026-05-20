@@ -194,7 +194,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="$STACKS_DIR/qbittorrent/config/qBittorrent/data/GeoDB" \
     --exclude="$STACKS_DIR/jdownloader/config/logs" \
     --exclude="$STACKS_DIR/jdownloader/config/tmp" \
-    --exclude="$STACKS_DIR/borg-ui/borg_cache" \
     -C / \
     "$STACKS_DIR" \
     "$SCRIPT_DIR" \
