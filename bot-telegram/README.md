@@ -31,7 +31,7 @@ nano .env
 Add commands using the `CMD_` prefix:
 
 ```ini
-CMD_backup="bash /home/gravi-ctrl/scripts/backup.sh"
+CMD_backup="bash /home/user/scripts/backup.sh"
 CMD_ping="ping -c 3 google.com"
 ```
 
@@ -62,8 +62,8 @@ After=network.target
 
 [Service]
 User=gravi-ctrl
-WorkingDirectory=/home/gravi-ctrl/scripts/bot-telegram
-ExecStart=/usr/bin/python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
+WorkingDirectory=%h/scripts/bot-telegram
+ExecStart=/usr/bin/python3 %h/scripts/bot-telegram/bot.py
 Restart=always
 RestartSec=10
 
