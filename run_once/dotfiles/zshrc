@@ -122,7 +122,7 @@ setopt SHARE_HISTORY           # Sync history across all open terminals
 setopt HIST_IGNORE_SPACE       # LEADING SPACE = NOT SAVED (Use for passwords/typos)
 
 # Junk Command Filter (Prevents these from cluttering history)
-HISTORY_IGNORE="(ls|ll|cd|pwd|exit|clear|reboot|history|zsh|htop|top)"
+HISTORY_IGNORE="(ls|ll|pwd|exit|clear|reboot|history|zsh|htop|top)"
 
 zshaddhistory() {
     local cmd="${1%%$'\n'}" # Strip trailing newline
