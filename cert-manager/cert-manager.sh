@@ -154,6 +154,57 @@ npm_upload_files() {
     fi
 }
 
+npm_get_proxy_host_id() {
+    local domain="$1"
+    curl -s "${NPM_URL}/api/nginx/proxy-hosts" \
+        -H "Authorization: Bearer ${npm_token}" \
+        | jq -r ".[] | select(.domain_names[] == \"${domain}\") | .id" | head -1
+}
+
+npm_create_proxy_host() {
+    local domain="$1"
+    local ip="$2"
+    local port="$3"
+    local scheme="$4"
+    local cert_id="${5:-0}"
+
+    local payload
+    # We use jq to safely build the JSON payload required by NPM
+    payload=$(jq -n \
+        --arg domain "$domain" \
+        --arg scheme "$scheme" \
+        --arg ip "$ip" \
+        --argjson port "$port" \
+        --argjson cert "$cert_id" \
+        '{
+            domain_names: [$domain],
+            forward_scheme: $scheme,
+            forward_host: $ip,
+            forward_port: $port,
+            certificate_id: (if $cert > 0 then $cert else 0 end),
+            ssl_forced: (if $cert > 0 then true else false end),
+            hsts_enabled: (if $cert > 0 then true else false end),
+            http2_support: (if $cert > 0 then true else false end),
+            block_exploits: true,
+            allow_websocket_upgrade: true,
+            meta: { letsencrypt_agree: false, dns_challenge: false }
+        }')
+
+    local resp code body
+    resp=$(curl -s -w "\n%{http_code}" -X POST "${NPM_URL}/api/nginx/proxy-hosts" \
+        -H "Authorization: Bearer ${npm_token}" \
+        -H "Content-Type: application/json" \
+        -d "$payload")
+
+    code=$(echo "$resp" | tail -1)
+    if [[ "$code" == "200" || "$code" == "201" ]]; then
+        log "Created NPM proxy host: ${domain} ➔ ${scheme}://${ip}:${port}"
+    else
+        body=$(echo "$resp" | sed '$d')
+        err "Failed to create proxy host (HTTP ${code}): ${body}"
+    fi
+}
+
 # Combined: auth → find-or-create → upload
 cmd_upload() {
     local cert_path="${CERT_DIR}/${CERT_FILE}"
@@ -232,27 +283,50 @@ cmd_export_ca() {
 }
 
 cmd_add() {
-    [[ $# -eq 0 ]] && { err "Usage: $0 add <service> [service2 ...]"; exit 1; }
+    [[ $# -eq 0 ]] && { err "Usage: $0 add <service> [ip] [port] [scheme (http/https)]"; exit 1; }
     ensure_services_file
 
-    local added=0
-    for raw in "$@"; do
-        local svc
-        svc=$(echo "$raw" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
-        [[ -z "$svc" ]] && { warn "Skipping invalid name '${raw}'"; continue; }
+    local svc="$1"
+    local ip="${2:-}"
+    local port="${3:-}"
+    local scheme="${4:-http}"
 
-        if grep -qx "$svc" "$SERVICES_FILE" 2>/dev/null; then
-            warn "'${svc}' already in the list"
-        else
-            echo "$svc" >> "$SERVICES_FILE"
-            log "Added '${svc}.${DOMAIN}'"
-            ((added++))
-        fi
-    done
+    svc=$(echo "$svc" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
+    [[ -z "$svc" ]] && { err "Invalid service name"; exit 1; }
 
-    if ((added > 0)); then
+    local domain="${svc}.${DOMAIN}"
+
+    # 1. Handle Certificate
+    if grep -qx "$svc" "$SERVICES_FILE" 2>/dev/null; then
+        warn "'${domain}' is already in the certificate list."
+    else
+        echo "$svc" >> "$SERVICES_FILE"
+        log "Added '${domain}' to certificate list."
         echo ""
-        cmd_regen
+        cmd_regen # This generates the cert AND uploads it to NPM
+    fi
+
+    # 2. Handle NPM Routing (If IP and Port are provided)
+    if [[ -n "$ip" && -n "$port" ]]; then
+        echo ""
+        info "Automating NPM Proxy Host creation..."
+        if npm_auth; then
+            local existing_id
+            existing_id=$(npm_get_proxy_host_id "$domain")
+
+            if [[ -n "$existing_id" && "$existing_id" != "null" ]]; then
+                warn "Proxy host for '${domain}' already exists (ID: ${existing_id})."
+            else
+                # Fetch the ID of the certificate we just uploaded so we can link it
+                local cert_id
+                cert_id=$(npm_find_cert)
+                [[ -z "$cert_id" || "$cert_id" == "null" ]] && cert_id=0
+
+                npm_create_proxy_host "$domain" "$ip" "$port" "$scheme" "$cert_id"
+            fi
+        else
+            warn "Could not authenticate with NPM. Proxy host must be created manually."
+        fi
     fi
 }
 
@@ -261,18 +335,42 @@ cmd_remove() {
     ensure_services_file
 
     local svc="$1"
+    local domain="${svc}.${DOMAIN}"
+
+    # 1. Delete from NPM
+    info "Checking for NPM proxy host..."
+    if curl -sf -o /dev/null --connect-timeout 3 "${NPM_URL}/api/" 2>/dev/null; then
+        if npm_auth; then
+            local host_id
+            host_id=$(npm_get_proxy_host_id "$domain")
+            if [[ -n "$host_id" && "$host_id" != "null" ]]; then
+                local code
+                code=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${NPM_URL}/api/nginx/proxy-hosts/${host_id}" \
+                    -H "Authorization: Bearer ${npm_token}")
+                if [[ "$code" == "200" || "$code" == "201" ]]; then
+                    log "Deleted NPM proxy host for '${domain}'"
+                else
+                    err "Failed to delete proxy host (HTTP $code)"
+                fi
+            else
+                info "No proxy host found in NPM for '${domain}'"
+            fi
+        fi
+    else
+        warn "NPM unreachable, skipping proxy host deletion."
+    fi
+
+    echo ""
+
+    # 2. Delete from Cert List
     if grep -qx "$svc" "$SERVICES_FILE"; then
         grep -vx "$svc" "$SERVICES_FILE" > "${SERVICES_FILE}.tmp"
         mv "${SERVICES_FILE}.tmp" "$SERVICES_FILE"
-        log "Removed '${svc}.${DOMAIN}'"
-        echo ""
-        warn "Remember to also remove the proxy host in NPM if you no longer need it."
+        log "Removed '${domain}' from local certificate list"
         echo ""
         cmd_regen
     else
-        err "'${svc}' not found in services list"
-        cmd_list
-        exit 1
+        err "'${svc}' not found in local services list"
     fi
 }
 
@@ -412,17 +510,17 @@ usage() {
   Usage: $0 <command> [arguments]
 
   Setup:
-    init              Install mkcert, create CA, prepare environment
-    export-ca         Copy rootCA.pem/.crt to shared folder for device import
-    setup-cron        Install monthly auto-renewal cron job
+    init                    Install mkcert, create CA, prepare environment
+    export-ca               Copy rootCA.pem/.crt to shared folder for device import
+    setup-cron              Install monthly auto-renewal cron job
 
   Day-to-day:
-    add <svc> [...]   Add service(s) to the list, regenerate & upload
-    remove <svc>      Remove a service, regenerate & upload
-    regen             Regenerate the certificate for all services
-    upload            Push current certificate to NPM via API
-    list              Show all configured services
-    status            Show certificate details, expiry & coverage
+    add <svc> [ip] [port]   Add a service to cert AND create NPM proxy (e.g., add jellyfin 192.168.1.50 8096)
+    remove <svc>            Delete NPM proxy host, remove from cert, and regenerate
+    regen                   Regenerate the certificate for all services
+    upload                  Push current certificate to NPM via API
+    list                    Show all configured services
+    status                  Show certificate details, expiry & coverage
 
   Examples:
     $0 init
