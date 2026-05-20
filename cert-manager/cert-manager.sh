@@ -68,29 +68,11 @@ info() { echo -e "${BLUE}[i]${NC} $*"; }
 # ── Services file ──
 
 ensure_services_file() {
-    [[ -f "$SERVICES_FILE" ]] && return
-    cat > "$SERVICES_FILE" << 'EOF'
-audiobooks
-bazarr
-dockge
-glances
-jd
-jellyfin
-kuma
-n8n
-nextcloud
-npm
-paperless
-pihole
-prowlarr
-qbit
-radarr
-romm
-scrutiny
-sonarr
-syncthing
-EOF
-    log "Created default ${SERVICES_FILE}"
+    if [[ ! -f "$SERVICES_FILE" ]]; then
+        touch "$SERVICES_FILE"
+        info "Created empty services file at ${SERVICES_FILE}"
+        info "Use '$0 add <service>' to start adding subdomains!"
+    fi
 }
 
 get_services() {
