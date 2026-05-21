@@ -46,24 +46,35 @@ At 05:00 every day, the server:
 
 > [!TIP]
 > For a deeper look at the entire stack, refer to the **[Script Inventory](./SCRIPTS_INVENTORY.md)** and **[Automation Schedule](./CRON_SCHEDULE.md)** under the **System Maps** section.
+
 ---
 
 ## 🚨 Disaster Recovery
 
 ```mermaid
 graph TD
+    %% Main Path
     A[Encrypted Backup + Key] --> B[Phase 1: bootstrap.sh]
     B --> C[Phase 2: setup.sh]
-    C --> D{Ghost Watcher}
-    D -->|Wait for Container| E[Auto-Config Nextcloud/Tailscale]
-    E --> F[Phase 3: Finalize & Reboot]
-    F --> G((Server Online))
+    
+    %% The Spawning of the Ghost
+    C -- spawns --> GW[<i>Ghost Watcher Daemon</i>]
+    
+    C --> D[<b>Phase 3: Manual Reboot</b>]
+    D --> E[Spin up Docker Stacks]
+    E --> F((<b>Server Online</b>))
 
-    style A fill:#1f242b,stroke:#d29922
+    %% The Background Path
+    GW -.->|Monitoring| E
+    E -.->|Nextcloud/Tailscale detected| G[Auto-Configure Funnel & Perms]
+    G -.->|Notify via Telegram| H[<b>Self Destruct</b>]
+
+    %% Styling
+    style GW fill:#1f242b,stroke:#8b5cf6,stroke-dasharray: 5 5
+    style H fill:#1f242b,stroke:#ef4444
+    style F fill:#1f242b,stroke:#3fb950
     style B fill:#1f242b,stroke:#3081f7
     style C fill:#1f242b,stroke:#3081f7
-    style D fill:#1f242b,stroke:#3fb950
-    style G fill:#1f242b,stroke:#3fb950
 ```
 
 The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
@@ -75,10 +86,12 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 | `~/ctrl-s-master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
 | `~/.ssh` | Deploy keys |
 | `/etc/ssh` | Host keys |
+| `/etc/unbound` | Local DNS Resolver Configs |
 
 ---
 
 ### Phase 1 — Bootstrap
+
 **1. Setup Decryption Key:**
 ```bash
 sudo nano /root/.backup-key.txt  # Paste your age key
@@ -110,17 +123,29 @@ curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 > ```
 </details>
 
-**3.** Run the installer:
+---
+
+### Phase 2 — System Provisioning
+
+Run the main installer:
 ```bash
 ~/scripts/run_once/setup.sh
 ```
-*This installs Docker, firewall, directory structure, permissions, Unbound, dotfiles, crontabs. Installs a background watcher that auto-configures containers as they come up.*
+*This installs Docker, firewall, directory structure, Python libraries, Unbound DNS, ZSH, and restores your system configs (crontabs, hosts, etc).*
+
+*At the end, it spawns the **Ghost Watcher**—a temporary systemd service that stays silent in the background.*
 
 ---
 
-### Phase 2 — Docker Stacks
+### Phase 3 — Docker & Finalize
 
-Restore the stacks using the compose files already placed in `/opt/stacks`:
+**1. Reboot the Server:**
+```bash
+sudo reboot
+```
+
+**2. Restore the Stacks:**
+After rebooting, move to `/opt/stacks` and bring up your services.
 
 ```bash
 # Start Dockge to manage stacks via UI
@@ -129,6 +154,9 @@ cd /opt/stacks/dockge && docker compose up -d
 # Or bring up everything at once
 find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
 ```
+
+> [!TIP]
+> **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the background watcher detects the containers, configures the Tailscale Funnel and Nextcloud permissions, sends you a Telegram confirmation, and then **deletes itself** from your system. You don't need to do anything!
 
 <details>
 <summary><b>No backup❓ Click here to start from scratch</b></summary>
@@ -144,22 +172,15 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 > ```
 </details>
 
----
-
-### Phase 3 — Finalize
-
-The background watcher handles most post-restore tasks automatically.
+<br>
 
 > [!WARNING]
-> Critical manual steps remaining:
+> **Critical manual steps remaining:**
 > - **Borgmatic:** Mount external HDD, import key, and run a check:
 >    `borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt && borgmatic check`
-> - **Tailscale:** If connection fails, regenerate auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) with Reusable + Tags, then update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
-
-**Finally:** `sudo reboot`
+> - **Tailscale:** If the Tailscale Funnel connection fails, regenerate the auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) (Reusable + Tags), then update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
 
 ---
-
 
 ## 🔄 Dual-push mirror setup
 
