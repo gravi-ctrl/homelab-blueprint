@@ -130,7 +130,7 @@ The background watcher handles most post-restore tasks automatically.
 > Critical manual steps remaining:
 > - **Borgmatic:** Mount external HDD, import key, and run a check:
 >    `borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt && borgmatic check`
-> - **Tailscale** → if connection fails, regenerate auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) → Reusable + Tags → update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
+> - **Tailscale:** If connection fails, regenerate auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) with Reusable + Tags, then update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
 
 **Finally:** `sudo reboot`
 
