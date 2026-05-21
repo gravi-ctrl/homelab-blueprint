@@ -54,8 +54,8 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 
 | Path | What |
 |------|------|
-| /opt/[stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) | Docker compose files, configs, `.env` secrets |
 | ~/scripts | This repo |
+| /opt/[stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) | Docker compose files, configs, `.env` secrets |
 | ~/[ctrl-s-master](https://codeberg.org/gravi-ctrl/ctrl-s-master) | Credential archival engine |
 | ~/.ssh | Deploy keys |
 | /etc/ssh | Host keys |
