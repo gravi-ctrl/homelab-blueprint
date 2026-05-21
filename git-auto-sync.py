@@ -124,8 +124,7 @@ def main():
 
             # 5c. Repo missing
             if "could not read from remote" in err_low or "not found" in err_low:
-                print("❌ CRITICAL: Remote repository not found or unreachable.")
-                sys.exit(1)
+                print("⚠️ Warning: Remote unreachable. (Might be a transient network/SSH drop)")
             
             # If not a critical error, it is a network error. Trigger the retry!
             print(f"⚠️ Pull failed (Network/Server Error). Retrying in 10s...")
