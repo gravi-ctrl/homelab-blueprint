@@ -54,11 +54,11 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 
 | Path | What |
 |------|------|
-| ~/scripts | This repo |
-| /opt/[stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) | Docker compose files, configs, `.env` secrets |
-| ~/[ctrl-s-master](https://codeberg.org/gravi-ctrl/ctrl-s-master) | Credential archival engine |
-| ~/.ssh | Deploy keys |
-| /etc/ssh | Host keys |
+| `~/scripts` | This repository (Automation Engine) |
+| `/opt/stacks` | [Docker Stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) (Compose files & secrets) |
+| `~/ctrl-s-master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
+| `~/.ssh` | Deploy keys |
+| `/etc/ssh` | Host keys |
 
 ---
 
@@ -70,13 +70,15 @@ sudo chmod 600 /root/.backup-key.txt
 ```
 
 **2. Run Bootstrap:**
-> Make sure to copy the backup file to $HOME before running the bootstrap
+> [!IMPORTANT]
+> The bootstrap script expects the backup archive to be located in `$HOME`. Ensure your `docker-stacks-*.tar.zst.age` file is moved there before proceeding.
 ```bash
 curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 ```
 *This decrypts the backup, restores the filesystem, and fixes SSH permissions.*
 
-> **No backup?**
+> [!NOTE]
+> **No backup?** If starting from scratch without an archive:
 > ```bash
 > # Place SSH keys from password manager into ~/.ssh/
 > chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
@@ -108,7 +110,8 @@ cd /opt/stacks/dockge && docker compose up -d
 find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
 ```
 
-> **No backup?**
+> [!NOTE]
+> **No backup?** If you didn't have a stacks archive, clone the repo and populate new `.env` files:
 > ```bash
 > sudo mkdir -p /opt/stacks && sudo chown -R $(id -u):$(id -g) /opt/stacks
 > git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
@@ -123,12 +126,13 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 
 The background watcher handles most post-restore tasks automatically. What remains:
 
-- **Borg key** → once external HDD is mounted:
-  ```bash
-  borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt && borgmatic check
-  ```
-- **Tailscale** → if connection fails, regenerate auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) → Reusable + Tags → update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
-- **Reboot**
+> [!WARNING]
+> Critical manual steps remaining:
+> - **Borgmatic:** Mount external HDD, import key, and run a check:
+>    `borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt && borgmatic check`
+> - **Tailscale** → if connection fails, regenerate auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) → Reusable + Tags → update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
+
+**Finally:** `sudo reboot`
 
 ---
 
