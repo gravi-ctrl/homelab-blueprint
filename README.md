@@ -50,6 +50,22 @@ At 05:00 every day, the server:
 
 ## 🚨 Disaster Recovery
 
+```mermaid
+graph TD
+    A[Encrypted Backup + Key] --> B[Phase 1: bootstrap.sh]
+    B --> C[Phase 2: setup.sh]
+    C --> D{Ghost Watcher}
+    D -->|Wait for Container| E[Auto-Config Nextcloud/Tailscale]
+    E --> F[Phase 3: Finalize & Reboot]
+    F --> G((Server Online))
+
+    style A fill:#1f242b,stroke:#d29922
+    style B fill:#1f242b,stroke:#3081f7
+    style C fill:#1f242b,stroke:#3081f7
+    style D fill:#1f242b,stroke:#3fb950
+    style G fill:#1f242b,stroke:#3fb950
+```
+
 The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 
 | Path | What |
@@ -77,8 +93,11 @@ curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 ```
 *This decrypts the backup, restores the filesystem, and fixes SSH permissions.*
 
+<details>
+<summary><b>No backup❓ Click here to start from scratch</b></summary>
+
 > [!NOTE]
-> **No backup?** If starting from scratch without an archive:
+> **Manual Setup:** If you are starting from scratch without a backup archive:
 > ```bash
 > # Place SSH keys from password manager into ~/.ssh/
 > chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
@@ -89,6 +108,7 @@ curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 > find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
 > cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
 > ```
+</details>
 
 **3.** Run the installer:
 ```bash
@@ -110,8 +130,11 @@ cd /opt/stacks/dockge && docker compose up -d
 find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
 ```
 
+<details>
+<summary><b>No backup❓ Click here to start from scratch</b></summary>
+
 > [!NOTE]
-> **No backup?** If you didn't have a stacks archive, clone the repo and populate new `.env` files:
+> **Manual Setup:** If you didn't have a stacks archive, clone the repo and populate new `.env` files:
 > ```bash
 > sudo mkdir -p /opt/stacks && sudo chown -R $(id -u):$(id -g) /opt/stacks
 > git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
@@ -119,6 +142,7 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 > # New secrets only - as configs at this point are... well, gone
 > for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
 > ```
+</details>
 
 ---
 
