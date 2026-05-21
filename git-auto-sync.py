@@ -98,25 +98,37 @@ def main():
         while count < max_retries:
             print(f"⬇️  Pulling changes from origin/{current_branch} (Attempt {count+1}/{max_retries})...")
             
-            pull_proc = run_command(["git", "pull", "origin", current_branch, "--no-edit", "--rebase", "--autostash"])
+            pull_proc = run_command(["git", "pull", "origin", current_branch, "--no-edit", "--rebase", "--autostash"], capture_output=True)
             
             if pull_proc.returncode == 0:
+                print(pull_proc.stdout.strip() if pull_proc.stdout else "✅ Pull successful.")
                 success = True
                 break
                 
-            # BULLETPROOF CONFLICT CHECK
-            # Don't guess the exit code. Ask Git directly if it's stuck.
+            # Check for CRITICAL pull errors that retrying won't fix
+            err_low = pull_proc.stderr.lower() if pull_proc.stderr else ""
+            
+            # 5a. Conflict Check
             status_proc = run_command(["git", "status"], capture_output=True)
             status_out = status_proc.stdout.lower() if status_proc.stdout else ""
-            
-            if "rebase in progress" in status_out or "unmerged paths" in status_out:
-                print("❌ Git Conflict detected during rebase.")
+            if "rebase in progress" in status_out or "unmerged paths" in status_out or "conflict" in err_low:
+                print("❌ Git Conflict detected. Manual merge required.")
                 print("⚠️ Attempting to abort stuck rebase to restore clean state...")
                 run_command(["git", "rebase", "--abort"], suppress_errors=True)
                 sys.exit(1)
             
-            # If not a conflict, it is a network error. Trigger the retry!
-            print(f"⚠️ Pull failed (Network/SSH Error). Retrying in 10s...")
+            # 5b. Auth/Permission Check
+            if "permission denied" in err_low or "authentication failed" in err_low:
+                print("❌ CRITICAL: Authentication/Permission error. Check your SSH keys/token.")
+                sys.exit(1)
+
+            # 5c. Repo missing
+            if "could not read from remote" in err_low or "not found" in err_low:
+                print("❌ CRITICAL: Remote repository not found or unreachable.")
+                sys.exit(1)
+            
+            # If not a critical error, it is a network error. Trigger the retry!
+            print(f"⚠️ Pull failed (Network/Server Error). Retrying in 10s...")
             time.sleep(10)
             count += 1
             
@@ -149,23 +161,36 @@ def main():
             break
         
         # Safeguard: Ensure stderr isn't None before reading it
-        error_msg = push_result.stderr.lower() if push_result.stderr else ""
+        err_low = push_result.stderr.lower() if push_result.stderr else ""
         raw_error = push_result.stderr.strip() if push_result.stderr else "Unknown Error"
 
-        # DETECT HISTORY REWRITE (Force push needed)
-        if "rejected" in error_msg and "fetch first" in error_msg:
+        # DETECT CRITICAL ERRORS (No retrying)
+        
+        # 6a. History Rewritten / Diverged
+        if "rejected" in err_low and "fetch first" in err_low:
             print("❌ CRITICAL: Remote history has diverged (History Rewrite detected).")
             print("⚠️ Manual intervention required: 'git push --force' may be needed.")
             sys.exit(1)
+            
+        # 6b. File too large (GitHub limit)
+        if "this is larger than github's recommended maximum file size" in err_low or "gh001" in err_low:
+            print("❌ CRITICAL: Push rejected because a file is too large.")
+            sys.exit(1)
 
-        # Check if the failure was just a missing upstream
-        if "no upstream branch" in error_msg or count == 0:
+        # 6c. Auth/Permission
+        if "permission denied" in err_low or "authentication failed" in err_low:
+            print("❌ CRITICAL: Authentication error during push.")
+            sys.exit(1)
+
+        # 6d. Check if the failure was just a missing upstream
+        if "upstream" in err_low or "set-upstream" in err_low:
             upstream_result = run_command(["git", "push", "-u", "origin", "HEAD"], capture_output=True)
             if upstream_result.returncode == 0:
                 print("✅ Upstream set and pushed successfully.")
                 success = True
                 break
 
+        # If we reached here, it is a generic failure (Network, Timeout, Server 500)
         print(f"⚠️ Push failed. Error: {raw_error}")
         print(f"Waiting 10s before retry...")
         time.sleep(10)
