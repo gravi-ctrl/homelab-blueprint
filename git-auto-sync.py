@@ -12,6 +12,7 @@ import os
 import subprocess
 import time
 import socket
+import random  # Added for randomized network jitter
 from datetime import datetime
 
 def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
@@ -21,7 +22,6 @@ def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     """
     if capture_output:
         stdout_dest = subprocess.PIPE
-        # If we capture output, we also want stderr so we can read it, unless explicitly suppressed
         stderr_dest = subprocess.DEVNULL if suppress_errors else subprocess.PIPE
     else:
         stdout_dest = None
@@ -36,10 +36,13 @@ def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     )
 
 def main():
-    if os.name == 'nt':
-        # -q (quiet) stops the banner exchange crash. BatchMode stops interactive prompts.
-        os.environ["GIT_SSH_COMMAND"] = "ssh -q -o BatchMode=yes"
-        os.environ["GIT_TERMINAL_PROMPT"] = "0"
+    # ── UNIVERSAL AUTOMATION SAFEGUARDS (Cross-Platform) ──────────────────
+    # BatchMode: Stops SSH from asking questions/prompts on all systems.
+    # StrictHostKeyChecking=accept-new: Quietly registers Codeberg/GitHub keys on first run, but prevents hangs.
+    # GIT_TERMINAL_PROMPT=0: Prevents Git from prompting for usernames/passwords.
+    ssh_opts = "-q -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
+    os.environ["GIT_SSH_COMMAND"] = f"ssh {ssh_opts}"
+    os.environ["GIT_TERMINAL_PROMPT"] = "0"
         
     hostname = socket.gethostname()
     os.environ["GIT_AUTHOR_NAME"] = "AutoSync Bot"
@@ -53,8 +56,8 @@ def main():
         print(f"Usage: python {sys.argv[0]} /path/to/repo [Label]")
         sys.exit(1)
 
-    target_dir = sys.argv[1]
-    # Default to "Auto-Sync" if no label provided
+    # Normalize paths to be cross-platform safe (handles \ and / automatically)
+    target_dir = os.path.normpath(sys.argv[1])
     label = sys.argv[2] if len(sys.argv) > 2 else "Auto-Sync"
 
     # 2. Navigate to the folder
@@ -72,7 +75,6 @@ def main():
     run_command(["git", "add", "."])
 
     # 4. Commit ONLY if there are changes
-    # git diff-index --quiet HEAD returns 0 if no changes, 1 if changes exist
     diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"])
     
     if diff_check.returncode != 0:
@@ -105,7 +107,6 @@ def main():
                 success = True
                 break
                 
-            # Check for CRITICAL pull errors that retrying won't fix
             err_low = pull_proc.stderr.lower() if pull_proc.stderr else ""
             
             # 5a. Conflict Check
@@ -122,13 +123,14 @@ def main():
                 print("❌ CRITICAL: Authentication/Permission error. Check your SSH keys/token.")
                 sys.exit(1)
 
-            # 5c. Repo missing
+            # 5c. Repo missing / Network hiccup (RESTORED WARNING BLOCK)
             if "could not read from remote" in err_low or "not found" in err_low:
                 print("⚠️ Warning: Remote unreachable. (Might be a transient network/SSH drop)")
-            
-            # If not a critical error, it is a network error. Trigger the retry!
-            print(f"⚠️ Pull failed (Network/Server Error). Retrying in 10s...")
-            time.sleep(10)
+
+            # If not a critical error, it is a network error. Trigger the retry with Jitter!
+            jitter_sleep = random.randint(25, 35)
+            print(f"⚠️ Pull failed (Network/Server Error). Retrying in {jitter_sleep}s...")
+            time.sleep(jitter_sleep)
             count += 1
             
         if not success:
@@ -147,11 +149,9 @@ def main():
     while count < max_retries:
         print(f"🚀 Pushing updates to all remotes (Attempt {count + 1}/{max_retries})...")
         
-        # We capture output here so we can inspect it for specific errors
         push_result = run_command(["git", "push"], capture_output=True)
 
         if push_result.returncode == 0:
-            # Git often sends success progress (like URLs) to stderr, and standard messages to stdout
             if push_result.stdout:
                 print(push_result.stdout.strip())
             if push_result.stderr:
@@ -159,19 +159,15 @@ def main():
             success = True
             break
         
-        # Safeguard: Ensure stderr isn't None before reading it
         err_low = push_result.stderr.lower() if push_result.stderr else ""
         raw_error = push_result.stderr.strip() if push_result.stderr else "Unknown Error"
 
-        # DETECT CRITICAL ERRORS (No retrying)
-        
         # 6a. History Rewritten / Diverged
         if "rejected" in err_low and "fetch first" in err_low:
             print("❌ CRITICAL: Remote history has diverged (History Rewrite detected).")
-            print("⚠️ Manual intervention required: 'git push --force' may be needed.")
             sys.exit(1)
             
-        # 6b. File too large (GitHub limit)
+        # 6b. File too large (GitHub/Codeberg limit)
         if "this is larger than github's recommended maximum file size" in err_low or "gh001" in err_low:
             print("❌ CRITICAL: Push rejected because a file is too large.")
             sys.exit(1)
@@ -190,15 +186,16 @@ def main():
                 break
 
         # If we reached here, it is a generic failure (Network, Timeout, Server 500)
+        # Apply random jitter to sleep duration
+        jitter_sleep = random.randint(25, 35)
         print(f"⚠️ Push failed. Error: {raw_error}")
-        print(f"Waiting 10s before retry...")
-        time.sleep(10)
+        print(f"Waiting {jitter_sleep}s before retry...")
+        time.sleep(jitter_sleep)
         count += 1
 
     if not success:
         print(f"❌ Push Failed after {max_retries} attempts.")
-        # Run one last time WITHOUT suppressing errors so the user sees the issue in logs
-        run_command(["git", "push"])
+        run_command(["git", "push"])  # Run once unsuppressed to show traceback logs to the wrapper
         sys.exit(1)
 
 if __name__ == "__main__":
