@@ -87,11 +87,11 @@ sudo chmod 600 /root/.backup-key.txt
 
 **2. Run Bootstrap:**
 > [!IMPORTANT]
-> The bootstrap script expects the backup archive to be located in `$HOME`. Ensure your `docker-stacks-*.tar.zst.age` file is moved there before proceeding.
+> The bootstrap script expects the backup archive to be located in `$HOME`. Ensure your `docker-stacks-*.tar.zst.age` file is copied there before proceeding.
 ```bash
 curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 ```
-*This decrypts the backup, restores the filesystem, and fixes SSH permissions.*
+*This decrypts the backup, restores the filesystem, fixes SSH permissions, and once done, removes the backup file.*
 
 <details>
 <summary><b>No backup❓ Click here to start from scratch</b></summary>
