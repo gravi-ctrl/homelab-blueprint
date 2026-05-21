@@ -74,7 +74,7 @@ sudo chmod 600 /root/.backup-key.txt
 ```bash
 curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 ```
-This decrypts the backup, restores the filesystem, and fixes SSH permissions.
+*This decrypts the backup, restores the filesystem, and fixes SSH permissions.*
 
 > **No backup?**
 > ```bash
