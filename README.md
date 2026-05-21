@@ -40,7 +40,7 @@ At 05:00 every day, the server:
 - Commits and pushes all changes to my Git mirrors using [[git-auto-sync.py](./git-auto-sync.py)].
 
 ### Safety & Integrity
-- **Backups:** [[local-opt-backup.sh](./local-opt-backup.sh)] stops the Docker socket during backups to ensure data isn't being written mid-snapshot. It verifies the archive integrity before finishing. This creates `the docker-stacks-DATE.tar.zst.age` backup file.
+- **Backups:** [[local-opt-backup.sh](./local-opt-backup.sh)] stops the Docker socket during backups to ensure data isn't being written mid-snapshot. It verifies the archive integrity before finishing. This creates the `docker-stacks-DATE.tar.zst.age` backup file.
 - **Nextcloud:** [[nextcloud-dynamic-watch.sh](./nextcloud-dynamic-watch.sh)] watches my data folders and tells Nextcloud to scan for new files the moment they are added.
 - **Hardware:** [[battery_monitor.sh](./battery_monitor.sh)] shuts down the server if the battery is low, and [[fix-cpu-thermals.sh](./run_once/fix-cpu-thermals.sh)] keeps the CPU from overheating.
 
