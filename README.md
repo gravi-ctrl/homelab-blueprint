@@ -70,12 +70,11 @@ sudo chmod 600 /root/.backup-key.txt
 ```
 
 **2. Run Bootstrap:**
-This decrypts the backup, restores the filesystem, and fixes SSH permissions.
 > Make sure to copy the backup file to $HOME before running the bootstrap
 ```bash
 curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 ```
-Decrypts the backup, restores filesystem, fixes SSH, re-links git repos, self-destructs.
+This decrypts the backup, restores the filesystem, and fixes SSH permissions.
 
 > **No backup?**
 > ```bash
