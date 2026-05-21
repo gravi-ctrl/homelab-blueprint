@@ -19,8 +19,13 @@ def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     Helper to run shell commands. 
     Returns a CompletedProcess object.
     """
-    stderr_dest = subprocess.DEVNULL if suppress_errors else None
-    stdout_dest = subprocess.PIPE if capture_output else None
+    if capture_output:
+        stdout_dest = subprocess.PIPE
+        # If we capture output, we also want stderr so we can read it, unless explicitly suppressed
+        stderr_dest = subprocess.DEVNULL if suppress_errors else subprocess.PIPE
+    else:
+        stdout_dest = None
+        stderr_dest = subprocess.DEVNULL if suppress_errors else None
     
     return subprocess.run(
         command,
@@ -35,6 +40,7 @@ def main():
         # -q (quiet) stops the banner exchange crash. BatchMode stops interactive prompts.
         os.environ["GIT_SSH_COMMAND"] = "ssh -q -o BatchMode=yes"
         os.environ["GIT_TERMINAL_PROMPT"] = "0"
+        
     hostname = socket.gethostname()
     os.environ["GIT_AUTHOR_NAME"] = "AutoSync Bot"
     os.environ["GIT_AUTHOR_EMAIL"] = f"auto-sync@{hostname}.local"
@@ -76,7 +82,7 @@ def main():
     else:
         print("Everything up-to-date.")
 
-# 5. Detect current branch and Pull updates
+    # 5. Detect current branch and Pull updates
     try:
         branch_proc = run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True)
         if branch_proc.returncode != 0:
@@ -101,7 +107,7 @@ def main():
             # BULLETPROOF CONFLICT CHECK
             # Don't guess the exit code. Ask Git directly if it's stuck.
             status_proc = run_command(["git", "status"], capture_output=True)
-            status_out = status_proc.stdout.lower()
+            status_out = status_proc.stdout.lower() if status_proc.stdout else ""
             
             if "rebase in progress" in status_out or "unmerged paths" in status_out:
                 print("❌ Git Conflict detected during rebase.")
@@ -128,24 +134,40 @@ def main():
     success = False
 
     while count < max_retries:
-        # Try standard push. Suppress errors initially (mimicking 2>/dev/null)
-        # to handle the "missing upstream" check cleanly.
-        push_result = run_command(["git", "push"], suppress_errors=True)
+        print(f"🚀 Pushing updates to all remotes (Attempt {count + 1}/{max_retries})...")
+        
+        # We capture output here so we can inspect it for specific errors
+        push_result = run_command(["git", "push"], capture_output=True)
 
         if push_result.returncode == 0:
+            # Git often sends success progress (like URLs) to stderr, and standard messages to stdout
+            if push_result.stdout:
+                print(push_result.stdout.strip())
+            if push_result.stderr:
+                print(push_result.stderr.strip())
             success = True
             break
         
-        # Check if the failure was just a missing upstream (First run only)
-        if count == 0:
-            # Try setting upstream
-            upstream_result = run_command(["git", "push", "-u", "origin", "HEAD"], suppress_errors=True)
+        # Safeguard: Ensure stderr isn't None before reading it
+        error_msg = push_result.stderr.lower() if push_result.stderr else ""
+        raw_error = push_result.stderr.strip() if push_result.stderr else "Unknown Error"
+
+        # DETECT HISTORY REWRITE (Force push needed)
+        if "rejected" in error_msg and "fetch first" in error_msg:
+            print("❌ CRITICAL: Remote history has diverged (History Rewrite detected).")
+            print("⚠️ Manual intervention required: 'git push --force' may be needed.")
+            sys.exit(1)
+
+        # Check if the failure was just a missing upstream
+        if "no upstream branch" in error_msg or count == 0:
+            upstream_result = run_command(["git", "push", "-u", "origin", "HEAD"], capture_output=True)
             if upstream_result.returncode == 0:
                 print("✅ Upstream set and pushed successfully.")
                 success = True
                 break
 
-        print(f"⚠️ Push failed (Attempt {count + 1}/{max_retries}). Retrying in 10s...")
+        print(f"⚠️ Push failed. Error: {raw_error}")
+        print(f"Waiting 10s before retry...")
         time.sleep(10)
         count += 1
 
