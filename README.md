@@ -124,7 +124,7 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 
 ### Phase 3 — Finalize
 
-The background watcher handles most post-restore tasks automatically. What remains:
+The background watcher handles most post-restore tasks automatically.
 
 > [!WARNING]
 > Critical manual steps remaining:
