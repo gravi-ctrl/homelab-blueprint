@@ -66,7 +66,7 @@ graph TD
 
     %% The Background Path
     GW -.->|Monitoring| E
-    E -.->|Nextcloud/Tailscale detected| G[Auto-Configure Funnel & Perms]
+    E -.->|Watched containers online| G[Run Post-Start Tasks]
     G -.->|Notify via Telegram| H[<b>Self Destruct</b>]
 
     %% Styling
@@ -132,7 +132,7 @@ Run the main installer:
 ```
 *This installs Docker, firewall, directory structure, Python libraries, Unbound DNS, ZSH, and restores your system configs (crontabs, hosts, etc).*
 
-*At the end, it spawns the **Ghost Watcher**—a temporary systemd service that stays silent in the background.*
+*At the end, it spawns the **Ghost Watcher**—a background service that waits for containers to come online and runs their post-start configuration tasks automatically.*
 
 ---
 
@@ -155,7 +155,7 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 ```
 
 > [!TIP]
-> **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the background watcher detects the containers, configures the Tailscale Funnel and Nextcloud permissions, sends you a Telegram confirmation, and then **deletes itself** from your system. You don't need to do anything!
+> **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
 
 <details>
 <summary><b>No backup❓ Click here to start from scratch</b></summary>

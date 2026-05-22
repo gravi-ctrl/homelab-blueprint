@@ -391,7 +391,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
-✅ Nextcloud firewall configured." \
+✅ Nextcloud post-restore script has been executed." \
             > /dev/null
         DONE_NEXTCLOUD=true
     fi
@@ -405,7 +405,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Tailscale
 ━━━━━━━━━━━━━━━
-✅ Tailscale Funnel configured for n8n webhooks.
+✅ Tailscale Funnel configured.
 
 ⚠️ If Tailscale connection fails, regenerate the auth key:
 1. Go to https://login.tailscale.com/admin/settings/keys
