@@ -398,7 +398,7 @@ If missing, manually re-add:
 - Folder name: assets
 - Restrict to: User
 - External storage: Local
-- Storage configuration: /data/external_files" \
+- Storage configuration: /mnt/external_files" \
             > /dev/null
         DONE_NEXTCLOUD=true
     fi
