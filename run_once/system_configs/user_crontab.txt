@@ -29,7 +29,7 @@ A=/data/assets
 15 4 * * * $S/cron-guard.py --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
 # Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git
-0 5 * * * $S/cron-guard.py --mode all "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
+0 5 * * * $S/cron-guard.py --mode fail "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
 # Check for available Docker container updates and notify
 0 9 * * * $S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"
