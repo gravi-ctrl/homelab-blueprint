@@ -389,7 +389,16 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
-✅ Nextcloud post-restore script has been executed." \
+✅ Nextcloud post-restore script has been executed
+
+⚠️ NEXTCLOUD UI SETUP REQUIREMENT
+1. Enable the "External storage support" app in Nextcloud.
+2. Go to: Profile Icon -> Administration Settings -> External storages.
+3. Add a new mount with these exact values:
+- Folder name: assets  <-- Matches NC_MOUNT_NAME
+- External storage: Local
+- Configuration: /data/assets
+- Available for: not-admin" \
             > /dev/null
         DONE_NEXTCLOUD=true
     fi
