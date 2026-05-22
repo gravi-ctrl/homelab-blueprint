@@ -1,8 +1,6 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-S=/home/gravi-ctrl/scripts
-C=/home/gravi-ctrl/ctrl_s_master
-A=/data/assets
+BASH_ENV=/home/gravi-ctrl/scripts/.env
 
 # .------------ minute (0 - 59)
 # | .---------- hour (0 - 23)

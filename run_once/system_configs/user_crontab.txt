@@ -1,7 +1,6 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-S=/home/gravi-ctrl/scripts
-A=/data/assets
+BASH_ENV=$HOME/scripts/.env
 
 # .------------ minute (0 - 59)
 # | .---------- hour (0 - 23)
@@ -11,7 +10,7 @@ A=/data/assets
 # | | | | |
 # * * * * *
 # Update NextDNS IP and Healthchecks.io server/internet monitor
-*/5 * * * * . $S/.env && curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"
+*/5 * * * * curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"
 
 # Sync Personal and Work Obsidian vaults to Git
 */30 * * * * $S/cron-guard.py --mode fail "Obsidian Notes Sync" "$S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; $S/git-auto-sync.py '$A/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
