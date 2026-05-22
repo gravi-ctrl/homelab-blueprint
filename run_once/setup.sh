@@ -153,8 +153,9 @@ fi
 header "4/10" "Directory Structure & Permissions"
 
 task "Create /data directory tree"
+sudo mkdir -p /data/nextcloud_data
 sudo mkdir -p /data/paperless/{data,media}
-sudo mkdir -p /data/assets/{torrents,downloads,nextcloud_data}
+sudo mkdir -p /data/assets/{torrents,downloads}
 sudo mkdir -p /data/assets/romm/{library,resources}
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
 sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM/paperless-scan,Movies,Music,My_Shit,Shared}
@@ -162,10 +163,9 @@ pass
 
 task "Set ownership & ACLs"
 sudo chown -R "$(id -u):$(id -g)" /data
-sudo chown -R 33:33 /data/assets/nextcloud_data
+sudo chown -R 33:33 /data/nextcloud_data
 quietly sudo setfacl -R -m u:33:rwx /data/assets
 quietly sudo setfacl -R -d -m u:33:rwx /data/assets
-quietly sudo setfacl -R -b /data/assets/nextcloud_data
 pass
 
 
