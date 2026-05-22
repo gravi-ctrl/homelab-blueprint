@@ -153,13 +153,13 @@ fi
 header "4/10" "Directory Structure & Permissions"
 
 task "Create /data directory tree"
-sudo mkdir -p /data/paperless
+sudo mkdir -p /data/paperless/{data,media}
 sudo mkdir -p /data/assets/torrents
 sudo mkdir -p /data/assets/downloads
 sudo mkdir -p /data/assets/nextcloud_data
 sudo mkdir -p /data/assets/romm/{library,resources}
 sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
-sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM,Movies,Music,My_Shit,Shared}
+sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM/paperless-scan,Movies,Music,My_Shit,Shared}
 pass
 
 task "Set ownership & ACLs"
