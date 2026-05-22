@@ -16,9 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- .ENV ---
 if [ -f "$SCRIPT_DIR/.env" ]; then
-    set -a
     source "$SCRIPT_DIR/.env"
-    set +a
 else
     echo "❌ .env file not found in $SCRIPT_DIR"
     exit 1
