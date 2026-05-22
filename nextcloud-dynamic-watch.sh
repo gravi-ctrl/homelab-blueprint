@@ -89,7 +89,7 @@ while true; do
                 # Map to Nextcloud internal path
                 SCAN_PATH="${NC_USER}/files/${NC_MOUNT_NAME}${RELATIVE}"
 
-            # CASE B: Internal Storage (/data/assets/nextcloud_data -> /not-admin/files)
+            # CASE B: Internal Storage (/data/nextcloud_data -> /not-admin/files)
             elif [[ "$DIR_PATH" == "$HOST_DATA_DIR"* ]]; then
                 # Strip the host data path
                 RELATIVE=$(echo "$DIR_PATH" | sed "s|^$HOST_DATA_DIR||")
