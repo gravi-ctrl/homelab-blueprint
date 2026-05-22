@@ -51,7 +51,7 @@ NC_USER="not-admin"
 # This must match the name you gave the folder in 'External Storage' settings exactly:
 NC_MOUNT_NAME="assets"
 REAL_ASSETS_DIR="/data/assets"
-HOST_DATA_DIR="/data/assets/nextcloud_data"
+HOST_DATA_DIR="/data/nextcloud_data"
 # Path to your docker-compose file:
 COMPOSE_FILE="/opt/stacks/nextcloud/compose.yml"
 
