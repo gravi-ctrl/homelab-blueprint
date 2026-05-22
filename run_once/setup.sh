@@ -392,7 +392,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
 ✅ Nextcloud post-restore script has been executed
 
 ⚠️ NEXTCLOUD UI SETUP REQUIREMENT
-1. Enable the "External storage support" app in Nextcloud.
+1. Enable the 'External storage support' app in Nextcloud.
 2. Go to: Profile Icon -> Administration Settings -> External storages.
 3. Add a new mount with these exact values:
 - Folder name: assets  <-- Matches NC_MOUNT_NAME
