@@ -393,7 +393,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
 
 ⚠️ NEXTCLOUD UI SETUP REQUIREMENT
 1. Enable the 'External storage support' app in Nextcloud.
-2. Go to: Profile Icon -> Administration Settings -> External storages.
+2. Go to: Profile Icon -> Administration Settings -> External storage.
 3. Add a new mount with these exact values:
 - Folder name: assets  <-- Matches NC_MOUNT_NAME
 - External storage: Local
