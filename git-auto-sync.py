@@ -60,6 +60,8 @@ def main():
     target_dir = os.path.normpath(sys.argv[1])
     label = sys.argv[2] if len(sys.argv) > 2 else "Auto-Sync"
 
+    print(f"\n--- Processing: {label} ({target_dir}) ---")
+  
     # 2. Navigate to the folder
     if not os.path.isdir(target_dir):
         print(f"❌ Error: Could not find directory: {target_dir}")
