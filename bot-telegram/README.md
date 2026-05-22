@@ -62,8 +62,8 @@ After=network.target
 
 [Service]
 User=gravi-ctrl
-WorkingDirectory=%h/scripts/bot-telegram
-ExecStart=/usr/bin/python3 %h/scripts/bot-telegram/bot.py
+WorkingDirectory=/home/gravi-ctrl/scripts/bot-telegram
+ExecStart=/usr/bin/python3 /home/gravi-ctrl/scripts/bot-telegram/bot.py
 Restart=always
 RestartSec=10
 
