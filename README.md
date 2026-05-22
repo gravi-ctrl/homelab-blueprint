@@ -86,7 +86,6 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 | `~/ctrl-s-master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
 | `~/.ssh` | Deploy keys |
 | `/etc/ssh` | Host keys |
-| `/etc/unbound` | Local DNS Resolver Configs |
 
 ---
 
