@@ -35,7 +35,7 @@ CMD_health="bash ~/scripts/health-snapshot.sh"
 
 ### 3. Install & Start
 ```bash
-python3 bot.py
+python3 bot.py --install
 ```
 
 The script self-installs as a systemd service (`tg-vergil`) on first run, enables it, and exits. From that point it runs automatically on boot.
@@ -46,6 +46,16 @@ Installing tg-vergil service...
 ✅ Service installed and started.
    Verify: sudo journalctl -u tg-vergil.service -f
 ```
+
+## Testing & Debugging
+
+If you want to test new commands, view real-time console logs, or troubleshoot errors, you can easily run the bot in the foreground. 
+
+**Run the bot interactively:**
+```bash
+python3 bot.py
+```
+*You will see the bot register your `.env` commands and confirm it is running in the foreground. Any errors or print statements will output directly to your terminal.*
 
 ## Adding New Commands
 
@@ -59,6 +69,12 @@ That's it — the new `/command` is live.
 ```bash
 # Status
 sudo systemctl status tg-vergil
+
+# Stop
+sudo systemctl stop tg-vergil
+
+# Start
+sudo systemctl start tg-vergil
 
 # Logs
 sudo journalctl -u tg-vergil -f

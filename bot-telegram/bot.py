@@ -13,22 +13,82 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# ── Self-Install ──────────────────────────────────────────────────────────────
+# ── Path & Config Setup ───────────────────────────────────────────────────────
 SCRIPT_PATH = Path(__file__).resolve()
 SCRIPT_DIR  = SCRIPT_PATH.parent
 SERVICE_NAME = "tg-vergil"
 SERVICE_FILE = Path(f"/etc/systemd/system/{SERVICE_NAME}.service")
 
-if "--running-as-service" not in sys.argv:
-    if not SERVICE_FILE.exists():
+# Ensure .env is loaded from the exact directory this script lives in
+load_dotenv(SCRIPT_DIR / '.env')
+
+TOKEN      = os.getenv('VERGIL_BOT_TOKEN')
+# Using a default of '0' prevents the script from crashing during the --install phase if .env isn't set up yet
+ALLOWED_ID = int(os.getenv('ALLOWED_USER_ID', 0)) 
+COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}
+
+# ── Bot Logic ─────────────────────────────────────────────────────────────────
+async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ALLOWED_ID:
+        return
+
+    trigger = update.message.text.split()[0][1:].lower()
+    shell_command = COMMAND_MAP.get(trigger)
+
+    if not shell_command:
+        await update.message.reply_text("❌ Command configuration not found.")
+        return
+
+    status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
+
+    try:
+        result = subprocess.run(
+            shlex.split(shell_command),
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        output = (result.stdout + result.stderr).strip() or "Success (No Output)"
+
+        if len(output) > 4000:
+            file_obj = io.BytesIO(output.encode('utf-8'))
+            file_obj.name = f"{trigger}_log.txt"
+            await update.message.reply_document(
+                document=file_obj,
+                caption=f"✅ Output for <b>{trigger}</b> (Log too long for text)",
+                parse_mode=ParseMode.HTML
+            )
+            await context.bot.delete_message(
+                chat_id=update.message.chat_id,
+                message_id=status_msg.message_id
+            )
+        else:
+            await status_msg.edit_text(f"<pre>{output}</pre>", parse_mode=ParseMode.HTML)
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+
+# ── Execution & Install Logic ─────────────────────────────────────────────────
+if __name__ == '__main__':
+
+    # 1. Trigger installer ONLY if explicitly requested via `--install`
+    if "--install" in sys.argv:
+        if SERVICE_FILE.exists():
+            print(f"Service {SERVICE_NAME} is already installed.")
+            print(f"To reinstall, delete {SERVICE_FILE} first.")
+            sys.exit(0)
+
         print(f"Installing {SERVICE_NAME} service...")
+        service_user = os.getenv('SERVICE_USER') or os.getenv('USER')
 
         service_content = f"""[Unit]
 Description=Telegram Remote Command Bot (Vergil)
 After=network.target
 
 [Service]
-User={os.getenv('USER', 'gravi-ctrl')}
+User={service_user}
 WorkingDirectory={SCRIPT_DIR}
 ExecStart=/usr/bin/python3 {SCRIPT_PATH} --running-as-service
 Restart=always
@@ -46,62 +106,24 @@ WantedBy=multi-user.target
         )
         subprocess.run(["sudo", "systemctl", "daemon-reload"], check=True)
         subprocess.run(["sudo", "systemctl", "enable", "--now", f"{SERVICE_NAME}.service"], check=True)
-        print(f"✅ Service installed and started.")
+        print(f"✅ Service installed and started as user: {service_user}")
         print(f"   Verify: sudo journalctl -u {SERVICE_NAME}.service -f")
         sys.exit(0)
-    else:
-        print(f"✅ Service already installed. Starting normally.")
-        subprocess.run(["sudo", "systemctl", "start", f"{SERVICE_NAME}.service"], check=True)
-        sys.exit(0)
 
-# ── Bot Logic ─────────────────────────────────────────────────────────────────
-load_dotenv()
-TOKEN      = os.getenv('VERGIL_BOT_TOKEN')
-ALLOWED_ID = int(os.getenv('ALLOWED_USER_ID'))
-COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}
-
-async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ALLOWED_ID:
-        return
-    trigger = update.message.text.split()[0][1:].lower()
-    shell_command = COMMAND_MAP.get(trigger)
-    if not shell_command:
-        await update.message.reply_text("❌ Command configuration not found.")
-        return
-    status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
-    try:
-        result = subprocess.run(
-            shlex.split(shell_command),
-            shell=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        output = (result.stdout + result.stderr).strip() or "Success (No Output)"
-        if len(output) > 4000:
-            file_obj = io.BytesIO(output.encode('utf-8'))
-            file_obj.name = f"{trigger}_log.txt"
-            await update.message.reply_document(
-                document=file_obj,
-                caption=f"✅ Output for <b>{trigger}</b> (Log too long for text)",
-                parse_mode=ParseMode.HTML
-            )
-            await context.bot.delete_message(
-                chat_id=update.message.chat_id,
-                message_id=status_msg.message_id
-            )
-        else:
-            await status_msg.edit_text(f"<pre>{output}</pre>", parse_mode=ParseMode.HTML)
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
-
-if __name__ == '__main__':
+    # 2. Otherwise, run the bot (foreground or background)
     if not TOKEN or not ALLOWED_ID:
         print("Error: Missing VERGIL_BOT_TOKEN or ALLOWED_USER_ID in .env")
         sys.exit(1)
+
     app = ApplicationBuilder().token(TOKEN).build()
+
     for cmd_trigger in COMMAND_MAP:
         app.add_handler(CommandHandler(cmd_trigger, execute_script))
         print(f"Registered command: /{cmd_trigger}")
-    print("Bot is active.")
+
+    if "--running-as-service" in sys.argv:
+        print("Bot is active (Running as systemd service).")
+    else:
+        print("Bot is active (Running in foreground. Press Ctrl+C to stop).")
+
     app.run_polling()
