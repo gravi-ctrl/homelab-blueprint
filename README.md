@@ -23,7 +23,7 @@ Auto-generated every morning at 05:00:
 
 ## ⚙️ How it Works
 
-Every scheduled task runs through `cron-guard.py` — failures go to Telegram immediately, nothing fails silently. SSL certificates are managed and deployed automatically. The server snapshots its own state daily and commits it to Git. A weekly encrypted backup captures everything needed for a full rebuild.
+The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a Telegram wrapper, so failures are never silent. The server snapshots its own state daily - scripts, crontabs, package lists - and commits everything to Git. Once a week, a verified age-encrypted archive captures the entire stack, ready to restore a wiped machine in under an hour.
 
 The result: the server largely runs itself, and when something does go wrong, you already know about it before you notice.
 
