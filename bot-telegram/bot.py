@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess
 import io
+import shlex
 from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update
@@ -70,8 +71,8 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
     try:
         result = subprocess.run(
-            shell_command,
-            shell=True,
+            shlex.split(shell_command),
+            shell=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
