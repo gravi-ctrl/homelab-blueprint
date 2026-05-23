@@ -23,28 +23,9 @@ Auto-generated every morning at 05:00:
 
 ## ⚙️ How it Works
 
-<<<<<<< HEAD
-```mermaid
-graph LR
-    A[Cron Jobs] -->|wrapped by| B[cron-guard.py]
-    B -->|alerts| C[📱 Telegram]
-    
-    D[Services] -->|SSL via| E[cert-manager.sh]
-    E -->|auto-deploys to| F[NPM]
-    
-    G[Server State] -->|daily snapshot| H[Git Mirrors]
-    
-    I[Everything] -->|weekly encrypted| J[🔒 Backup]
-    J -->|verified| K[✅ Done]
-```
-
-> [!TIP]
-> See the **[Script Inventory](./SCRIPTS_INVENTORY.md)** and **[Automation Schedule](./CRON_SCHEDULE.md)** for the complete picture.
-=======
 The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a Telegram wrapper, so failures are never silent. The server snapshots its own state daily - scripts, crontabs, package lists - and commits everything to Git. Once a week, a verified age-encrypted archive captures the entire stack, ready to restore a wiped machine in under an hour.
 
 The result: the server largely runs itself, and when something does go wrong, you already know about it before you notice.
->>>>>>> 7106e71b437ffd7b75f422c0d1cb5ce672ccdee7
 
 > [!TIP]
 > For the full picture, see the **[Script Inventory](./SCRIPTS_INVENTORY.md)** and **[Automation Schedule](./CRON_SCHEDULE.md)**.
