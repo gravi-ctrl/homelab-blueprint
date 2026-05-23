@@ -11,7 +11,6 @@
 | `cron-guard.py` | Executes commands on Linux/Windows with real-time log tailing and Telegram alerts for job success or failure. | Varies |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
-| `guestwifi` | Triggers the running wifi-robot container via HTTP | On Demand |
 | `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh` and /etc/ssh to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |

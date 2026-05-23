@@ -160,7 +160,7 @@ bindkey "^[[OB" down-line-or-beginning-search
 alias cert='$HOME/scripts/cert-manager/cert-manager.sh'
 
 # Guest Wi-Fi script
-alias guestwifi='$HOME/scripts/guestwifi'
+alias guestwifi='/opt/stacks/wifi-robot/guestwifi'
 
 # cheat.sh - a TLDR alternative
 cht() {
