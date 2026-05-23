@@ -1,38 +1,74 @@
 #!/usr/bin/env python3
-
 # @DESCRIPTION: Runs scripts and commands directly on server with logs (programmed in the .env file)
 # @FREQUENCY: On Demand - Telegram
 
 import os
+import sys
 import subprocess
 import io
+from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
+# ── Self-Install ──────────────────────────────────────────────────────────────
+SCRIPT_PATH = Path(__file__).resolve()
+SCRIPT_DIR  = SCRIPT_PATH.parent
+SERVICE_NAME = "tg-vergil"
+SERVICE_FILE = Path(f"/etc/systemd/system/{SERVICE_NAME}.service")
+
+if "--running-as-service" not in sys.argv:
+    if not SERVICE_FILE.exists():
+        print(f"Installing {SERVICE_NAME} service...")
+
+        service_content = f"""[Unit]
+Description=Telegram Remote Command Bot (Vergil)
+After=network.target
+
+[Service]
+User={os.getenv('USER', 'gravi-ctrl')}
+WorkingDirectory={SCRIPT_DIR}
+ExecStart=/usr/bin/python3 {SCRIPT_PATH} --running-as-service
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+"""
+        subprocess.run(
+            ["sudo", "tee", str(SERVICE_FILE)],
+            input=service_content,
+            text=True,
+            check=True,
+            stdout=subprocess.DEVNULL
+        )
+        subprocess.run(["sudo", "systemctl", "daemon-reload"], check=True)
+        subprocess.run(["sudo", "systemctl", "enable", "--now", f"{SERVICE_NAME}.service"], check=True)
+        print(f"✅ Service installed and started.")
+        print(f"   Verify: sudo journalctl -u {SERVICE_NAME}.service -f")
+        sys.exit(0)
+    else:
+        print(f"✅ Service already installed. Starting normally.")
+        subprocess.run(["sudo", "systemctl", "start", f"{SERVICE_NAME}.service"], check=True)
+        sys.exit(0)
+
+# ── Bot Logic ─────────────────────────────────────────────────────────────────
 load_dotenv()
-
-TOKEN = os.getenv('VERGIL_BOT_TOKEN')
+TOKEN      = os.getenv('VERGIL_BOT_TOKEN')
 ALLOWED_ID = int(os.getenv('ALLOWED_USER_ID'))
-
 COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}
 
 async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ALLOWED_ID:
         return
-
     trigger = update.message.text.split()[0][1:].lower()
     shell_command = COMMAND_MAP.get(trigger)
-
     if not shell_command:
         await update.message.reply_text("❌ Command configuration not found.")
         return
-
     status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
-
     try:
-        # Run command
         result = subprocess.run(
             shell_command,
             shell=True,
@@ -40,9 +76,7 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
             stderr=subprocess.PIPE,
             text=True
         )
-
         output = (result.stdout + result.stderr).strip() or "Success (No Output)"
-
         if len(output) > 4000:
             file_obj = io.BytesIO(output.encode('utf-8'))
             file_obj.name = f"{trigger}_log.txt"
@@ -51,24 +85,22 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 caption=f"✅ Output for <b>{trigger}</b> (Log too long for text)",
                 parse_mode=ParseMode.HTML
             )
-            await context.bot.delete_message(chat_id=update.message.chat_id, message_id=status_msg.message_id)
-
+            await context.bot.delete_message(
+                chat_id=update.message.chat_id,
+                message_id=status_msg.message_id
+            )
         else:
             await status_msg.edit_text(f"<pre>{output}</pre>", parse_mode=ParseMode.HTML)
-
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
 if __name__ == '__main__':
     if not TOKEN or not ALLOWED_ID:
         print("Error: Missing VERGIL_BOT_TOKEN or ALLOWED_USER_ID in .env")
-        exit(1)
-
+        sys.exit(1)
     app = ApplicationBuilder().token(TOKEN).build()
-
     for cmd_trigger in COMMAND_MAP:
         app.add_handler(CommandHandler(cmd_trigger, execute_script))
         print(f"Registered command: /{cmd_trigger}")
-
     print("Bot is active.")
     app.run_polling()
