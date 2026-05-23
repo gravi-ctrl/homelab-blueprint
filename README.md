@@ -23,26 +23,22 @@ Auto-generated every morning at 05:00:
 
 ## ⚙️ How it Works
 
-### Telegram Alerts [[cron-guard.py](./cron-guard.py)]
-Almost every cron job is wrapped in this script to: 
-- Send a Telegram message with the last 15 lines of logs whenever a job finishes. 
-- Notify me on "Always", "Only on Failure", or "Only on Success".
+```mermaid
+graph LR
+    A[Cron Jobs] -->|wrapped by| B[cron-guard.py]
+    B -->|alerts| C[📱 Telegram]
+    
+    D[Services] -->|SSL via| E[cert-manager.sh]
+    E -->|auto-deploys to| F[NPM]
+    
+    G[Server State] -->|daily snapshot| H[Git Mirrors]
+    
+    I[Everything] -->|weekly encrypted| J[🔒 Backup]
+    J -->|verified| K[✅ Done]
+```
 
-### SSL & NPM [[cert-manager.sh](./cert-manager/cert-manager.sh)]
-This manages my local SSL certificates and Nginx Proxy Manager.
-- Adding a service automatically generates the SSL cert and creates the Proxy Host in NPM via API.
-- It also exports the Root CA to a Syncthing folder so I can easily install it on my phone or laptop.
-
-### Daily Sync [[backup-scripts-git.sh](./backup-scripts-git.sh)]
-At 05:00 every day, the server:
-- Snapshots my installed package list, PPAs, and crontabs.
-- Re-indexes all scripts and translates the cron schedule into Markdown.
-- Commits and pushes all changes to my Git mirrors using [[git-auto-sync.py](./git-auto-sync.py)].
-
-### Safety & Integrity
-- **Backups:** [[local-opt-backup.sh](./local-opt-backup.sh)] stops the Docker socket during backups to ensure data isn't being written mid-snapshot. It verifies the archive integrity before finishing. This creates the `docker-stacks-DATE.tar.zst.age` backup file.
-- **Nextcloud:** [[nextcloud-dynamic-watch.sh](./nextcloud-dynamic-watch.sh)] watches my data folders and tells Nextcloud to scan for new files the moment they are added.
-- **Hardware:** [[battery_monitor.sh](./battery_monitor.sh)] shuts down the server if the battery is low, and [[fix-cpu-thermals.sh](./run_once/fix-cpu-thermals.sh)] keeps the CPU from overheating.
+> [!TIP]
+> See the **[Script Inventory](./SCRIPTS_INVENTORY.md)** and **[Automation Schedule](./CRON_SCHEDULE.md)** for the complete picture.
 
 > [!TIP]
 > For a deeper look at the entire stack, refer to the **[Script Inventory](./SCRIPTS_INVENTORY.md)** and **[Automation Schedule](./CRON_SCHEDULE.md)** under the **System Maps** section.
