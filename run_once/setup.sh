@@ -168,6 +168,13 @@ quietly sudo setfacl -R -m u:33:rwx /data/assets
 quietly sudo setfacl -R -d -m u:33:rwx /data/assets
 pass
 
+task "Symlink user scripts → /opt/scripts"
+if [ ! -L /opt/scripts ]; then
+    quietly sudo ln -s "$HOME/scripts" /opt/scripts
+    pass "created"
+else
+    pass "already linked"
+fi
 
 # ══════════════════════════════════════════════════════════════
 # [5/10] PYTHON LIBRARIES
@@ -371,7 +378,7 @@ cat << EOF | sudo tee /usr/local/bin/bootstrap-watcher.sh > /dev/null
 # ── 1. Task States ────────────────────────────────────────────────────────────
 DONE_NEXTCLOUD=false
 DONE_TAILSCALE=false
-source /home/$USER/scripts/.env
+source /opt/scripts/.env
 
 # ── 2. Helper Functions ───────────────────────────────────────────────────────
 is_running() {
@@ -384,7 +391,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
     # 🔹 TASK: NEXTCLOUD
     if [ "\$DONE_NEXTCLOUD" = false ] && is_running "nextcloud"; then
         sleep 15
-        su - $USER -c "/home/$USER/scripts/run_once/nextcloud_post-restore_fix.sh"
+        sudo -u \$(stat -c '%U' /opt/scripts/.) /opt/scripts/run_once/nextcloud_post-restore_fix.sh
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
