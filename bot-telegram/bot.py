@@ -22,9 +22,21 @@ SERVICE_FILE = Path(f"/etc/systemd/system/{SERVICE_NAME}.service")
 # Ensure .env is loaded from the exact directory this script lives in
 load_dotenv(SCRIPT_DIR / '.env')
 
-TOKEN      = os.getenv('VERGIL_BOT_TOKEN')
-# Using a default of '0' prevents the script from crashing during the --install phase if .env isn't set up yet
-ALLOWED_ID = int(os.getenv('ALLOWED_USER_ID', 0)) 
+# Validate essential configuration immediately (aborts both run and install if missing)
+TOKEN = os.getenv('VERGIL_BOT_TOKEN')
+RAW_ALLOWED_ID = os.getenv('ALLOWED_USER_ID')
+
+if not TOKEN or not RAW_ALLOWED_ID:
+    print("❌ Error: Missing VERGIL_BOT_TOKEN or ALLOWED_USER_ID in .env")
+    print("   Please configure your .env file before installing or running the bot.")
+    sys.exit(1)
+
+try:
+    ALLOWED_ID = int(RAW_ALLOWED_ID)
+except ValueError:
+    print(f"❌ Error: ALLOWED_USER_ID '{RAW_ALLOWED_ID}' in .env is not a valid integer.")
+    sys.exit(1)
+
 COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}
 
 # ── Bot Logic ─────────────────────────────────────────────────────────────────
@@ -111,10 +123,6 @@ WantedBy=multi-user.target
         sys.exit(0)
 
     # 2. Otherwise, run the bot (foreground or background)
-    if not TOKEN or not ALLOWED_ID:
-        print("Error: Missing VERGIL_BOT_TOKEN or ALLOWED_USER_ID in .env")
-        sys.exit(1)
-
     app = ApplicationBuilder().token(TOKEN).build()
 
     for cmd_trigger in COMMAND_MAP:
