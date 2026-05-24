@@ -93,7 +93,7 @@ if __name__ == '__main__':
             sys.exit(0)
 
         print(f"Installing {SERVICE_NAME} service...")
-        service_user = os.getenv('SERVICE_USER') or os.getenv('USER')
+        service_user = SCRIPT_PATH.owner()
 
         service_content = f"""[Unit]
 Description=Telegram Remote Command Bot (Vergil)
