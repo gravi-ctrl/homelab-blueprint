@@ -52,8 +52,7 @@ NC_USER="not-admin"
 NC_MOUNT_NAME="assets"
 REAL_ASSETS_DIR="/data/assets"
 HOST_DATA_DIR="/data/nextcloud_data"
-# Path to your docker-compose file:
-COMPOSE_FILE="/opt/stacks/nextcloud/compose.yml"
+CONTAINER_NAME="nextcloud"
 
 WATCH_LIST="${HOST_DATA_DIR}/${NC_USER}/files ${REAL_ASSETS_DIR}"
 QUEUE_FILE="/tmp/nextcloud_events.log"
@@ -63,9 +62,8 @@ trap "pkill -P $$; exit" SIGINT SIGTERM
 echo "Starting Nextcloud Docker Watcher..."
 
 # 1. START LISTENER
-# We watch the host directories directly
 inotifywait -m -r -e close_write -e moved_to -e delete \
-    --format '%w' \
+    --format '%w%f' \
     --exclude '/\.' \
     $WATCH_LIST | while read DIR_PATH; do
         echo "$DIR_PATH" >> "$QUEUE_FILE"
@@ -82,33 +80,46 @@ while true; do
         for DIR_PATH in $TARGETS; do
             SCAN_PATH=""
 
-            # CASE A: External Assets (/data/assets -> /not-admin/files/Assets)
+            # CASE A: External Assets
             if [[ "$DIR_PATH" == "$REAL_ASSETS_DIR"* ]]; then
-                # Strip the host path
                 RELATIVE=$(echo "$DIR_PATH" | sed "s|^$REAL_ASSETS_DIR||")
-                # Map to Nextcloud internal path
                 SCAN_PATH="${NC_USER}/files/${NC_MOUNT_NAME}${RELATIVE}"
 
-            # CASE B: Internal Storage (/data/nextcloud_data -> /not-admin/files)
+            # CASE B: Internal Storage
             elif [[ "$DIR_PATH" == "$HOST_DATA_DIR"* ]]; then
-                # Strip the host data path
                 RELATIVE=$(echo "$DIR_PATH" | sed "s|^$HOST_DATA_DIR||")
-                # Map to Nextcloud internal path
-                SCAN_PATH="${RELATIVE}" 
+                SCAN_PATH="${RELATIVE}"
             fi
 
-            # Clean trailing slash
             SCAN_PATH=${SCAN_PATH%/}
 
-            # EXECUTE SCAN VIA DOCKER
             if [ ! -z "$SCAN_PATH" ]; then
-                echo "[$(date '+%H:%M:%S')] Scanning: $SCAN_PATH"
-                # -T disables pseudo-tty (required for background scripts)
-                # -u 33 ensures we run as www-data
-                docker compose -f "$COMPOSE_FILE" exec -T -u 33 app php occ files:scan --path="$SCAN_PATH"
+                # If the file doesn't exist on disk, we MUST scan its parent directory
+                if [ ! -e "$DIR_PATH" ]; then
+                    SCAN_PATH=$(dirname "$SCAN_PATH")
+                fi
+
+                # Append to a temporary targets list for deduplication
+                echo "$SCAN_PATH" >> "${QUEUE_FILE}.targets"
             fi
         done
         unset IFS
+
+        # 3. EXECUTE DEDUPLICATED SCANS
+        if [ -f "${QUEUE_FILE}.targets" ]; then
+            # Deduplicate the Nextcloud paths (e.g., 5 files deleted in same folder = 1 folder scan)
+            FINAL_TARGETS=$(sort -u "${QUEUE_FILE}.targets")
+
+            IFS=$'\n'
+            for SCAN_PATH in $FINAL_TARGETS; do
+                echo "[$(date '+%H:%M:%S')] Scanning: $SCAN_PATH"
+                docker exec -u 33 "$CONTAINER_NAME" php occ files:scan --path="$SCAN_PATH"
+            done
+            unset IFS
+
+            rm "${QUEUE_FILE}.targets"
+        fi
+
         rm "${QUEUE_FILE}.processing"
     fi
 done
