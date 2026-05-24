@@ -23,12 +23,12 @@ DISK_FREE=$(df -h /data | awk 'NR==2 {print $4}')
 
 # ── Containers ────────────────────────────────────────────────
 RUNNING=$(docker ps --format '{{.Status}}' | grep -c "^Up")
-UNHEALTHY=$(docker ps --format '{{.Status}}' | grep -c "unhealthy" || true)
+DOWN=$(docker ps -a --format '{{.Status}}' | grep -ciE "exited|unhealthy|restarting" || true)
 
-if [ "$UNHEALTHY" -gt 0 ]; then
-    UNHEALTHY_NAMES=$(docker ps --format '{{.Names}} {{.Status}}' \
-        | grep "unhealthy" | awk '{print $1}' | tr '\n' ' ' | sed 's/ $//')
-    CONTAINER_LINE="🐳 ${RUNNING} running · ⚠️ unhealthy: ${UNHEALTHY_NAMES}"
+if [ "$DOWN" -gt 0 ]; then
+    DOWN_NAMES=$(docker ps -a --format '{{.Names}} {{.Status}}' \
+        | grep -iE "exited|unhealthy|restarting" | awk '{print $1}' | tr '\n' ' ' | sed 's/ $//')
+    CONTAINER_LINE="🐳 ${RUNNING} running · ⚠️ unhealthy or not running: ${DOWN_NAMES}"
 else
     CONTAINER_LINE="🐳 ${RUNNING} running · ✅ all healthy"
 fi
