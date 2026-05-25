@@ -26,7 +26,7 @@
 ### 📁 Cert-Manager
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
-| `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager. | On Demand |
+| `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole. | On Demand |
 
 
 ### 📁 Dockcheck
