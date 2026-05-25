@@ -387,7 +387,7 @@ is_running() {
 }
 
 # ── 3. Main Watcher Loop ──────────────────────────────────────────────────────
-while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ]; do
+while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ] || [ "\$DONE_NPM" = false ]; do
 
     # 🔹 TASK: NEXTCLOUD
     if [ "\$DONE_NEXTCLOUD" = false ] && is_running "nextcloud"; then
