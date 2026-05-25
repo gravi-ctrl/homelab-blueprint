@@ -21,7 +21,7 @@ if docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/de
     exit 0
 fi
 
-echo "⚠️  .ocdata missing — running post-restore fix..."
+echo "⚠️  .ncdata missing — running post-restore fix..."
 
 # Create data directory first
 docker exec -u www-data "$CONTAINER" mkdir -p /var/www/html/data
