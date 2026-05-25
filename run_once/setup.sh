@@ -430,6 +430,24 @@ If missing, manually re-add:
         DONE_TAILSCALE=true
     fi
 
+    # 🔹 TASK: NGINX PROXY MANAGER (NPM) REMINDER
+    if [ "\$DONE_NPM" = false ] && is_running "npm"; then
+        sleep 5
+        curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=\${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: NPM
+━━━━━━━━━━━━━━━
+ℹ️ NPM container is now running!
+
+If you need to initialize a new CA and regenerate your local certificates:
+1. Run: 'cert init' and 'cert regen'
+2. Don't forget to restart Nginx right after:
+   'docker restart npm'
+   (This flushes Nginx's memory cache so it immediately loads the new keys!)" \
+            > /dev/null
+        DONE_NPM=true
+    fi
+
     sleep 10
 done
 
