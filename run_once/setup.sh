@@ -162,8 +162,9 @@ sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM/paperless-scan,Movies,Mus
 pass
 
 task "Set ownership & ACLs"
-sudo chown -R "$(id -u):$(id -g)" /data
-sudo chown -R 33:33 /data/nextcloud_data
+quietly sudo chown -R "$(id -u):$(id -g)" "$HOME"
+quietly sudo chown -R "$(id -u):$(id -g)" /data
+quietly sudo chown -R 33:33 /data/nextcloud_data
 quietly sudo setfacl -R -m u:33:rwx /data/assets
 quietly sudo setfacl -R -d -m u:33:rwx /data/assets
 pass
