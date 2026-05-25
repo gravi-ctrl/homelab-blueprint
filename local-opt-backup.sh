@@ -176,27 +176,29 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='GPUCache' \
     --exclude='CachedImages' \
     --exclude='Crash Reports' \
-    --exclude="$STACKS_DIR/jellyfin/config/transcodes" \
-    --exclude="$STACKS_DIR/jellyfin/config/cache" \
-    --exclude="$STACKS_DIR/jellyfin/config/log" \
-    --exclude="$STACKS_DIR/arrs/config/*/MediaCover" \
-    --exclude="$STACKS_DIR/arrs/config/*/Backups" \
-    --exclude="$STACKS_DIR/arrs/config/*/logs" \
-    --exclude="$STACKS_DIR/arrs/config/*/UpdateLogs" \
-    --exclude="$STACKS_DIR/scrutiny/influxdb" \
-    --exclude="$STACKS_DIR/audiobookshelf/backups" \
-    --exclude="$STACKS_DIR/audiobookshelf/metadata/cache" \
-    --exclude="$STACKS_DIR/pihole/etc-pihole/pihole-FTL.db" \
-    --exclude="$STACKS_DIR/pihole/etc-pihole/gravity_old.db" \
-    --exclude="$STACKS_DIR/qbittorrent/config/qBittorrent/data/logs" \
-    --exclude="$STACKS_DIR/qbittorrent/config/qBittorrent/data/GeoDB" \
-    --exclude="$STACKS_DIR/jdownloader/config/logs" \
-    --exclude="$STACKS_DIR/jdownloader/config/tmp" \
+    --exclude="${STACKS_DIR#/}/jellyfin/config/transcodes" \
+    --exclude="${STACKS_DIR#/}/jellyfin/config/cache" \
+    --exclude="${STACKS_DIR#/}/jellyfin/config/log" \
+    --exclude="${STACKS_DIR#/}/arrs/config/*/MediaCover" \
+    --exclude="${STACKS_DIR#/}/arrs/config/*/Backups" \
+    --exclude="${STACKS_DIR#/}/arrs/config/*/logs" \
+    --exclude="${STACKS_DIR#/}/arrs/config/*/UpdateLogs" \
+    --exclude="${STACKS_DIR#/}/scrutiny/influxdb" \
+    --exclude="${STACKS_DIR#/}/audiobookshelf/backups" \
+    --exclude="${STACKS_DIR#/}/audiobookshelf/metadata/cache" \
+    --exclude="${STACKS_DIR#/}/paperless-ngx/redisdata" \
+    --exclude="${STACKS_DIR#/}/pihole/etc-pihole/pihole-FTL.db" \
+    --exclude="${STACKS_DIR#/}/pihole/etc-pihole/gravity_old.db" \
+    --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/logs" \
+    --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/GeoDB" \
+    --exclude="${STACKS_DIR#/}/jdownloader/config/logs" \
+    --exclude="${STACKS_DIR#/}/jdownloader/config/tmp" \
     -C / \
-    "$STACKS_DIR" \
-    "$SCRIPT_DIR" \
-    "$USER_HOME/ctrl_s_master" \
-    "$USER_HOME/.ssh" \
+    "${STACKS_DIR#/}" \
+    "${SCRIPT_DIR#/}" \
+    "${USER_HOME#/}/ctrl_s_master" \
+    "${USER_HOME#/}/.ssh" \
+    "${USER_HOME#/}/.local/share/mkcert" \
     etc/ssh \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
 
