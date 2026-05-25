@@ -378,6 +378,7 @@ cat << EOF | sudo tee /usr/local/bin/bootstrap-watcher.sh > /dev/null
 # ── 1. Task States ────────────────────────────────────────────────────────────
 DONE_NEXTCLOUD=false
 DONE_TAILSCALE=false
+DONE_NPM=false
 source /opt/scripts/.env
 
 # ── 2. Helper Functions ───────────────────────────────────────────────────────
