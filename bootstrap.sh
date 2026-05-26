@@ -31,32 +31,48 @@ sudo apt-get purge -y -qq cloud-init
 sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
 sudo systemctl restart ssh
 
-echo ">>> Re-linking the repos..."
+echo ">>> Generating self-destructing re-link script..."
+cat << 'EOF' > "$HOME/re-link.sh"
+#!/bin/bash
+
 setup_repo() {
-    local target_dir=$1
-    local repo_url=$2
-    
-    echo "Linking $target_dir with $repo_url..."
-    (cd "$target_dir" && \
-     git init -b main && \
-     git remote add origin "$repo_url" 2>/dev/null || git remote set-url origin "$repo_url" && \
-     git fetch origin && \
-     git checkout -f -B main origin/main)
+    echo "🔗 Linking $1..."
+    git -C "$1" init -b main -q
+    git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
+    git -C "$1" fetch origin || return 1
+    git -C "$1" checkout -f -B main origin/main -q
 }
 
-setup_repo "$HOME/scripts" "git@codeberg.org:gravi-ctrl/homelab-blueprint.git"
-setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git"
-setup_repo "/opt/stacks" "git@codeberg.org:gravi-ctrl/server-docker-backup.git"
+echo ">>> Syncing repositories..."
+
+if setup_repo "$HOME/scripts"       "git@codeberg.org:gravi-ctrl/homelab-blueprint.git" &&
+   setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git" &&
+   setup_repo "/opt/stacks"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git"; then
+
+    echo "✅ All repositories successfully linked!"
+    rm -- "$0"
+
+else
+    echo "❌ Re-linking failed (Codeberg might be unreachable)."
+    echo "⚠️  Try running '~/re-link.sh' manually later once the connection is restored."
+    exit 1
+fi
+EOF
+
+chmod +x "$HOME/re-link.sh"
+
+"$HOME/re-link.sh" || true
 
 echo ">>> Cleaning up..."
 rm -- "$BACKUP"
 
 cat <<'EOF'
 
-✅ Bootstrap complete!
+✅ Bootstrap phase complete!
 
 Next steps:
   1. Run the installer:  ~/scripts/run_once/setup.sh
+         (If linking failed, run ~/re-link.sh first!)
 
   2. Re-open your SSH session.
 EOF
