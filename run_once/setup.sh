@@ -349,6 +349,18 @@ else
     skip "not found or empty"
 fi
 
+task "Trust restored mkcert CA system-wide"
+# For future me or the random stranger looking at this:
+# If the CA was successfully restored from backup, '-install' tells the OS to trust it.
+# If it's missing, then we don't want mkcert to auto-generate a new one here.
+# Instead, we skip it so the we can manually run 'cert-manager.sh init'.
+if [ -d "$HOME/.local/share/mkcert" ] && [ -f "$HOME/.local/share/mkcert/rootCA.pem" ]; then
+    quietly mkcert -install
+    pass
+else
+    skip "no CA found"
+fi
+
 
 # ══════════════════════════════════════════════════════════════
 # [9/10] FIREWALL
