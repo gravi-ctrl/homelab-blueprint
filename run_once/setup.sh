@@ -427,22 +427,30 @@ If missing, manually re-add:
         DONE_NEXTCLOUD=true
     fi
 
-    # 🔹 TASK: TAILSCALE
+# 🔹 TASK: TAILSCALE
     if [ "\$DONE_TAILSCALE" = false ] && is_running "tailscaled"; then
         sleep 5
         docker exec tailscaled tailscale serve reset
-        docker exec tailscaled tailscale funnel --bg --https=443 http://127.0.0.1:5678
+
+        if [ -n "\$N8N_WEBHOOK_UUID" ]; then
+            docker exec tailscaled tailscale funnel --bg --https=443 --set-path=/webhook/\${N8N_WEBHOOK_UUID} http://127.0.0.1:5678/webhook/\${N8N_WEBHOOK_UUID}
+            docker exec tailscaled tailscale funnel --bg --https=443 --set-path=/webhook-test/\${N8N_WEBHOOK_UUID} http://127.0.0.1:5678/webhook-test/\${N8N_WEBHOOK_UUID}
+
+            MSG_TEXT="🔧 setup.sh's Post-Restore Watcher: Tailscale
+━━━━━━━━━━━━━━━
+✅ Tailscale Funnel configured!
+🛡️ n8n webhooks successfully secured via path-based routing."
+        else
+            MSG_TEXT="🔧 setup.sh's Post-Restore Watcher: Tailscale
+━━━━━━━━━━━━━━━
+❌ Tailscale Funnel skipped!
+⚠️ WARNING: N8N_WEBHOOK_UUID is missing in /opt/scripts/.env!
+For security reasons, n8n was not exposed. Please add the UUID to your .env to run the funnel."
+        fi
+
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Tailscale
-━━━━━━━━━━━━━━━
-✅ Tailscale Funnel configured.
-
-⚠️ If Tailscale connection fails, regenerate the auth key:
-1. Go to https://login.tailscale.com/admin/settings/keys
-2. Click 'Generate auth key'
-3. Tick: Reusable + Tags → select a tag
-4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env" \
+            --data-urlencode "text=\${MSG_TEXT}" \
             > /dev/null
         DONE_TAILSCALE=true
     fi
