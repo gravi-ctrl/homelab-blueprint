@@ -450,7 +450,13 @@ For security reasons, n8n was not exposed. Please add the UUID to your .env to r
 
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=\${MSG_TEXT}" \
+            --data-urlencode "text=\${MSG_TEXT}
+
+⚠️ If Tailscale connection fails, regenerate the auth key:
+1. Go to https://login.tailscale.com/admin/settings/keys
+2. Click 'Generate auth key'
+3. Tick: Reusable + Tags → select a tag
+4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env" \
             > /dev/null
         DONE_TAILSCALE=true
     fi
