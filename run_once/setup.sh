@@ -162,16 +162,19 @@ sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM/paperless-scan,Movies,Mus
 pass
 
 task "Set ownership & ACLs"
-quietly sudo chown -R "$(id -u):$(id -g)" "$HOME"
-quietly sudo chown -R "$(id -u):$(id -g)" /data
-quietly sudo chown -R 33:33 /data/nextcloud_data
+sudo chown -R "$(id -u):$(id -g)" /data
+sudo chown -R 33:33 /data/nextcloud_data
 quietly sudo setfacl -R -m u:33:rwx /data/assets
 quietly sudo setfacl -R -d -m u:33:rwx /data/assets
 pass
 
+task "Fix .local ownership"
+sudo chown -R "$(id -u):$(id -g)" "$HOME/.local"
+pass
+
 task "Symlink user scripts → /opt/scripts"
 if [ ! -L /opt/scripts ]; then
-    quietly sudo ln -s "$HOME/scripts" /opt/scripts
+    sudo ln -s "$HOME/scripts" /opt/scripts
     pass "created"
 else
     pass "already linked"
