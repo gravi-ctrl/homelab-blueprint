@@ -13,7 +13,7 @@
 | **Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git** | At 05:00 | `$S/cron-guard.py --mode fail "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"` |
 | **Check for available Docker container updates and notify** | At 09:00 | `$S/cron-guard.py --mode fail "Dockcheck Update Checker" "$S/dockcheck/dockcheck.sh -mniIMx 10 -d 5"` |
 | **Runs a Borgmatic backup** | At 02:00, only on Sunday | `$S/cron-guard.py --mode all "Borg Backup" "borgmatic"` |
-| **cert-manager: regenerate & upload SSL certs to NPM** | At 03:00, on day 1 of the month | `$S/cron-guard.py --mode fail "cert-mgr: Renew SSL certs" "$S/cert-manager/cert-manager.sh regen"` |
+| **cert-manager: regenerate & upload SSL certs to NPM** | At 03:00, on day 1 of the month | `$S/cron-guard.py --mode fail "cert-mgr: Renew SSL certs" "$S/cert-manager/cert-manager.sh renew"` |
 
 
 ## ⚡ Root Cron
