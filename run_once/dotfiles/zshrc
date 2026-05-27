@@ -171,7 +171,7 @@ cht() {
 alias welcome='actual_show_welcome_msg'
 
 # Readable Docker Status
-alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
+alias dps='docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
