@@ -76,7 +76,8 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 
 **1. Setup Decryption Key:**
 ```bash
-sudo nano /root/.backup-key.txt  # Paste your age key
+# Paste your age key
+sudo nano /root/.backup-key.txt
 sudo chmod 600 /root/.backup-key.txt
 ```
 
