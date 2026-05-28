@@ -14,15 +14,15 @@ EXTRACTED=false
 
 if sudo test -f "$KEY"; then
     BACKUP="$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)"
-    [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $KEY, but no backup archive found!" >&2; exit 1; }
-    
+    [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $KEY, but no backup archive found at $HOME" >&2; exit 1; }
+
     echo "Using backup: $BACKUP"
     echo ">>> Installing age and zstd..."
     sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
 
     echo ">>> Decrypting and extracting backup..."
     sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd -xf - -C /
-    
+
     EXTRACTED=true
 else
     read -r -p "⚠️  $KEY doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice < /dev/tty
@@ -50,10 +50,10 @@ cat << 'EOF' > "$HOME/re-link.sh"
 
 setup_repo() {
     echo "🔗 Linking $1..."
-    
+
     sudo mkdir -p "$1"
     sudo chown -R "$(id -u):$(id -g)" "$1"
-    
+
     git -C "$1" init -b main -q
     git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
     git -C "$1" fetch origin || return 1
