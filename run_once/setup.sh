@@ -402,12 +402,16 @@ is_running() {
     docker container inspect -f '{{.State.Status}}' "\$1" 2>/dev/null | grep -q "running"
 }
 
+is_nextcloud_ready() {
+    is_running "nextcloud" && docker exec nextcloud test -f /var/www/html/lib/versioncheck.php 2>/dev/null
+}
+
 # ── 3. Main Watcher Loop ──────────────────────────────────────────────────────
 while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ] || [ "\$DONE_NPM" = false ]; do
 
     # 🔹 TASK: NEXTCLOUD
-    if [ "\$DONE_NEXTCLOUD" = false ] && is_running "nextcloud"; then
-        sleep 15
+    if [ "\$DONE_NEXTCLOUD" = false ] && is_nextcloud_ready; then
+        sleep 5
         sudo -u \$(stat -c '%U' /opt/scripts/.) /opt/scripts/run_once/nextcloud_post-restore_fix.sh
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
@@ -427,7 +431,7 @@ If missing, manually re-add:
         DONE_NEXTCLOUD=true
     fi
 
-# 🔹 TASK: TAILSCALE
+    # 🔹 TASK: TAILSCALE
     if [ "\$DONE_TAILSCALE" = false ] && is_running "tailscaled"; then
         sleep 5
         docker exec tailscaled tailscale serve reset
@@ -511,7 +515,6 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now bootstrap-watcher.service >/dev/null 2>&1
 pass "ghost watcher installed"
-
 
 # ══════════════════════════════════════════════════════════════
 # DONE
