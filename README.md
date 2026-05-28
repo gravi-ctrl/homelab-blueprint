@@ -92,12 +92,9 @@ Choose your scenario before running the script:
 
 **2. Run Bootstrap:**
 ```bash
-curl -fsSl codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o bootstrap.sh
+curl -fsSl codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 # or if down
-curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o bootstrap.sh
-
-# then
-bash bootstrap.sh
+curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh | bash
 ```
 > [!NOTE]  
 > If doing a Fresh Start, the script will detect the missing key and ask if you want to skip the backup restoration. Press `y`. It will then initialize your environment and automatically clone all necessary Git repositories.
