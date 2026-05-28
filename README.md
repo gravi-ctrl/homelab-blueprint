@@ -92,7 +92,7 @@ Choose your scenario before running the script:
 
 **2. Run Bootstrap:**
 ```bash
-curl -fsSl codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o bootstrap.sh
+curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o bootstrap.sh
 # or if down
 curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o bootstrap.sh
 
