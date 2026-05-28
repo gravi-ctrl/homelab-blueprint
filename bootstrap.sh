@@ -25,7 +25,7 @@ if sudo test -f "$KEY"; then
     
     EXTRACTED=true
 else
-    read -r -p "⚠️  Key doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice
+    read -r -p "⚠️  $KEY doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice
     case "$choice" in
         y|Y) echo "Skipping backup restoration phase..." ;;
         *) echo "Aborting..."; exit 1 ;;
