@@ -130,8 +130,17 @@ Run the main installer:
 sudo reboot
 ```
 
+<details>
+<summary><b>Fresh Start Only: Initialize Stack Secrets</b></summary>
+
+Since you started fresh, `/opt/stacks` lacks its `.env` files. Generate the templates and fill in your keys/passwords *before* starting the containers:
+```bash
+for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
+```
+</details>
+
 **2. Restore the Stacks:**
-After rebooting, move to `/opt/stacks` and bring up your services.
+Move to `/opt/stacks` and spin up your infrastructure.
 
 ```bash
 # Start Dockge to manage stacks via UI
@@ -143,17 +152,6 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 
 > [!TIP]
 > **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
-
-<details>
-<summary><b>Fresh Start Only: Initialize Stack Secrets</b></summary>
-
-> [!NOTE]
-> Because you started fresh, `/opt/stacks` was automatically cloned during Phase 1, but it lacks secrets. Generate the base `.env` files now:
-> ```bash
-> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
-> ```
-> *You will need to manually populate these new `.env` files with API keys/passwords since the old ones are gone.*
-</details>
 
 > [!WARNING]
 > **Critical manual steps remaining:**
