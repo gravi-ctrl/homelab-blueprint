@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# @DESCRIPTION: Phase 1 Bootstrap: Installs recovery tools, decrypts the Day-0 archive, restores filesystem state, and preps SSH.
+# @DESCRIPTION: Phase 1 Bootstrap: Preps SSH, optionally restores a Day-0 archive, and auto-links blueprint git repositories.
 # @FREQUENCY: Run Once (Disaster Recovery)
 
 set -euo pipefail
