@@ -50,6 +50,10 @@ cat << 'EOF' > "$HOME/re-link.sh"
 
 setup_repo() {
     echo "🔗 Linking $1..."
+    
+    sudo mkdir -p "$1"
+    sudo chown -R "$(id -u):$(id -g)" "$1"
+    
     git -C "$1" init -b main -q
     git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
     git -C "$1" fetch origin || return 1
