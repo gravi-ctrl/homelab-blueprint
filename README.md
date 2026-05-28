@@ -32,7 +32,7 @@ The result: the server largely runs itself, and when something does go wrong, yo
 
 ---
 
-## 🚨 Disaster Recovery
+## 🚨 Deployment & Recovery
 
 ```mermaid
 graph TD
@@ -60,7 +60,9 @@ graph TD
     style C fill:#1f242b,stroke:#3081f7
 ```
 
-The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
+The server can be provisioned in two ways: **Full Recovery** (restoring a weekly `docker-stacks-DATE.tar.zst.age` archive) or a **Fresh Start** (bootstrapping from scratch). 
+
+A full backup archive contains everything needed to restore the exact state:
 
 | Path | What |
 |------|------|
@@ -74,38 +76,37 @@ The weekly `docker-stacks-DATE.tar.zst.age` backup contains everything needed:
 
 ### Phase 1 — Bootstrap
 
-**1. Setup Decryption Key:**
-```bash
-# Paste your age key
-sudo nano /root/.backup-key.txt
-sudo chmod 600 /root/.backup-key.txt
-```
+The bootstrap script is designed to handle both a **Full Recovery** (decrypts archive) and a **Fresh Start** (skips decryption, dynamically fetches repos).
+
+**1. Preparation:**
+Choose your scenario before running the script:
+
+*   **Option A: Full Recovery**
+    Ensure `docker-stacks-*.tar.zst.age` is in `$HOME`, then paste your decryption key:
+    ```bash
+    sudo nano /root/.backup-key.txt
+    sudo chmod 600 /root/.backup-key.txt
+    ```
+*   **Option B: Fresh Start (No Backup)**
+    Simply place your Git deploy keys into `~/.ssh/` from your password manager. The script will securely fix their permissions for you.
 
 **2. Run Bootstrap:**
-> [!IMPORTANT]
-> The bootstrap script expects the backup archive to be located in `$HOME`. Ensure your `docker-stacks-*.tar.zst.age` file is copied there before proceeding.
 ```bash
 curl -fsSl codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
 # or if down
 curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh | bash
 ```
-*This decrypts the backup, restores the filesystem, fixes SSH permissions, and once done, removes the backup file.*
+> [!NOTE]  
+> If doing a Fresh Start, the script will detect the missing key and ask if you want to skip the backup restoration. Press `y`. It will then initialize your environment and automatically clone all necessary Git repositories.
 
 <details>
-<summary><b>No backup❓ Click here to start from scratch</b></summary>
+<summary><b>Fresh Start Only: Initialize .env files</b></summary>
 
-> [!NOTE]
-> **Manual Setup:** If you are starting from scratch without a backup archive:
-> ```bash
-> # Place SSH keys from password manager into ~/.ssh/
-> chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_* && chmod 644 ~/.ssh/id_*.pub
->
-> git clone git@codeberg.org:gravi-ctrl/homelab-blueprint.git ~/scripts
-> find ~/scripts -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} +
->
-> find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
-> cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
-> ```
+Since you skipped the backup, your configurations are missing. Fill in your secrets:
+```bash
+find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
+cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
+```
 </details>
 
 ---
@@ -144,20 +145,15 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 > **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
 
 <details>
-<summary><b>No backup❓ Click here to start from scratch</b></summary>
+<summary><b>Fresh Start Only: Initialize Stack Secrets</b></summary>
 
 > [!NOTE]
-> **Manual Setup:** If you didn't have a stacks archive, clone the repo and populate new `.env` files:
+> Because you started fresh, `/opt/stacks` was automatically cloned during Phase 1, but it lacks secrets. Generate the base `.env` files now:
 > ```bash
-> sudo mkdir -p /opt/stacks && sudo chown -R $(id -u):$(id -g) /opt/stacks
-> git clone git@codeberg.org:gravi-ctrl/server-docker-backup.git /opt/stacks
->
-> # New secrets only - as configs at this point are... well, gone
 > for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
 > ```
+> *You will need to manually populate these new `.env` files with API keys/passwords since the old ones are gone.*
 </details>
-
-<br>
 
 > [!WARNING]
 > **Critical manual steps remaining:**
