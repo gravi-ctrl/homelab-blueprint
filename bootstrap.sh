@@ -9,6 +9,7 @@ set -euo pipefail
 
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
+SCRIPT_PATH="$(readlink -f "$0")"
 KEY="/root/.backup-key.txt"
 EXTRACTED=false
 
@@ -25,7 +26,7 @@ if sudo test -f "$KEY"; then
     
     EXTRACTED=true
 else
-    read -r -p "⚠️  Key doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice
+    read -r -p "⚠️  $KEY doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice
     case "$choice" in
         y|Y) echo "Skipping backup restoration phase..." ;;
         *) echo "Aborting..."; exit 1 ;;
@@ -84,6 +85,8 @@ echo ">>> Cleaning up..."
 if [[ "$EXTRACTED" == true ]]; then
     rm -- "$BACKUP"
 fi
+
+rm -- "$SCRIPT_PATH"
 
 cat <<'EOF'
 
