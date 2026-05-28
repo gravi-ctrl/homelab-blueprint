@@ -10,21 +10,34 @@ set -euo pipefail
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
 KEY="/root/.backup-key.txt"
-sudo test -f "$KEY" || { echo "ERROR: Key not found at $KEY" >&2; exit 1; }
+EXTRACTED=false
 
-BACKUP="$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)"
-[[ -z "$BACKUP" ]] && { echo "ERROR: No backup archive found in $HOME" >&2; exit 1; }
-echo "Using backup: $BACKUP"
+if sudo test -f "$KEY"; then
+    BACKUP="$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)"
+    [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $KEY, but no backup archive found!" >&2; exit 1; }
+    
+    echo "Using backup: $BACKUP"
+    echo ">>> Installing age and zstd..."
+    sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
 
-echo ">>> Installing age and zstd..."
-sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
-
-echo ">>> Decrypting and extracting backup..."
-sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd -xf - -C /
+    echo ">>> Decrypting and extracting backup..."
+    sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd -xf - -C /
+    
+    EXTRACTED=true
+else
+    read -r -p "⚠️  Key doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice
+    case "$choice" in
+        y|Y) echo "Skipping backup restoration phase..." ;;
+        *) echo "Aborting..."; exit 1 ;;
+    esac
+fi
 
 echo ">>> Fixing SSH permissions..."
+mkdir -p "$HOME/.ssh"
 sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
-chmod 700 "$HOME/.ssh" && chmod 600 "$HOME/.ssh"/id_* && chmod 644 "$HOME/.ssh"/id_*.pub
+chmod 700 "$HOME/.ssh"
+chmod 600 "$HOME/.ssh"/id_* 2>/dev/null || echo "⚠️  No private keys found — skipping."
+chmod 644 "$HOME/.ssh"/id_*.pub 2>/dev/null || true
 
 echo ">>> Removing cloud-init..."
 sudo apt-get purge -y -qq cloud-init
@@ -64,7 +77,9 @@ chmod +x "$HOME/re-link.sh"
 "$HOME/re-link.sh" || true
 
 echo ">>> Cleaning up..."
-rm -- "$BACKUP"
+if [[ "$EXTRACTED" == true ]]; then
+    rm -- "$BACKUP"
+fi
 
 cat <<'EOF'
 
