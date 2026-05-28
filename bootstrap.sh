@@ -9,6 +9,7 @@ set -euo pipefail
 
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
+SCRIPT_PATH="$(readlink -f "$0")"
 KEY="/root/.backup-key.txt"
 EXTRACTED=false
 
@@ -84,6 +85,8 @@ echo ">>> Cleaning up..."
 if [[ "$EXTRACTED" == true ]]; then
     rm -- "$BACKUP"
 fi
+
+rm -- "$SCRIPT_PATH"
 
 cat <<'EOF'
 
