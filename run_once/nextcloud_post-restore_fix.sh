@@ -11,8 +11,7 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 0
 fi
 
-# --- Smart Check 1: Fix Permissions ONLY if they are broken ---
-# This checks the current owner of /var/www/html inside the container
+# --- Fix Permissions ONLY if they are broken ---
 CURRENT_OWNER=$(docker exec "$CONTAINER" stat -c '%U' /var/www/html)
 
 if [ "$CURRENT_OWNER" != "www-data" ]; then
