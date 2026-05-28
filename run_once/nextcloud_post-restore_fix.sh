@@ -1,10 +1,6 @@
 #!/bin/bash
-# @DESCRIPTION: Recreates missing markers, user data directories, and appdata_ folders. Safe to run anytime — exits gracefully if not needed.
+# @DESCRIPTION: Recreates missing markers, user data directories, and appdata_ folders. Safe to run anytime.
 # @FREQUENCY: Run Once
-
-# Updated for Nextcloud 33+
-# .ncdata replaced .ocdata and requires specific content
-# .ocdata is legacy and no longer needed
 
 CONTAINER="nextcloud"
 USERNAME="not-admin"
@@ -15,43 +11,47 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 0
 fi
 
-# --- Guard: Does .ncdata exist? (Means data is probably fine) ---
+# Check for .ncdata
+HAS_NCDATA=false
 if docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/dev/null; then
-    echo "✅ .ncdata exists — data directory looks intact. Skipping."
-    exit 0
+    HAS_NCDATA=true
 fi
 
-echo "⚠️  .ncdata missing — running post-restore fix..."
+if [ "$HAS_NCDATA" = false ]; then
+    echo "⚠️  .ncdata missing — creating data directory and markers..."
 
-# Create data directory first
-docker exec -u www-data "$CONTAINER" mkdir -p /var/www/html/data
+    # Create data directory first
+    docker exec -u www-data "$CONTAINER" mkdir -p /var/www/html/data
 
-# Create .ncdata marker
-docker exec -u www-data "$CONTAINER" bash -c 'echo "# Nextcloud data directory" > /var/www/html/data/.ncdata'
+    # Create .ncdata marker
+    docker exec -u www-data "$CONTAINER" bash -c 'echo "# Nextcloud data directory" > /var/www/html/data/.ncdata'
 
-# Get instance ID
-INSTANCE_ID=$(docker exec -u www-data "$CONTAINER" php occ config:system:get instanceid)
-echo "Instance ID: $INSTANCE_ID"
+    # Get instance ID
+    INSTANCE_ID=$(docker exec -u www-data "$CONTAINER" php occ config:system:get instanceid)
+    echo "Instance ID: $INSTANCE_ID"
 
-# Create user dirs
-docker exec -u www-data "$CONTAINER" mkdir -p \
-  /var/www/html/data/"$USERNAME"/files \
-  /var/www/html/data/"$USERNAME"/cache \
-  /var/www/html/data/"$USERNAME"/uploads
+    # Create user dirs
+    docker exec -u www-data "$CONTAINER" mkdir -p \
+      /var/www/html/data/"$USERNAME"/files \
+      /var/www/html/data/"$USERNAME"/cache \
+      /var/www/html/data/"$USERNAME"/uploads
 
-# Create appdata dirs
-docker exec -u www-data "$CONTAINER" mkdir -p \
-  /var/www/html/data/appdata_"${INSTANCE_ID}"/avatar/"$USERNAME" \
-  /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/images \
-  /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/users/"$USERNAME" \
-  /var/www/html/data/appdata_"${INSTANCE_ID}"/preview
+    # Create appdata dirs
+    docker exec -u www-data "$CONTAINER" mkdir -p \
+      /var/www/html/data/appdata_"${INSTANCE_ID}"/avatar/"$USERNAME" \
+      /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/images \
+      /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/users/"$USERNAME" \
+      /var/www/html/data/appdata_"${INSTANCE_ID}"/preview
 
-# Fix permissions
-docker exec "$CONTAINER" chown -R www-data:www-data /var/www/html/data
-docker exec "$CONTAINER" find /var/www/html/data -type d -exec chmod 750 {} \;
-docker exec "$CONTAINER" find /var/www/html/data -type f -exec chmod 640 {} \;
+    # Fix permissions
+    docker exec "$CONTAINER" chown -R www-data:www-data /var/www/html/data
+    docker exec "$CONTAINER" find /var/www/html/data -type d -exec chmod 750 {} \;
+    docker exec "$CONTAINER" find /var/www/html/data -type f -exec chmod 640 {} \;
+else
+    echo "✅ .ncdata exists — skipping folder creation steps."
+fi
 
-# Scan and repair
+echo ">>> Running system scans and maintenance repairs..."
 docker exec -u www-data "$CONTAINER" php occ files:scan --all
 docker exec -u www-data "$CONTAINER" php occ files:scan-app-data
 docker exec -u www-data "$CONTAINER" php occ files:cleanup
