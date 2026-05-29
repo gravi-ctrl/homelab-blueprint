@@ -90,9 +90,14 @@ def npm_host_url(h):
     domains = h.get("domain_names", [])
     return f"{scheme}://{domains[0]}" if domains else ""
 
-def match_npm(stacks, npm_index):
+def match_npm(stacks, npm_index, npm_self_url=None):
+    NPM_CONTAINER_NAMES = {"npm", "nginx-proxy-manager", "nginxproxymanager"}
     for stack in stacks:
         for svc in stack["services"]:
+            # If this service IS the NPM container, inject its own URL directly
+            if npm_self_url and svc["container_name"].lower() in NPM_CONTAINER_NAMES:
+                svc["npm_urls"] = [npm_self_url]
+                continue
             urls = []
             for key in {svc["container_name"].lower(), svc["name"].lower()}:
                 for h in npm_index.get(key, []):
@@ -186,6 +191,13 @@ def parse_compose(path, text):
         image = str(cfg.get("image") or "")
         img   = classify_image(image)
 
+        # Collect every ${VAR} reference anywhere in this service's raw config
+        # (covers vars used as values in environment, volumes, entrypoint, etc.)
+        # combined with keys explicitly declared in environment:
+        raw_svc_text = json.dumps(cfg)
+        referenced_vars = set(re.findall(r'\$\{([^}]+)\}', raw_svc_text))
+        all_env_keys = list(set(env_d.keys()) | referenced_vars)
+
         services.append({
             "name": name,
             "container_name": cfg.get("container_name") or name,
@@ -201,6 +213,10 @@ def parse_compose(path, text):
             "restart": cfg.get("restart","no"),
             "has_healthcheck": has_hc,
             "depends_on": deps,
+            # All env var keys this service references (declared + ${VAR} interpolations)
+            "env_keys": all_env_keys,
+            # Per-service env vars from .env.example (populated later)
+            "env_vars": [],
         })
 
     return {"path":path,"parse_error":None,"services":services}
@@ -315,6 +331,9 @@ h1{font-size:20px;font-weight:500}
 .env-table td.k{font-family:ui-monospace,monospace;color:var(--tx);font-size:11px;white-space:nowrap}
 .env-table td.v{font-family:ui-monospace,monospace;font-size:11px;color:var(--tx3)}
 .env-secret{font-style:italic;color:var(--tx3)}
+.shared-env{margin-top:12px;padding-top:10px;border-top:.5px solid var(--br)}
+.shared-env-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;
+                  color:var(--tx3);margin-bottom:6px}
 .err-banner{background:var(--red-bg);color:var(--red-tx);border:.5px solid;
             border-radius:var(--r);padding:.45rem .85rem;font-size:12px;margin-bottom:8px}
 .no-match{color:var(--tx2);font-size:13px;padding:2rem 0;text-align:center;display:none}
@@ -355,6 +374,17 @@ function rcls(r){
   if(r.includes('unless'))return 'r-unless';
   if(r.includes('on-failure'))return 'r-onfail';
   return 'r-no';}
+
+function envTable(vars){
+  if(!vars||!vars.length) return '';
+  const trows=vars.map(ev=>`<tr>
+    <td class="k">${e(ev.key)}</td>
+    <td class="v">${ev.is_secret?'<span class="env-secret">••••••</span>':ev.default?e(ev.default):'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${e(ev.comment)}</td></tr>`).join('');
+  return`<div class="env-wrap"><table class="env-table">
+    <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>${trows}</tbody></table></div>`;
+}
 
 function renderStats(){
   let svcs=0;const pts=new Set();let urls=0,roll=0;
@@ -411,20 +441,25 @@ function buildCard(stack,i){
 
     if(sv.volumes.length)rows.push(`<div class="detail"><span class="dlabel">Volumes</span><span class="dval dval-col">${sv.volumes.map(v=>`<span class="mono">${e(v)}</span>`).join('')}</span></div>`);
 
-    if(stack.env_vars&&stack.env_vars.length){
-      const trows=stack.env_vars.map(ev=>`<tr>
-        <td class="k">${e(ev.key)}</td>
-        <td class="v">${ev.is_secret?'<span class="env-secret">••••••</span>':ev.default?e(ev.default):'<span style="color:var(--tx3)">—</span>'}</td>
-        <td>${e(ev.comment)}</td></tr>`).join('');
-      rows.push(`<div class="detail"><span class="dlabel">Env vars</span><div class="env-wrap"><table class="env-table"><thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead><tbody>${trows}</tbody></table></div></div>`);
+    // Per-service env vars (only vars this container actually declares)
+    if(sv.env_vars&&sv.env_vars.length){
+      rows.push(`<div class="detail"><span class="dlabel">Env vars</span>${envTable(sv.env_vars)}</div>`);
     }
 
     return`<div class="svc"><div class="svc-head"><span class="svc-name">${e(sv.name)}</span><div class="svc-badges">${sb}</div></div><div class="svc-body">${rows.join('')}</div></div>`;
   }).join('');
 
+  // Orphan env vars: defined in .env.example but not referenced by any service's environment block
+  const orphanEnv = (stack.env_vars&&stack.env_vars.length)
+    ? `<div class="shared-env">
+         <div class="shared-env-label">Shared / unmatched env vars</div>
+         ${envTable(stack.env_vars)}
+       </div>`
+    : '';
+
   const label=stack.path.replace(/\/(docker-compose|compose)\.ya?ml$/i,'');
   const err=stack.parse_error?`<div class="err-banner">⚠ ${e(stack.parse_error)}</div>`:'';
-  return`<div class="card-head" id="h${i}" onclick="toggle(${i})"><span>🗂</span><span class="stack-name">${e(label)}</span><div class="head-badges">${hb}</div><span class="chev">▾</span></div><div class="card-body" id="b${i}">${err}<div class="svc-list">${svcsHtml}</div></div>`;
+  return`<div class="card-head" id="h${i}" onclick="toggle(${i})"><span>🗂</span><span class="stack-name">${e(label)}</span><div class="head-badges">${hb}</div><span class="chev">▾</span></div><div class="card-body" id="b${i}">${err}<div class="svc-list">${svcsHtml}</div>${orphanEnv}</div>`;
 }
 
 function renderCards(){
@@ -509,16 +544,29 @@ def main():
         stack_dir = str(Path(cp).parent)
         env_ex_path = f"{stack_dir}/.env.example" if stack_dir!="." else ".env.example"
         stack["env_vars"] = []
+
         if env_ex_path in env_ex_set:
             try:
                 env_text = github_raw(user, repo, branch, env_ex_path)
-                stack["env_vars"] = parse_env_example(env_text)
+                all_env_vars = parse_env_example(env_text)
+
+                # Distribute env vars to their owning service based on
+                # which keys that service actually declares in environment:
+                all_svc_keys = {k for sv in stack["services"] for k in sv.get("env_keys", [])}
+                for sv in stack["services"]:
+                    sv_keys = set(sv.get("env_keys", []))
+                    sv["env_vars"] = [ev for ev in all_env_vars if ev["key"] in sv_keys]
+
+                # Anything not claimed by any service stays at stack level (orphans)
+                stack["env_vars"] = [ev for ev in all_env_vars if ev["key"] not in all_svc_keys]
+
             except Exception as ex:
                 if args.verbose: print(f"    ⚠ .env.example: {ex}")
 
         stacks.append(stack)
+        svc_env_total = sum(len(sv.get("env_vars",[])) for sv in stack["services"])
         print(f"  ✓ {cp}  ({len(stack['services'])} services"
-              + (f", {len(stack['env_vars'])} env vars" if stack["env_vars"] else "")
+              + (f", {svc_env_total} matched + {len(stack['env_vars'])} orphan env vars" if (svc_env_total or stack['env_vars']) else "")
               + ("  ⚠ "+stack["parse_error"] if stack.get("parse_error") else "") + ")")
 
     npm_count = 0
@@ -530,7 +578,28 @@ def main():
             hosts = npm.proxy_hosts()
             npm_count = len(hosts)
             print(f"  ✓ {npm_count} proxy host(s)")
-            match_npm(stacks, build_npm_index(hosts))
+
+            npm_index = build_npm_index(hosts)
+
+            # Derive NPM's own admin URL by finding the proxy host forwarding to port 81
+            # Fall back to first https host, then first http host
+            npm_self_url = None
+            https_fallback = None
+            for h in hosts:
+                u = npm_host_url(h)
+                if not u:
+                    continue
+                if str(h.get("forward_port", "")) == "81":
+                    npm_self_url = u
+                    break
+                if not https_fallback and u.startswith("https"):
+                    https_fallback = u
+            if not npm_self_url:
+                npm_self_url = https_fallback
+            if npm_self_url:
+                print(f"  ✓ NPM self-URL detected: {npm_self_url}")
+
+            match_npm(stacks, npm_index, npm_self_url)
             matched = sum(1 for s in stacks for sv in s["services"] if sv["npm_urls"])
             print(f"  ✓ Matched URLs to {matched} service(s)")
     elif not args.no_npm:
