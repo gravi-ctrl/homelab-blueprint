@@ -104,8 +104,8 @@ def match_npm(stacks, npm_index):
 # ── .env.example parser ───────────────────────────────────────────
 def parse_env_example(text):
     entries, pending = [], []
-    SECRET_KEYS = {"password","secret","key","token","pass","auth",
-                   "credentials","private","salt","encryption"}
+    SECRET_KEYS = {"password","secret","key","token","pass","auth","api",
+                   "credentials","private","salt","encryption","user","id"}
     for raw in text.splitlines():
         line = raw.strip()
         if not line:
