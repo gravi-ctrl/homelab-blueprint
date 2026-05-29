@@ -90,6 +90,14 @@ def npm_host_url(h):
     domains = h.get("domain_names", [])
     return f"{scheme}://{domains[0]}" if domains else ""
 
+def npm_host_details(h):
+    """Return url, forward_host, and forward_port for a proxy host."""
+    return {
+        "url": npm_host_url(h),
+        "forward_host": h.get("forward_host", ""),
+        "forward_port": str(h.get("forward_port", "")),
+    }
+
 def match_npm(stacks, npm_index, npm_self_url=None):
     NPM_CONTAINER_NAMES = {"npm", "nginx-proxy-manager", "nginxproxymanager"}
     for stack in stacks:
@@ -97,14 +105,18 @@ def match_npm(stacks, npm_index, npm_self_url=None):
             # If this service IS the NPM container, inject its own URL directly
             if npm_self_url and svc["container_name"].lower() in NPM_CONTAINER_NAMES:
                 svc["npm_urls"] = [npm_self_url]
+                svc["npm_details"] = [{"url": npm_self_url, "forward_host": "192.168.1.109", "forward_port": "81"}]
                 continue
+            details = []
             urls = []
             for key in {svc["container_name"].lower(), svc["name"].lower()}:
                 for h in npm_index.get(key, []):
-                    u = npm_host_url(h)
-                    if u and u not in urls:
-                        urls.append(u)
+                    d = npm_host_details(h)
+                    if d["url"] and d["url"] not in urls:
+                        urls.append(d["url"])
+                        details.append(d)
             svc["npm_urls"] = urls
+            svc["npm_details"] = details
 
 # ── .env.example parser ───────────────────────────────────────────
 def parse_env_example(text):
@@ -164,6 +176,7 @@ def parse_compose(path, text):
     services = []
     for name, cfg in raw_svcs.items():
         cfg = cfg or {}
+        network_mode = str(cfg.get("network_mode") or "").strip()
         ports   = [str(p) for p in (cfg.get("ports") or [])]
         nets_r  = cfg.get("networks") or []
         nets    = list(nets_r.keys()) if isinstance(nets_r,dict) else list(nets_r)
@@ -191,9 +204,17 @@ def parse_compose(path, text):
         image = str(cfg.get("image") or "")
         img   = classify_image(image)
 
+        # Security flags
+        is_privileged = bool(cfg.get("privileged", False))
+        cap_add = list(cfg.get("cap_add") or [])
+        explicit_container_name = bool(cfg.get("container_name"))
+
+        # network_mode handling
+        # host/none/service:xxx modes mean no mapped ports but potentially exposed
+        is_host_network = network_mode.lower() == "host"
+        is_special_network = bool(network_mode) and network_mode.lower() not in ("bridge",)
+
         # Collect every ${VAR} reference anywhere in this service's raw config
-        # (covers vars used as values in environment, volumes, entrypoint, etc.)
-        # combined with keys explicitly declared in environment:
         raw_svc_text = json.dumps(cfg)
         referenced_vars = set(re.findall(r'\$\{([^}]+)\}', raw_svc_text))
         all_env_keys = list(set(env_d.keys()) | referenced_vars)
@@ -201,21 +222,26 @@ def parse_compose(path, text):
         services.append({
             "name": name,
             "container_name": cfg.get("container_name") or name,
+            "explicit_container_name": explicit_container_name,
             "image": image,
             "image_tag": img["tag"],
             "image_pinned": img["pinned"],
             "ports": ports,
             "networks": nets,
             "network_type": net_class_of(nets),
+            "network_mode": network_mode,
+            "is_host_network": is_host_network,
+            "is_special_network": is_special_network,
             "app_url_hint": app_url_hint,
             "npm_urls": [],
+            "npm_details": [],
             "volumes": vols,
             "restart": cfg.get("restart","no"),
             "has_healthcheck": has_hc,
             "depends_on": deps,
-            # All env var keys this service references (declared + ${VAR} interpolations)
+            "is_privileged": is_privileged,
+            "cap_add": cap_add,
             "env_keys": all_env_keys,
-            # Per-service env vars from .env.example (populated later)
             "env_vars": [],
         })
 
@@ -243,6 +269,7 @@ HTML = r"""<!DOCTYPE html>
   --coral-bg:#faece7;--coral-tx:#993c1d;
   --red-bg:#fcebeb;--red-tx:#a32d2d;
   --ok-bg:#eaf3de;--ok-tx:#3b6d11;
+  --orange-bg:#fff0e0;--orange-tx:#7a3800;--orange-bd:#f5b060;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#1c1c1a;--bg2:#232320;--bg3:#2a2a27;--bg4:#323230;
@@ -256,6 +283,7 @@ HTML = r"""<!DOCTYPE html>
   --coral-bg:#7a2e14;--coral-tx:#f5c4b3;
   --red-bg:#501313;--red-tx:#f7c1c1;
   --ok-bg:#173404;--ok-tx:#c0dd97;
+  --orange-bg:#4a2200;--orange-tx:#ffb870;--orange-bd:#7a4800;
 }}
 body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;
      color:var(--tx);background:var(--bg3);line-height:1.5}
@@ -299,10 +327,13 @@ h1{font-size:20px;font-weight:500}
 .b-pin   {background:var(--ok-bg);    color:var(--ok-tx)}
 .b-roll  {background:var(--amber-bg); color:var(--amber-tx)}
 .b-warn  {background:var(--red-bg);   color:var(--red-tx)}
+.b-host  {background:var(--orange-bg);color:var(--orange-tx)}
+.b-priv  {background:var(--red-bg);   color:var(--red-tx)}
+.b-noname{background:var(--amber-bg); color:var(--amber-tx)}
 .r-always{background:var(--ok-bg);    color:var(--ok-tx)}
 .r-unless{background:var(--blue-bg);  color:var(--blue-tx)}
 .r-onfail{background:var(--amber-bg); color:var(--amber-tx)}
-.r-no    {background:var(--gray-bg);  color:var(--gray-tx)}
+.r-no    {background:var(--red-bg);   color:var(--red-tx)}
 .card-body{padding:.75rem 1rem;display:none}
 .card-body.open{display:block}
 .svc-list{display:grid;gap:8px}
@@ -322,6 +353,9 @@ h1{font-size:20px;font-weight:500}
 .url-link{font-size:12px;color:var(--blue-tx);text-decoration:none;
           display:inline-flex;align-items:center;gap:3px}
 .url-link:hover{text-decoration:underline}
+.npm-detail{font-size:11px;color:var(--tx3);display:inline-flex;align-items:center;
+            gap:3px;font-family:ui-monospace,monospace}
+.npm-detail-sep{color:var(--tx3);margin:0 2px}
 .env-wrap{margin-top:2px;width:100%;overflow-x:auto}
 .env-table{width:100%;border-collapse:collapse;font-size:11.5px}
 .env-table th{text-align:left;color:var(--tx3);font-weight:400;font-size:10.5px;
@@ -356,6 +390,8 @@ h1{font-size:20px;font-weight:500}
     <button class="fbtn" id="f-urls"     onclick="tog('urls')">Has URL</button>
     <button class="fbtn" id="f-internal" onclick="tog('internal')">Internal net</button>
     <button class="fbtn" id="f-rolling"  onclick="tog('rolling')">Rolling tag</button>
+    <button class="fbtn" id="f-security" onclick="tog('security')">⚠ Security</button>
+    <button class="fbtn" id="f-host"     onclick="tog('host')">Host network</button>
   </div>
   <div class="stacks" id="stacks"></div>
   <div class="no-match" id="no-match">No stacks match your filter.</div>
@@ -364,10 +400,10 @@ h1{font-size:20px;font-weight:500}
 const D=__DATA__;
 function e(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function bdg(cls,txt){return`<span class="bdg ${cls}">${e(txt)}</span>`}
-function extLink(url){
+function extLink(url,label){
   return`<a class="url-link" href="${e(url)}" target="_blank">`+
     `<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 3H3a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-4"/><path d="M13 1h2v2M9 7l6-6"/></svg>`+
-    `${e(url)}</a>`}
+    `${e(label||url)}</a>`}
 function rcls(r){
   if(!r||r==='no')return 'r-no';
   if(r==='always')return 'r-always';
@@ -386,22 +422,29 @@ function envTable(vars){
     <tbody>${trows}</tbody></table></div>`;
 }
 
+function svcHasSecurityConcern(sv){
+  return sv.is_privileged || (sv.cap_add&&sv.cap_add.length>0) || !sv.explicit_container_name || (sv.restart==='no'||!sv.restart);
+}
+
 function renderStats(){
-  let svcs=0;const pts=new Set();let urls=0,roll=0;
+  let svcs=0;const pts=new Set();let urls=0,roll=0,secWarn=0,hostNet=0;
   D.forEach(s=>{svcs+=s.services.length;s.services.forEach(sv=>{
     sv.ports.forEach(p=>pts.add(p));
     if(sv.npm_urls.length||sv.app_url_hint)urls++;
     if(!sv.image_pinned)roll++;
+    if(svcHasSecurityConcern(sv))secWarn++;
+    if(sv.is_host_network)hostNet++;
   })});
   document.getElementById('stats').innerHTML=[
     ['Stacks',D.length],['Services',svcs],
-    ['Open ports',pts.size],['URLs found',urls],['Rolling tags',roll]
+    ['Open ports',pts.size],['URLs found',urls],['Rolling tags',roll],
+    ['⚠ Warnings',secWarn]
   ].map(([l,n])=>`<div class="stat"><div class="stat-n">${n}</div><div class="stat-l">${e(l)}</div></div>`).join('');
 }
 
 function buildCard(stack,i){
   const allPorts=[],allUrls=[];
-  let hp=false,hi=false,hasRoll=false;
+  let hp=false,hi=false,hasRoll=false,hasSec=false,hasHost=false;
   stack.services.forEach(sv=>{
     sv.ports.forEach(p=>allPorts.push(p));
     if(sv.npm_urls.length)allUrls.push(...sv.npm_urls);
@@ -409,29 +452,59 @@ function buildCard(stack,i){
     if(['proxy-only','both'].includes(sv.network_type))hp=true;
     if(['internal-only','both'].includes(sv.network_type))hi=true;
     if(!sv.image_pinned)hasRoll=true;
+    if(svcHasSecurityConcern(sv))hasSec=true;
+    if(sv.is_host_network)hasHost=true;
   });
   const hb=[
     bdg('b-svc',`${stack.services.length} svc${stack.services.length!==1?'s':''}`),
     hp&&hi?bdg('b-both','proxy+internal'):hp?bdg('b-proxy','proxy'):hi?bdg('b-int','internal'):'',
+    hasHost?bdg('b-host','host net'):'',
     ...allPorts.slice(0,3).map(p=>bdg('b-port',p)),
     allPorts.length>3?bdg('b-svc',`+${allPorts.length-3} ports`):'',
     ...allUrls.slice(0,2).map(u=>bdg('b-url',u)),
     allUrls.length>2?bdg('b-url',`+${allUrls.length-2} more`):'',
     hasRoll?bdg('b-roll','rolling'):'',
+    hasSec?bdg('b-warn','⚠ warnings'):'',
   ].filter(Boolean).join('');
 
   const svcsHtml=stack.services.map(sv=>{
+    const secFlags=[];
+    if(sv.is_privileged) secFlags.push(bdg('b-priv','⚠ privileged'));
+    if(sv.cap_add&&sv.cap_add.length) secFlags.push(bdg('b-priv',`⚠ cap_add: ${sv.cap_add.join(', ')}`));
+    if(!sv.explicit_container_name) secFlags.push(bdg('b-noname','⚠ no container_name'));
+    if(sv.is_host_network) secFlags.push(bdg('b-host','host network'));
+    if(sv.is_special_network&&!sv.is_host_network) secFlags.push(bdg('b-host',`network_mode: ${sv.network_mode}`));
+
     const sb=[
       sv.image_pinned?bdg('b-pin',sv.image_tag):bdg('b-roll',sv.image_tag||'latest'),
       sv.has_healthcheck?bdg('b-pin','✓ health'):'',
       bdg(rcls(sv.restart),sv.restart||'no'),
+      ...secFlags,
     ].filter(Boolean).join('');
 
     const rows=[];
     rows.push(`<div class="detail"><span class="dlabel">Image</span><span class="dval"><span class="mono">${e(sv.image)}</span></span></div>`);
 
-    const urls=sv.npm_urls.length?sv.npm_urls:sv.app_url_hint?[sv.app_url_hint]:[];
-    if(urls.length)rows.push(`<div class="detail"><span class="dlabel">URL</span><span class="dval">${urls.map(extLink).join('')}</span></div>`);
+    // Container name row — only show if explicit (implicit names are already flagged)
+    if(sv.explicit_container_name){
+      rows.push(`<div class="detail"><span class="dlabel">Container</span><span class="dval"><span class="mono">${e(sv.container_name)}</span></span></div>`);
+    }
+
+    // NPM URLs with container:port details
+    if(sv.npm_details&&sv.npm_details.length){
+      const npmRows = sv.npm_details.map(d=>{
+        const portPart = d.forward_port ? `<span class="npm-detail"><span class="mono">${e(d.forward_host)}:${e(d.forward_port)}</span></span>` : '';
+        return `<div style="display:flex;flex-direction:column;gap:2px">${extLink(d.url)}${portPart}</div>`;
+      }).join('');
+      rows.push(`<div class="detail"><span class="dlabel">URL</span><span class="dval" style="flex-direction:column;align-items:flex-start">${npmRows}</span></div>`);
+    } else if(sv.app_url_hint){
+      rows.push(`<div class="detail"><span class="dlabel">URL</span><span class="dval">${extLink(sv.app_url_hint)}</span></div>`);
+    }
+
+    // network_mode row
+    if(sv.network_mode){
+      rows.push(`<div class="detail"><span class="dlabel">Net mode</span><span class="dval">${bdg(sv.is_host_network?'b-host':'b-int', sv.network_mode)}</span></div>`);
+    }
 
     if(sv.ports.length)rows.push(`<div class="detail"><span class="dlabel">Ports</span><span class="dval">${sv.ports.map(p=>`<span class="mono">${e(p)}</span>`).join('')}</span></div>`);
 
@@ -441,7 +514,6 @@ function buildCard(stack,i){
 
     if(sv.volumes.length)rows.push(`<div class="detail"><span class="dlabel">Volumes</span><span class="dval dval-col">${sv.volumes.map(v=>`<span class="mono">${e(v)}</span>`).join('')}</span></div>`);
 
-    // Per-service env vars (only vars this container actually declares)
     if(sv.env_vars&&sv.env_vars.length){
       rows.push(`<div class="detail"><span class="dlabel">Env vars</span>${envTable(sv.env_vars)}</div>`);
     }
@@ -449,7 +521,6 @@ function buildCard(stack,i){
     return`<div class="svc"><div class="svc-head"><span class="svc-name">${e(sv.name)}</span><div class="svc-badges">${sb}</div></div><div class="svc-body">${rows.join('')}</div></div>`;
   }).join('');
 
-  // Orphan env vars: defined in .env.example but not referenced by any service's environment block
   const orphanEnv = (stack.env_vars&&stack.env_vars.length)
     ? `<div class="shared-env">
          <div class="shared-env-label">Shared / unmatched env vars</div>
@@ -468,13 +539,19 @@ function renderCards(){
 }
 function toggle(i){const b=document.getElementById('b'+i),h=document.getElementById('h'+i);const o=b.classList.toggle('open');h.classList.toggle('is-open',o);}
 
-const F={ports:false,urls:false,internal:false,rolling:false};
+const F={ports:false,urls:false,internal:false,rolling:false,security:false,host:false};
 function tog(k){F[k]=!F[k];document.getElementById('f-'+k).classList.toggle('on',F[k]);applyFilter();}
 function applyFilter(){
   const q=document.getElementById('search').value.toLowerCase();let n=0;
   document.querySelectorAll('#stacks .card').forEach(el=>{
     const s=D[+el.dataset.i];const txt=JSON.stringify(s).toLowerCase();
-    const ok=(!q||txt.includes(q))&&(!F.ports||s.services.some(sv=>sv.ports.length>0))&&(!F.urls||s.services.some(sv=>sv.npm_urls.length||sv.app_url_hint))&&(!F.internal||s.services.some(sv=>['internal-only','both'].includes(sv.network_type)))&&(!F.rolling||s.services.some(sv=>!sv.image_pinned));
+    const ok=(!q||txt.includes(q))
+      &&(!F.ports||s.services.some(sv=>sv.ports.length>0))
+      &&(!F.urls||s.services.some(sv=>sv.npm_urls.length||sv.app_url_hint))
+      &&(!F.internal||s.services.some(sv=>['internal-only','both'].includes(sv.network_type)))
+      &&(!F.rolling||s.services.some(sv=>!sv.image_pinned))
+      &&(!F.security||s.services.some(sv=>svcHasSecurityConcern(sv)))
+      &&(!F.host||s.services.some(sv=>sv.is_host_network));
     el.style.display=ok?'':'none';if(ok)n++;
   });
   document.getElementById('no-match').style.display=n?'none':'block';
@@ -550,14 +627,11 @@ def main():
                 env_text = github_raw(user, repo, branch, env_ex_path)
                 all_env_vars = parse_env_example(env_text)
 
-                # Distribute env vars to their owning service based on
-                # which keys that service actually declares in environment:
                 all_svc_keys = {k for sv in stack["services"] for k in sv.get("env_keys", [])}
                 for sv in stack["services"]:
                     sv_keys = set(sv.get("env_keys", []))
                     sv["env_vars"] = [ev for ev in all_env_vars if ev["key"] in sv_keys]
 
-                # Anything not claimed by any service stays at stack level (orphans)
                 stack["env_vars"] = [ev for ev in all_env_vars if ev["key"] not in all_svc_keys]
 
             except Exception as ex:
@@ -565,8 +639,20 @@ def main():
 
         stacks.append(stack)
         svc_env_total = sum(len(sv.get("env_vars",[])) for sv in stack["services"])
+
+        # Security summary for this stack
+        host_svcs   = [sv["name"] for sv in stack["services"] if sv.get("is_host_network")]
+        priv_svcs   = [sv["name"] for sv in stack["services"] if sv.get("is_privileged")]
+        noname_svcs = [sv["name"] for sv in stack["services"] if not sv.get("explicit_container_name")]
+
+        flags = []
+        if host_svcs:   flags.append(f"host-net: {', '.join(host_svcs)}")
+        if priv_svcs:   flags.append(f"privileged: {', '.join(priv_svcs)}")
+        if noname_svcs: flags.append(f"no container_name: {', '.join(noname_svcs)}")
+
         print(f"  ✓ {cp}  ({len(stack['services'])} services"
               + (f", {svc_env_total} matched + {len(stack['env_vars'])} orphan env vars" if (svc_env_total or stack['env_vars']) else "")
+              + (f"  ⚠ {' | '.join(flags)}" if flags else "")
               + ("  ⚠ "+stack["parse_error"] if stack.get("parse_error") else "") + ")")
 
     npm_count = 0
@@ -581,8 +667,6 @@ def main():
 
             npm_index = build_npm_index(hosts)
 
-            # Derive NPM's own admin URL by finding the proxy host forwarding to port 81
-            # Fall back to first https host, then first http host
             npm_self_url = None
             https_fallback = None
             for h in hosts:
@@ -619,13 +703,19 @@ def main():
     total_ports = len({p for s in stacks for sv in s["services"] for p in sv["ports"]})
     total_urls  = sum(1 for s in stacks for sv in s["services"] if sv["npm_urls"] or sv["app_url_hint"])
     rolling     = sum(1 for s in stacks for sv in s["services"] if not sv["image_pinned"])
+    host_net    = sum(1 for s in stacks for sv in s["services"] if sv["is_host_network"])
+    privileged  = sum(1 for s in stacks for sv in s["services"] if sv["is_privileged"])
+    no_name     = sum(1 for s in stacks for sv in s["services"] if not sv["explicit_container_name"])
 
     print(f"""
 ┌─ Done ────────────────────────────────────────
-│  File    : {out_path.resolve()}
-│  Stacks  : {len(stacks)}  ·  Services: {total_svcs}
-│  Ports   : {total_ports}  ·  URLs: {total_urls}  ·  NPM hosts: {npm_count}
-│  Rolling tags: {rolling} (consider pinning these)
+│  File      : {out_path.resolve()}
+│  Stacks    : {len(stacks)}  ·  Services: {total_svcs}
+│  Ports     : {total_ports}  ·  URLs: {total_urls}  ·  NPM hosts: {npm_count}
+│  Rolling tags   : {rolling} (consider pinning these)
+│  Host network   : {host_net}
+│  Privileged     : {privileged}
+│  No container_name: {no_name}
 └───────────────────────────────────────────────
   Open: open {out_path}   (macOS)
         xdg-open {out_path}   (Linux)
