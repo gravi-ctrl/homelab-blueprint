@@ -186,8 +186,7 @@ fi
 header "5/10" "Python Libraries"
 
 task "pip install requirements"
-quietly pip3 install python-dotenv git-filter-repo cron-descriptor \
-    python-telegram-bot selenium flask --break-system-packages
+quietly pip3 install python-dotenv git-filter-repo cron-descriptor python-telegram-bot pyyaml requests selenium flask --break-system-packages
 pass
 
 
