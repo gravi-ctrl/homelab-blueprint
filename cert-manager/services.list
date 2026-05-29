@@ -1,8 +1,9 @@
 audiobooks
+auth
 bazarr
-d
 dockge
 glances
+home
 jd
 jellyfin
 kuma
@@ -19,3 +20,4 @@ romm
 scrutiny
 sonarr
 syncthing
+

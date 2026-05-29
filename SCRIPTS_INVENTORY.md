@@ -46,5 +46,6 @@
 
 ## ⚠️ Undocumented Scripts
 > *These scripts are missing `@DESCRIPTION:` or `@FREQUENCY:` tags.*
+- `StackDeck/docker_dash.py`
 - `dockcheck/notify_templates/notify_telegram.sh`
 - `dockcheck/notify_templates/notify_v2.sh`
