@@ -11,6 +11,12 @@ Setup:
     pip install pyyaml requests python-dotenv
     python3 docker_dash.py
 
+Service descriptions (optional):
+    Add labels to any service in your compose file:
+        labels:
+          - "dash.description=Audiobook & podcast server"
+          - "dash.notes=Hardware transcoding configured"
+
 Options:
     --env PATH      Path to .env file (default: .env)
     --out PATH      Override output file path
@@ -204,6 +210,20 @@ def parse_compose(path, text):
         image = str(cfg.get("image") or "")
         img   = classify_image(image)
 
+        # Labels — parse both list and dict forms
+        labels_r = cfg.get("labels") or []
+        labels_d = {}
+        if isinstance(labels_r, list):
+            for item in labels_r:
+                if "=" in str(item):
+                    k, _, v = str(item).partition("=")
+                    labels_d[k.strip()] = v.strip()
+        elif isinstance(labels_r, dict):
+            labels_d = {k: str(v) for k, v in labels_r.items()}
+
+        dash_description = labels_d.get("dash.description", "").strip()
+        dash_notes       = labels_d.get("dash.notes", "").strip()
+
         # Security flags
         is_privileged = bool(cfg.get("privileged", False))
         cap_add = list(cfg.get("cap_add") or [])
@@ -243,6 +263,8 @@ def parse_compose(path, text):
             "cap_add": cap_add,
             "env_keys": all_env_keys,
             "env_vars": [],
+            "description": dash_description,
+            "notes": dash_notes,
         })
 
     return {"path":path,"parse_error":None,"services":services}
@@ -368,6 +390,8 @@ h1{font-size:20px;font-weight:500}
 .shared-env{margin-top:12px;padding-top:10px;border-top:.5px solid var(--br)}
 .shared-env-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;
                   color:var(--tx3);margin-bottom:6px}
+.svc-desc{font-size:12px;color:var(--tx2);padding:.4rem .85rem .1rem;font-style:italic;border-bottom:.5px solid var(--br)}
+.svc-notes{font-size:11.5px;color:var(--tx3);background:var(--bg3);padding:.35rem .85rem;border-top:.5px solid var(--br);border-radius:0 0 var(--r) var(--r)}
 .err-banner{background:var(--red-bg);color:var(--red-tx);border:.5px solid;
             border-radius:var(--r);padding:.45rem .85rem;font-size:12px;margin-bottom:8px}
 .no-match{color:var(--tx2);font-size:13px;padding:2rem 0;text-align:center;display:none}
@@ -518,7 +542,7 @@ function buildCard(stack,i){
       rows.push(`<div class="detail"><span class="dlabel">Env vars</span>${envTable(sv.env_vars)}</div>`);
     }
 
-    return`<div class="svc"><div class="svc-head"><span class="svc-name">${e(sv.name)}</span><div class="svc-badges">${sb}</div></div><div class="svc-body">${rows.join('')}</div></div>`;
+    return`<div class="svc"><div class="svc-head"><span class="svc-name">${e(sv.name)}</span><div class="svc-badges">${sb}</div></div>${sv.description?`<div class="svc-desc">${e(sv.description)}</div>`:''}<div class="svc-body">${rows.join('')}</div>${sv.notes?`<div class="svc-notes">📝 ${e(sv.notes)}</div>`:''}</div>`;
   }).join('');
 
   const orphanEnv = (stack.env_vars&&stack.env_vars.length)
