@@ -1,12 +1,10 @@
 #!/bin/bash
-
 # @DESCRIPTION: Phase 1 Bootstrap: Preps SSH, optionally restores a Day-0 archive, and auto-links blueprint git repositories.
 # @FREQUENCY: Run Once (Disaster Recovery)
 
 set -euo pipefail
 
 # Decrypts weekly backup, fixes perms, preps for setup.sh
-
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
 KEY="/root/.backup-key.txt"
@@ -17,11 +15,19 @@ if sudo test -f "$KEY"; then
     [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $KEY, but no backup archive found at $HOME" >&2; exit 1; }
 
     echo "Using backup: $BACKUP"
+
     echo ">>> Installing age and zstd..."
     sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
 
     echo ">>> Decrypting and extracting backup..."
     sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --preserve-permissions -xf - -C /
+
+    echo ">>> Fixing extracted file ownership..."
+    TARGET_UID=$(id -u)
+    TARGET_GID=$(id -g)
+    sudo find /opt/stacks "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
+        -uid 1000 ! -uid "$TARGET_UID" \
+        -exec chown "$TARGET_UID:$TARGET_GID" {} +
 
     EXTRACTED=true
 else
@@ -50,10 +56,8 @@ cat << 'EOF' > "$HOME/re-link.sh"
 
 setup_repo() {
     echo "🔗 Linking $1..."
-
     sudo mkdir -p "$1"
     sudo chown -R "$(id -u):$(id -g)" "$1"
-
     git -C "$1" init -b main -q
     git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
     git -C "$1" fetch origin || return 1
@@ -61,14 +65,11 @@ setup_repo() {
 }
 
 echo ">>> Syncing repositories..."
-
 if setup_repo "$HOME/scripts"       "git@codeberg.org:gravi-ctrl/homelab-blueprint.git" &&
    setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git" &&
    setup_repo "/opt/stacks"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git"; then
-
     echo "✅ All repositories successfully linked!"
     rm -- "$0"
-
 else
     echo "❌ Re-linking failed (Codeberg might be unreachable)."
     echo "⚠️  Try running '~/re-link.sh' manually later once the connection is restored."
@@ -77,7 +78,6 @@ fi
 EOF
 
 chmod +x "$HOME/re-link.sh"
-
 "$HOME/re-link.sh" || true
 
 echo ">>> Cleaning up..."
@@ -86,12 +86,9 @@ if [[ "$EXTRACTED" == true ]]; then
 fi
 
 cat <<'EOF'
-
 ✅ Bootstrap phase complete!
-
 Next steps:
   1. Run the installer:  ~/scripts/run_once/setup.sh
          (If linking failed, run ~/re-link.sh first!)
-
   2. Re-open your SSH session.
 EOF
