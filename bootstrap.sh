@@ -19,7 +19,7 @@ if sudo test -f "$KEY"; then
     sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
 
     echo ">>> Decrypting and extracting backup..."
-    sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner --preserve-permissions -xf - -C /
+    sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
 
     echo ">>> Fixing extracted file ownership..."
     TARGET_UID=$(id -u)
@@ -59,7 +59,9 @@ cat << 'EOF' > "$HOME/re-link.sh"
 setup_repo() {
     echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
-    sudo chown -R "$(id -u):$(id -g)" "$1"
+    if [ -z "$(ls -A "$1" 2>/dev/null)" ]; then
+        sudo chown -R "$(id -u):$(id -g)" "$1"
+    fi
     git -C "$1" init -b main -q
     git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
     git -C "$1" fetch origin || return 1
