@@ -13,15 +13,15 @@ fi
 
 # --- Fix Permissions ONLY if they are broken ---
 CURRENT_OWNER=$(docker exec "$CONTAINER" stat -c '%U' /var/www/html)
+DATA_OWNER=$(docker exec "$CONTAINER" stat -c '%U' /var/www/html/data 2>/dev/null || echo "missing")
 
-if [ "$CURRENT_OWNER" != "www-data" ]; then
-    echo "⚠️  Wrong permissions detected (Owned by $CURRENT_OWNER). Fixing ownership..."
+if [ "$CURRENT_OWNER" != "www-data" ] || [ "$DATA_OWNER" != "www-data" ]; then
+    echo "⚠️  Wrong permissions detected (html: $CURRENT_OWNER, data: $DATA_OWNER). Fixing ownership..."
     docker exec "$CONTAINER" chown -R www-data:www-data /var/www/html
-
     docker exec "$CONTAINER" find /var/www/html/data -type d -exec chmod 750 {} + 2>/dev/null || true
     docker exec "$CONTAINER" find /var/www/html/data -type f -exec chmod 640 {} + 2>/dev/null || true
 else
-    echo "✅ Permissions on /var/www/html look correct (www-data)."
+    echo "✅ Permissions on /var/www/html and /var/www/html/data look correct (www-data)."
 fi
 
 # --- Missing Data Markers & Scans ---
