@@ -114,6 +114,7 @@ cleanup() {
     # 1. Remove lock & stacks snapshot
     rm -f "$LOCKFILE"
     rm -f "$RUNNING_STACKS_FILE"
+    rm -f /tmp/backup-uid.txt
 
     # 2. Kill Heartbeat
     if [ -n "$HEARTBEAT_PID" ]; then
@@ -148,6 +149,9 @@ for stack_dir in "$STACKS_DIR"/*/; do
     fi
 done
 echo "Captured $(wc -l < "$RUNNING_STACKS_FILE") running stack(s)."
+
+# Write backup UID/GID metadata
+echo "$(id -u "$SCRIPT_OWNER"):$(id -g "$SCRIPT_OWNER")" > /tmp/backup-uid.txt
 
 echo "Stopping and masking Docker..."
 systemctl mask docker.socket
@@ -204,6 +208,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     "${USER_HOME#/}/.ssh" \
     "${USER_HOME#/}/.local/share/mkcert" \
     etc/ssh \
+    tmp/backup-uid.txt \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
 
 TAR_EXIT_CODE=${PIPESTATUS[0]}
