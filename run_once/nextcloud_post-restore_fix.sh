@@ -35,7 +35,7 @@ docker exec -u www-data "$CONTAINER" test -d /var/www/html/data/"$USERNAME" 2>/d
     && USER_DIR_EXISTS=true
 
 # --- Case 1: Fresh install — neither .ncdata nor user dir exist ---
-if [ "$NCDATA_EXISTS" = false ] && [ "$USER_DIR_EXISTS" = false ]; then
+if [ "$NCDATA_EXISTS" = false ] || [ "$USER_DIR_EXISTS" = false ]; then
     echo "⚠️  Fresh setup needed — creating directories and running scans..."
 
     # Create data directory and .ncdata marker
