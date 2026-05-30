@@ -29,7 +29,7 @@ if sudo test -f "$KEY"; then
     sudo find /opt/stacks "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
         -uid "$BACKUP_UID" ! -uid "$TARGET_UID" \
         -exec chown "$TARGET_UID:$TARGET_GID" {} +
-    rm -f /tmp/backup-uid.txt
+    sudo rm -f /tmp/backup-uid.txt
 
     EXTRACTED=true
 else
