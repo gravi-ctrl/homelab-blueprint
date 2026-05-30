@@ -103,11 +103,11 @@ curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh | bash
 <details>
 <summary><b>Fresh Start Only: Initialize .env files</b></summary>
 
-Since you skipped the backup, your configurations are missing. Fill in your secrets:
-```bash
-find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
-cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
-```
+> Since you skipped the backup, your configurations are missing. Fill in your secrets:
+> ```bash
+> find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
+> cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
+> ```
 </details>
 
 ---
@@ -134,10 +134,13 @@ sudo reboot
 <details>
 <summary><b>Fresh Start Only: Initialize Stack Secrets</b></summary>
 
-Since you started fresh, `/opt/stacks` lacks its `.env` files. Generate the templates and fill in your keys/passwords *before* starting the containers:
-```bash
-for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
-```
+> Since you started fresh, `/opt/stacks` lacks its `.env` files. 
+> Generate the templates first:
+> ```bash
+> for d in /opt/stacks/*/; do [ -f "${d}.env.example" ] && cp --update=none "${d}.env.example" "${d}.env"; done
+> ```
+> Fill in what you can from your password manager. Some secrets (e.g. OIDC client credentials) can only be obtained after spinning up their respective services first.
+
 </details>
 
 **2. Restore the Stacks:**
