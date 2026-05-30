@@ -68,9 +68,10 @@ A full backup archive contains everything needed to restore the exact state:
 |------|------|
 | `~/scripts` | This repository (Automation Engine) |
 | `/opt/stacks` | [Docker Stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) (Compose files & secrets) |
-| `~/ctrl-s-master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
+| `~/ctrl_s_master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
 | `~/.ssh` | Deploy keys |
 | `/etc/ssh` | Host keys |
+| `~/.local/share/mkcert` | Local CA for SSL |
 
 ---
 
@@ -151,7 +152,7 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 ```
 
 > [!TIP]
-> **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
+> **The Ghost Watcher in Action:** As soon as you run `docker compose up -d`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
 
 ---
 
