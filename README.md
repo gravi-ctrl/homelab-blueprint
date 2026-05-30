@@ -153,12 +153,6 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 > [!TIP]
 > **The Ghost Watcher in Action:** As soon as you run `docker compose up`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
 
-> [!WARNING]
-> **Critical manual steps remaining:**
-> - **Borgmatic:** Mount external HDD, import key, and run a check:
->    `borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt && borgmatic check`
-> - **Tailscale:** If the Tailscale Funnel connection fails, regenerate the auth key at [Tailscale Admin](https://login.tailscale.com/admin/settings/keys) (Reusable + Tags), then update `TS_AUTHKEY` in `/opt/stacks/tailscale/.env`
-
 ---
 
 ## 🔄 Dual-push mirror setup
