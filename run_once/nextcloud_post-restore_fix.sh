@@ -24,14 +24,22 @@ else
     echo "✅ Permissions on /var/www/html and /var/www/html/data look correct (www-data)."
 fi
 
-# --- Missing Data Markers & Scans ---
-if ! docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/dev/null; then
-    echo "⚠️  .ncdata missing — creating data directory, folders, and running system scans..."
+# --- Check health indicators ---
+NCDATA_EXISTS=false
+USER_DIR_EXISTS=false
 
-    # Create data directory first
+docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/dev/null \
+    && NCDATA_EXISTS=true
+
+docker exec -u www-data "$CONTAINER" test -d /var/www/html/data/"$USERNAME" 2>/dev/null \
+    && USER_DIR_EXISTS=true
+
+# --- Case 1: Fresh install — neither .ncdata nor user dir exist ---
+if [ "$NCDATA_EXISTS" = false ] && [ "$USER_DIR_EXISTS" = false ]; then
+    echo "⚠️  Fresh setup needed — creating directories and running scans..."
+
+    # Create data directory and .ncdata marker
     docker exec -u www-data "$CONTAINER" mkdir -p /var/www/html/data
-
-    # Create .ncdata marker
     docker exec -u www-data "$CONTAINER" bash -c 'echo "# Nextcloud data directory" > /var/www/html/data/.ncdata'
 
     # Get instance ID
@@ -40,18 +48,20 @@ if ! docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/
 
     # Create user dirs
     docker exec -u www-data "$CONTAINER" mkdir -p \
-      /var/www/html/data/"$USERNAME"/files \
-      /var/www/html/data/"$USERNAME"/cache \
-      /var/www/html/data/"$USERNAME"/uploads
+        /var/www/html/data/"$USERNAME"/files/Voice_Memos \
+        /var/www/html/data/"$USERNAME"/cache \
+        /var/www/html/data/"$USERNAME"/uploads
 
     # Create appdata dirs
     docker exec -u www-data "$CONTAINER" mkdir -p \
-      /var/www/html/data/appdata_"${INSTANCE_ID}"/avatar/"$USERNAME" \
-      /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/images \
-      /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/users/"$USERNAME" \
-      /var/www/html/data/appdata_"${INSTANCE_ID}"/preview
+        /var/www/html/data/appdata_"${INSTANCE_ID}"/avatar/"$USERNAME" \
+        /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/images \
+        /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/users/"$USERNAME" \
+        /var/www/html/data/appdata_"${INSTANCE_ID}"/theming/global \
+        /var/www/html/data/appdata_"${INSTANCE_ID}"/js/core \
+        /var/www/html/data/appdata_"${INSTANCE_ID}"/preview
 
-    # Ensure permissions for newly created folders
+    # Fix permissions
     docker exec "$CONTAINER" chown -R www-data:www-data /var/www/html/data
 
     echo ">>> Running system scans and maintenance repairs..."
@@ -61,6 +71,11 @@ if ! docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/
     docker exec -u www-data "$CONTAINER" php occ maintenance:repair
 
     echo "✅ Post-restore setup and scans complete."
+
+# --- Case 2: Healthy install ---
 else
-    echo "✅ .ncdata exists — skipping folder creation and heavy database scans."
+    echo "✅ Nextcloud looks healthy (.ncdata: $NCDATA_EXISTS, user dir: $USER_DIR_EXISTS)."
+    echo ">>> Running maintenance:repair as a precaution..."
+    docker exec -u www-data "$CONTAINER" php occ maintenance:repair
+    echo "✅ Done."
 fi
