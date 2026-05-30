@@ -153,7 +153,7 @@ fi
 header "4/10" "Directory Structure & Permissions"
 
 task "Create /data directory tree"
-sudo mkdir -p /data/nextcloud_data/not-admin/files/Voice_Memos
+sudo mkdir -p /data/nextcloud_data
 sudo mkdir -p /data/paperless/{data,media}
 sudo mkdir -p /data/assets/{torrents,downloads/watch}
 sudo mkdir -p /data/assets/romm/{library,resources}
