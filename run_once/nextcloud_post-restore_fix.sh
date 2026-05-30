@@ -34,7 +34,7 @@ docker exec -u www-data "$CONTAINER" test -f /var/www/html/data/.ncdata 2>/dev/n
 docker exec -u www-data "$CONTAINER" test -d /var/www/html/data/"$USERNAME" 2>/dev/null \
     && USER_DIR_EXISTS=true
 
-# --- Case 1: Fresh install — neither .ncdata nor user dir exist ---
+# --- Fresh install ---
 if [ "$NCDATA_EXISTS" = false ] || [ "$USER_DIR_EXISTS" = false ]; then
     echo "⚠️  Fresh setup needed — creating directories and running scans..."
 
@@ -72,7 +72,7 @@ if [ "$NCDATA_EXISTS" = false ] || [ "$USER_DIR_EXISTS" = false ]; then
 
     echo "✅ Post-restore setup and scans complete."
 
-# --- Case 2: Healthy install ---
+# --- Healthy install ---
 else
     echo "✅ Nextcloud looks healthy (.ncdata: $NCDATA_EXISTS, user dir: $USER_DIR_EXISTS)."
     echo ">>> Running maintenance:repair as a precaution..."
