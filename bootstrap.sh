@@ -1,7 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Phase 1 Bootstrap: Preps SSH, optionally restores a Day-0 archive, and auto-links blueprint git repositories.
 # @FREQUENCY: Run Once (Disaster Recovery)
-
 set -euo pipefail
 
 # Decrypts weekly backup, fixes perms, preps for setup.sh
@@ -25,9 +24,12 @@ if sudo test -f "$KEY"; then
     echo ">>> Fixing extracted file ownership..."
     TARGET_UID=$(id -u)
     TARGET_GID=$(id -g)
+    BACKUP_UID=$(cut -d: -f1 /tmp/backup-uid.txt)
+    BACKUP_GID=$(cut -d: -f2 /tmp/backup-uid.txt)
     sudo find /opt/stacks "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
-        -uid 1000 ! -uid "$TARGET_UID" \
+        -uid "$BACKUP_UID" ! -uid "$TARGET_UID" \
         -exec chown "$TARGET_UID:$TARGET_GID" {} +
+    rm -f /tmp/backup-uid.txt
 
     EXTRACTED=true
 else
