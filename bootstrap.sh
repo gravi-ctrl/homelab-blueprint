@@ -19,7 +19,7 @@ if sudo test -f "$KEY"; then
     sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
 
     echo ">>> Decrypting and extracting backup..."
-    sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --preserve-permissions -xf - -C /
+    sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner --preserve-permissions -xf - -C /
 
     echo ">>> Fixing extracted file ownership..."
     TARGET_UID=$(id -u)
