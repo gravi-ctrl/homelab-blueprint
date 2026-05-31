@@ -8,11 +8,11 @@
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) |
 | `bootstrap.sh` | Phase 1 Bootstrap: Preps SSH, optionally restores a Day-0 archive, and auto-links blueprint git repositories. | Run Once (Disaster Recovery) |
 | `cleanup_script.py` | Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode. | Daily 1am and 1pm |
-| `cron-guard.py` | Executes commands on Linux/Windows with real-time log tailing and Telegram alerts for job success or failure. | Varies |
+| `cron-guard.py` | Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure. | Varies |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies |
 | `health-snapshot.sh` | Sends an on-demand health snapshot of the server to Telegram | On Demand |
-| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh` and /etc/ssh to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) |
+| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function | Daily 5am (triggered by `backup-scripts-git.sh`) |
 
@@ -41,7 +41,7 @@
 | `run_once/configure-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific) | Run Once |
 | `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Anytime |
-| `run_once/setup.sh` | Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles | Run Once (Disaster Recovery) |
+| `run_once/setup.sh` | Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) |
 
 
 ## ⚠️ Undocumented Scripts
