@@ -4,4 +4,6 @@ git-filter-repo
 PySocks
 python-dotenv
 python-telegram-bot
+pyyaml
+requests
 selenium
