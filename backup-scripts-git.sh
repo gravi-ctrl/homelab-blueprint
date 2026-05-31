@@ -62,11 +62,11 @@ pip3 list -v --not-required --disable-pip-version-check 2>/dev/null \
     | awk '$3 ~ /^\// && $3 !~ /^\/usr\/lib\/python/ {print $1}' \
     | grep -viE "^(pip|setuptools|wheel|distribute)$" > "$SNAPSHOT_DIR/my_pip_packages.txt" || true
 
-# C. APT Repositories (PPAs)
+# D. APT Repositories (PPAs)
 grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' /etc/apt/sources.list.d/ 2>/dev/null \
     | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt" || true
 
-# D. Dotfiles
+# E. Dotfiles
 [ -f ~/.zshrc ] && cp ~/.zshrc "$SCRIPT_DIR/run_once/dotfiles/zshrc"
 [ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "$SCRIPT_DIR/run_once/dotfiles/p10k.zsh"
 [ -f /etc/nanorc ] && cp /etc/nanorc "$SCRIPT_DIR/run_once/dotfiles/nanorc"

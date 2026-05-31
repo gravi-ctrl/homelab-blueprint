@@ -185,10 +185,15 @@ fi
 # ══════════════════════════════════════════════════════════════
 header "5/10" "Python Libraries"
 
-task "pip install requirements"
-quietly pip3 install python-dotenv git-filter-repo cron-descriptor python-telegram-bot pyyaml requests selenium flask --break-system-packages
-pass
-
+task "Install pip packages from backup list"
+PIP_PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_pip_packages.txt"
+if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
+    # Read the file and pass the packages to pip3 install
+    quietly xargs -a "$PIP_PACKAGES_FILE" pip3 install --break-system-packages
+    pass
+else
+    skip "list not found"
+fi
 
 # ══════════════════════════════════════════════════════════════
 # [6/10] SHELL ENVIRONMENT (ZSH + P10K)
