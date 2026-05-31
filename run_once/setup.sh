@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Installs dependencies, configures Docker, permissions, Python, Shell, Runs the firewall script and restores system configs & dotfiles
+# @DESCRIPTION: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
