@@ -416,7 +416,7 @@ while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ] || [ "\$D
     if [ "\$DONE_NEXTCLOUD" = false ] && is_nextcloud_ready; then
         sleep 5
         sudo -u \$(stat -c '%U' /opt/scripts/.) /opt/scripts/run_once/nextcloud_post-restore_fix.sh
-        sudo -u \$(stat -c '%U' /opt/scripts/.) /opt/scripts/nextcloud-dynamic-watch.sh
+        /opt/scripts/nextcloud-dynamic-watch.sh
         curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
             -d "chat_id=\${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
