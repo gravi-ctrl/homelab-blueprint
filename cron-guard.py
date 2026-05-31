@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-"""
-# @DESCRIPTION: Executes commands on Linux/Windows with real-time log tailing and Telegram alerts for job success or failure.
+# @DESCRIPTION: Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure.
 # @FREQUENCY: Varies
-"""
+
 # USAGE:
 # python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
 # python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)
@@ -30,9 +29,8 @@ def load_dotenv(filepath):
                 key, val = line.split('=', 1)
                 os.environ[key.strip()] = val.strip().strip('"\'')
 
-def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration):
+def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration):  # noqa: log_tail now used in fallback too
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-
 
     if exit_code == 0:
         status_header = "✅ <b>TASK SUCCESSFUL</b>"
@@ -58,12 +56,45 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration)
         "text": text
     }).encode('utf-8')
 
+    last_error = None
     for _ in range(3):
         try:
             req = urllib.request.Request(url, data=data, method='POST')
             with urllib.request.urlopen(req, timeout=30) as resp:
                 if resp.getcode() == 200: return True
-        except: time.sleep(2)
+        except Exception as e:
+            last_error = str(e)
+            time.sleep(2)
+
+    # --- Dual fallback logging (stderr + file) ---
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    alert_msg = (
+        f"[cron-guard] WARNING: Telegram alert delivery failed\n"
+        f"  Job      : {job_name}\n"
+        f"  Exit code: {exit_code}\n"
+        f"  Duration : {duration}\n"
+        f"  Finished : {timestamp}\n"
+        f"  Error    : {last_error}\n"
+    )
+
+    # 1) stderr — captured by syslog/journald on Linux, Event Viewer on Windows
+    print(alert_msg, file=sys.stderr)
+
+    # 2) failed_alerts.log — sits next to cron-guard.py for manual inspection
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        fallback_log = os.path.join(script_dir, 'failed_alerts.log')
+        with open(fallback_log, 'a', encoding='utf-8') as f:
+            f.write(
+                f"{timestamp} | job={job_name!r} | exit={exit_code} | duration={duration} | error={last_error}\n"
+                f"--- last logs ---\n"
+                f"{log_tail}\n"
+                f"-----------------\n"
+            )
+    except Exception as log_err:
+        # If even the file write fails, at least stderr already has it
+        print(f"[cron-guard] WARNING: Could not write to failed_alerts.log: {log_err}", file=sys.stderr)
+
     return False
 
 def main():
@@ -78,9 +109,7 @@ def main():
     if not args.command:
         parser.print_help()
         sys.exit(1)
-
-    # If the command was passed as a single quoted string, use it raw.
-    # Otherwise, join command parts correctly, preserving quotes.
+        
     if len(args.command) == 1:
         full_cmd = args.command[0]
     else:
@@ -118,10 +147,10 @@ def main():
             env=child_env
         )
 
-        # Better log capture: stream output in real-time
+        # Stream output in real-time
         for line in iter(process.stdout.readline, ''):
             clean_line = line.rstrip('\n')
-            print(clean_line) # Still print to local console/logs
+            print(clean_line)
             log_queue.append(clean_line)
 
         exit_code = process.wait()
