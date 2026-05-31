@@ -1,0 +1,7 @@
+cron_descriptor
+Flask
+git-filter-repo
+PySocks
+python-dotenv
+python-telegram-bot
+selenium

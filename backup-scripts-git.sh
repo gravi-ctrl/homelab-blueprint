@@ -57,6 +57,11 @@ fi
 # B. Installed Packages
 apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
+# C. Python (PIP) Packages
+pip3 list -v --not-required --disable-pip-version-check 2>/dev/null \
+    | awk '$3 ~ /^\// && $3 !~ /^\/usr\/lib\/python/ {print $1}' \
+    | grep -viE "^(pip|setuptools|wheel|distribute)$" > "$SNAPSHOT_DIR/my_pip_packages.txt" || true
+
 # C. APT Repositories (PPAs)
 grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' /etc/apt/sources.list.d/ 2>/dev/null \
     | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt" || true
