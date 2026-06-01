@@ -101,15 +101,6 @@ else
     pass "already installed"
 fi
 
-task "Install regctl (for Dockcheck)"
-if ! command -v regctl &> /dev/null; then
-    quietly sudo curl -fsSL https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
-    sudo chmod +x /usr/local/bin/regctl
-    pass "installed"
-else
-    pass "already installed"
-fi
-
 task "Write Docker daemon.json"
 sudo mkdir -p /etc/docker
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
