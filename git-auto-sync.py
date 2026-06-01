@@ -160,15 +160,16 @@ def main():
                 print(push_result.stderr.strip())
             success = True
             break
-        
+
         err_low = push_result.stderr.lower() if push_result.stderr else ""
         raw_error = push_result.stderr.strip() if push_result.stderr else "Unknown Error"
 
-        # 6a. History Rewritten / Diverged
-        if "rejected" in err_low and "fetch first" in err_low:
-            print("❌ CRITICAL: Remote history has diverged (History Rewrite detected).")
+        # 6a. History Rewritten / Diverged (Non-fast-forward / Behind)
+        if "rejected" in err_low and ("fetch first" in err_low or "use 'git pull'" in err_low or "non-fast-forward" in err_low):
+            print("❌ CRITICAL: Remote history has diverged (History Rewrite / Non-fast-forward detected).")
+            print("💡 Suggestion: If this is a mirror repository (like GitHub/Codeberg) and you've force-updated one, you may need to manually force-push to align them: git push <remote> main --force")
             sys.exit(1)
-            
+
         # 6b. File too large (GitHub/Codeberg limit)
         if "this is larger than github's recommended maximum file size" in err_low or "gh001" in err_low:
             print("❌ CRITICAL: Push rejected because a file is too large.")
