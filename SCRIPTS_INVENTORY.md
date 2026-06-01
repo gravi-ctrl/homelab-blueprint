@@ -29,12 +29,6 @@
 | `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole. | On Demand |
 
 
-### 📁 Dockcheck
-| Script File | Purpose | Frequency |
-| :--- | :--- | :--- |
-| `dockcheck/dockcheck.sh` | (External: mag37) Checks Docker registries for container updates by comparing local hashes against upstream without pulling images. | Daily 9am |
-
-
 ### 📁 Run_Once
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
@@ -47,5 +41,3 @@
 ## ⚠️ Undocumented Scripts
 > *These scripts are missing `@DESCRIPTION:` or `@FREQUENCY:` tags.*
 - `StackDeck/docker_dash.py`
-- `dockcheck/notify_templates/notify_telegram.sh`
-- `dockcheck/notify_templates/notify_v2.sh`
