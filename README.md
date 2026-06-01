@@ -106,7 +106,6 @@ curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh | bash
 > Since you skipped the backup, your configurations are missing. Fill in your secrets:
 > ```bash
 > find ~/scripts -type f -name ".env.example" -execdir cp --update=none .env.example .env \;
-> cp --update=none ~/scripts/dockcheck/default.config ~/scripts/dockcheck/dockcheck.config
 > ```
 </details>
 

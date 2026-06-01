@@ -1,7 +1,6 @@
 # sensitive env files
 .env
 **/.env
-**/dockcheck.config
 **/certs/
 
 # --- LOGS & TEMP ---
