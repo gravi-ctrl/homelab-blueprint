@@ -31,7 +31,7 @@ BASH_ENV=$HOME/scripts/.env
 0 5 * * * $S/cron-guard.py --mode fail "Scripts & System Configs Backup" "$S/backup-scripts-git.sh"
 
 # Scan docker-compose files and open dependency update PRs on Codeberg
-0 9 * * 1 $S/cron-guard.py --mode fail "Renovate" "docker run --rm --env-file /opt/stacks/renovate/.env -v /opt/stacks/renovate/config.js:/usr/src/app/config.js renovate/renovate"
+0 9 * * * $S/cron-guard.py --mode fail "Renovate" "docker run --rm --env-file /opt/stacks/renovate/.env -v /opt/stacks/renovate/config.js:/usr/src/app/config.js renovate/renovate"
 
 # Runs a Borgmatic backup
 0 2 * * 0 $S/cron-guard.py --mode all "Borg Backup" "borgmatic"
