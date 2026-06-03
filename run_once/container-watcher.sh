@@ -83,15 +83,22 @@ If you need to initialize a new CA and regenerate your local certificates:
 # ════════════════════════
 # 🚀 MAIN WATCHER ENGINE
 # ════════════════════════
+mapfile -t TASK_LINES <<< "$WATCHER_TASKS"
+
 while true; do
     ALL_DONE=true
     HAS_VALID_TASKS=false
 
-    # Parse the multi-line variable from .env line by line
-    while IFS="|" read -r task container custom_check; do
+    for line in "${TASK_LINES[@]}"; do
         # Ignore empty lines or lines with only spaces
-        [[ -z "${task// /}" ]] && continue
+        [[ -z "${line// /}" ]] && continue
+        # Ignore lines that start with a comment (#)
+        [[ "$line" == \#* ]] && continue
+
         HAS_VALID_TASKS=true
+
+        # Unpack the current line into variables
+        IFS="|" read -r task container custom_check <<< "$line"
 
         # 1. Skip if already completed
         if is_done "$task"; then
@@ -111,7 +118,7 @@ while true; do
                 fi
             fi
         fi
-    done <<< "$WATCHER_TASKS"
+    done
 
     # ── Self-Destruct Sequence ─────────────────────────────────────────────
     if [ "$ALL_DONE" = true ] || [ "$HAS_VALID_TASKS" = false ]; then
