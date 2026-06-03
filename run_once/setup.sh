@@ -344,10 +344,6 @@ else
 fi
 
 task "Trust restored mkcert CA system-wide"
-# For future me or the random stranger looking at this:
-# If the CA was successfully restored from backup, '-install' tells the OS to trust it.
-# If it's missing, then we don't want mkcert to auto-generate a new one here.
-# Instead, we skip it so the we can manually run 'cert-manager.sh init'.
 if [ -d "$HOME/.local/share/mkcert" ] && [ -f "$HOME/.local/share/mkcert/rootCA.pem" ]; then
     quietly mkcert -install
     pass
@@ -376,129 +372,19 @@ fi
 header "10/10" "Background Tasks"
 task "Create Docker watcher daemon"
 
-# 1. Create the Watcher Script
-# Note: We use \$ for variables we want evaluated inside the daemon,
-# and $USER for variables we want evaluated right now.
-cat << EOF | sudo tee /usr/local/bin/bootstrap-watcher.sh > /dev/null
-#!/bin/bash
-# ==============================================================================
-# 👻 GHOST WATCHER: Auto-configures containers once they are manually started
-# ==============================================================================
+WATCHER_SCRIPT="$HOME/scripts/run_once/container-watcher.sh"
 
-# ── 1. Task States ────────────────────────────────────────────────────────────
-DONE_NEXTCLOUD=false
-DONE_TAILSCALE=false
-DONE_NPM=false
-source /opt/scripts/.env
+if [ -f "$WATCHER_SCRIPT" ]; then
+    chmod +x "$WATCHER_SCRIPT"
 
-# ── 2. Helper Functions ───────────────────────────────────────────────────────
-is_running() {
-    docker container inspect -f '{{.State.Status}}' "\$1" 2>/dev/null | grep -q "running"
-}
-
-is_nextcloud_ready() {
-    is_running "nextcloud" && docker exec nextcloud test -f /var/www/html/lib/versioncheck.php 2>/dev/null
-}
-
-# ── 3. Main Watcher Loop ──────────────────────────────────────────────────────
-while [ "\$DONE_NEXTCLOUD" = false ] || [ "\$DONE_TAILSCALE" = false ] || [ "\$DONE_NPM" = false ]; do
-
-    # 🔹 TASK: NEXTCLOUD
-    if [ "\$DONE_NEXTCLOUD" = false ] && is_nextcloud_ready; then
-        sleep 5
-        sudo -u \$(stat -c '%U' /opt/scripts/.) /opt/scripts/run_once/nextcloud_post-restore_fix.sh
-        /opt/scripts/nextcloud-dynamic-watch.sh
-        curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=\${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: Nextcloud
-━━━━━━━━━━━━━━━
-✅ Nextcloud post-restore and dynamic-watch scripts have been executed
-
-🔍 Verify External storage:
-Ensure 'assets' is listed in Administration settings > External storage.
-(Requires 'External storage support' app)
-If missing, manually re-add:
-- Folder name: assets
-- Restrict to: User
-- External storage: Local
-- Storage configuration: /mnt/external_files" \
-            > /dev/null
-        DONE_NEXTCLOUD=true
-    fi
-
-    # 🔹 TASK: TAILSCALE
-    if [ "\$DONE_TAILSCALE" = false ] && is_running "tailscaled"; then
-        sleep 5
-        docker exec tailscaled tailscale serve reset
-
-        if [ -n "\$N8N_WEBHOOK_UUID" ]; then
-            docker exec tailscaled tailscale funnel --bg --https=443 --set-path=/webhook/\${N8N_WEBHOOK_UUID} http://127.0.0.1:5678/webhook/\${N8N_WEBHOOK_UUID}
-            docker exec tailscaled tailscale funnel --bg --https=443 --set-path=/webhook-test/\${N8N_WEBHOOK_UUID} http://127.0.0.1:5678/webhook-test/\${N8N_WEBHOOK_UUID}
-
-            MSG_TEXT="🔧 setup.sh's Post-Restore Watcher: Tailscale
-━━━━━━━━━━━━━━━
-✅ Tailscale Funnel configured!
-🛡️ n8n webhooks successfully secured via path-based routing."
-        else
-            MSG_TEXT="🔧 setup.sh's Post-Restore Watcher: Tailscale
-━━━━━━━━━━━━━━━
-❌ Tailscale Funnel skipped!
-⚠️ WARNING: N8N_WEBHOOK_UUID is missing in /opt/scripts/.env!
-For security reasons, n8n was not exposed. Please add the UUID to your .env to run the funnel."
-        fi
-
-        curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=\${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=\${MSG_TEXT}
-
-⚠️ If Tailscale connection fails, regenerate the auth key:
-1. Go to https://login.tailscale.com/admin/settings/keys
-2. Click 'Generate auth key'
-3. Tick: Reusable + Tags → select a tag
-4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env" \
-            > /dev/null
-        DONE_TAILSCALE=true
-    fi
-
-    # 🔹 TASK: NGINX PROXY MANAGER (NPM) REMINDER
-    if [ "\$DONE_NPM" = false ] && is_running "npm"; then
-        sleep 5
-        curl -fsS "https://api.telegram.org/bot\${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=\${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=🔧 setup.sh's Post-Restore Watcher: NPM
-━━━━━━━━━━━━━━━
-ℹ️ NPM container is now running!
-
-If you need to initialize a new CA and regenerate your local certificates:
-1. Run: 'cert init' and 'cert regen'
-2. Don't forget to restart Nginx right after:
-   'docker restart npm'
-   (This flushes Nginx's memory cache so it immediately loads the new keys!)" \
-            > /dev/null
-        DONE_NPM=true
-    fi
-
-    sleep 10
-done
-
-# ── 4. Self-Destruct Sequence ─────────────────────────────────────────────────
-systemctl disable bootstrap-watcher.service
-rm /etc/systemd/system/bootstrap-watcher.service
-rm /usr/local/bin/bootstrap-watcher.sh
-systemctl daemon-reload
-EOF
-
-sudo chmod +x /usr/local/bin/bootstrap-watcher.sh
-
-# 2. Create the Systemd Service
-cat << 'EOF' | sudo tee /etc/systemd/system/bootstrap-watcher.service > /dev/null
+    cat << EOF | sudo tee /etc/systemd/system/container-watcher.service > /dev/null
 [Unit]
 Description=Post-Bootstrap Docker Watcher
 After=docker.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/bootstrap-watcher.sh
+ExecStart=/opt/scripts/run_once/container-watcher.sh
 Restart=on-failure
 RestartSec=30
 
@@ -506,10 +392,13 @@ RestartSec=30
 WantedBy=multi-user.target
 EOF
 
-# Enable it to start
-sudo systemctl daemon-reload
-sudo systemctl enable --now bootstrap-watcher.service >/dev/null 2>&1
-pass "ghost watcher installed"
+    sudo systemctl daemon-reload
+    quietly sudo systemctl enable --now container-watcher.service
+    pass "ghost watcher installed & started"
+else
+    skip "watcher script not found"
+fi
+
 
 # ══════════════════════════════════════════════════════════════
 # DONE
