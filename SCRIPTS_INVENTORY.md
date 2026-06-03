@@ -33,6 +33,7 @@
 | Script File | Purpose | Frequency |
 | :--- | :--- | :--- |
 | `run_once/configure-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once |
+| `run_once/container-watcher.sh` | Auto-configures containers once they are manually started | Run Once |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific) | Run Once |
 | `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Anytime |
 | `run_once/setup.sh` | Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) |
