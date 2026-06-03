@@ -7,5 +7,5 @@
 **/*.log
 **/*.tmp
 **/*.bak
-**/*.ghost_watcher_state
+.ghost_watcher_state
 StackDeck/index.html
