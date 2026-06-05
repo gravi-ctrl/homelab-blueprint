@@ -119,7 +119,11 @@ Run the main installer:
 ```
 *This installs Docker, firewall, directory structure, Python libraries, Unbound DNS, ZSH, and restores your system configs (crontabs, hosts, etc).*
 
-*At the end, it spawns the **Ghost Watcher**—a background service that waits for containers to come online and runs their post-start configuration tasks automatically.*
+At the end, it spawns the **Ghost Watcher** (`container-watcher.sh`), a background service that waits for containers to come online and runs their post-start configuration tasks.
+
+> [!NOTE]  
+> **The Ghost Watcher Engine:**
+> The watcher is fully modular and controlled via `WATCHER_TASKS` in `/opt/scripts/.env`. You do not need to modify the engine to add new containers; simply define the payload function and add the container's name to the `.env` registry. Once all tasks complete, the daemon deletes its state file and self-destructs.
 
 ---
 
@@ -154,7 +158,7 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 ```
 
 > [!TIP]
-> **The Ghost Watcher in Action:** As soon as you run `docker compose up -d`, the Ghost Watcher detects containers coming online, runs their post-start tasks, sends a Telegram confirmation, and deletes itself.
+> **The Ghost Watcher in Action:** As soon as you run `docker compose up -d`, the Ghost Watcher detects containers coming online, executes their internal readiness checks, runs their post-start scripts, sends a Telegram confirmation, and silently uninstalls itself from systemd.
 
 ---
 
