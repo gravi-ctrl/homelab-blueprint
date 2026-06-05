@@ -255,8 +255,12 @@ else
 fi
 
 # Validation
-if [ $TAR_EXIT_CODE -eq 0 ]; then
-    echo "✅ Backup successful."
+if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
+    if [ $TAR_EXIT_CODE -eq 1 ]; then
+        echo "⚠️  Backup succeeded with warnings (some files changed during read)."
+    else
+        echo "✅ Backup successful."
+    fi
     echo "Verifying backup integrity..."
     if age -d -i "$AGE_KEYFILE" "$BACKUP_DIR/$DOCKER_FILENAME" | zstd -t 2>&1 | \
     sed "s|/\*stdin\*\\\\|$DOCKER_FILENAME|" | \
