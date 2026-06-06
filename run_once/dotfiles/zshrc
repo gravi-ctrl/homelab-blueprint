@@ -71,14 +71,14 @@ function actual_show_welcome_msg() {
     # =========================================================
     local -a aliases=(
         "welcome|Briefing"
-        "guestwifi|WiFi Toggle"
         "dps|Docker Table"
         "dcp|DC Pull"
         "dcu|DC Up -d"
         "cert|Cert Manager"
-        "extract|Unzip/Tar"
         "vc-mount|Mount Vault"
         "vc-umount|Unmount Vault"
+        "extract|Unzip/Tar"
+        "guestwifi|WiFi Toggle"
         "stamp|Timestamp"
         "cht|Cmd Help"
     )
