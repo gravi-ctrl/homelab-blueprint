@@ -153,6 +153,16 @@ echo "Captured $(wc -l < "$RUNNING_STACKS_FILE") running stack(s)."
 # Write backup UID/GID metadata
 echo "$(id -u "$SCRIPT_OWNER"):$(id -g "$SCRIPT_OWNER")" > /tmp/backup-uid.txt
 
+echo "Stopping stacks gracefully..."
+if [ -f "$RUNNING_STACKS_FILE" ]; then
+    while IFS= read -r stack_dir; do
+        if [ -f "$stack_dir/compose.yml" ]; then
+            echo "  → Stopping $(basename "$stack_dir")"
+            docker compose -f "$stack_dir/compose.yml" down --timeout 30
+        fi
+    done < "$RUNNING_STACKS_FILE"
+fi
+
 echo "Stopping and masking Docker..."
 systemctl mask docker.socket
 systemctl stop docker.socket docker.service containerd
