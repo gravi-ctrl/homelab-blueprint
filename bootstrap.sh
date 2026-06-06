@@ -6,10 +6,8 @@ set -euo pipefail
 # Decrypts weekly backup, fixes perms, preps for setup.sh
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # --- .ENV ---
-source "$SCRIPT_DIR/.env" || { echo "❌ .env file not found in $SCRIPT_DIR"; exit 1; }
+source "$HOME/scripts/.env" || { echo "❌ .env file not found in $SCRIPT_DIR"; exit 1; }
 
 EXTRACTED=false
 
