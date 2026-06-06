@@ -6,13 +6,16 @@ set -euo pipefail
 # Decrypts weekly backup, fixes perms, preps for setup.sh
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
-KEY="/root/.backup-key.txt"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- .ENV ---
+source "$SCRIPT_DIR/.env" || { echo "❌ .env file not found in $SCRIPT_DIR"; exit 1; }
+
 EXTRACTED=false
 
-if sudo test -f "$KEY"; then
+if sudo [ -f "$AGE_KEYFILE" ]; then
     BACKUP="$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)"
-    [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $KEY, but no backup archive found at $HOME" >&2; exit 1; }
-
+    [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $AGE_KEYFILE, but no backup archive found at $HOME" >&2; exit 1; }
     echo "Using backup: $BACKUP"
 
     echo ">>> Installing age and zstd..."
@@ -33,7 +36,7 @@ if sudo test -f "$KEY"; then
 
     EXTRACTED=true
 else
-    read -r -p "⚠️  $KEY doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice < /dev/tty
+    read -r -p "⚠️  $AGE_KEYFILE doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice < /dev/tty
     case "$choice" in
         y|Y) echo "Skipping backup restoration phase..." ;;
         *) echo "Aborting..."; exit 1 ;;
