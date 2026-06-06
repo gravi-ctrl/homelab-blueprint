@@ -47,20 +47,24 @@ If missing, manually re-add:
 task_tailscale() {
     docker exec tailscaled tailscale serve reset
 
+    # ── Funnels ───────────────────────────────────────────────────────────
+    local funnel_msg=""
+
     if [ -n "$N8N_WEBHOOK_UUID" ]; then
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook/${N8N_WEBHOOK_UUID}"
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook-test/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook-test/${N8N_WEBHOOK_UUID}"
-        MSG_TEXT="✅ Tailscale Funnel configured!
-🛡️ n8n webhooks successfully secured via path-based routing."
+        funnel_msg+="✅ n8n webhooks configured\n"
     else
-        MSG_TEXT="❌ Tailscale Funnel skipped!
-⚠️ WARNING: N8N_WEBHOOK_UUID is missing in /opt/scripts/.env!
-For security reasons, n8n was not exposed. Please add the UUID to your .env to run the funnel."
+        funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env\n"
     fi
 
+    docker exec tailscaled tailscale funnel --bg --https=443 "http://127.0.0.1:80"
+    funnel_msg+="✅ Obsidian (ignis) configured"
+
+    # ── Message ───────────────────────────────────────────────────────────
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
 ━━━━━━━━━━━━━━━
-${MSG_TEXT}
+${funnel_msg}
 
 ⚠️ If Tailscale connection fails, regenerate the auth key:
 1. Go to https://login.tailscale.com/admin/settings/keys
