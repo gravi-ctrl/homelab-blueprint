@@ -7,7 +7,7 @@ set -euo pipefail
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
 # --- .ENV ---
-source "$HOME/scripts/.env" || { echo "❌ .env file not found in $SCRIPT_DIR"; exit 1; }
+source "$HOME/scripts/.env" || { echo "❌ .env file not found in $HOME/scripts"; exit 1; }
 
 EXTRACTED=false
 
