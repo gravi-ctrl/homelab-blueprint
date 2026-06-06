@@ -29,6 +29,7 @@ docker-compose-plugin
 docker-model-plugin
 dos2unix
 e2fsprogs
+fail2ban
 fastfetch
 findutils
 fzf
