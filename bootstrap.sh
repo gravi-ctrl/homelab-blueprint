@@ -1,6 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories.
 # @FREQUENCY: Run Once (Disaster Recovery)
+# @USES_ENV: STACKS_DIR, AGE_KEYFILE
 set -euo pipefail
 
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
