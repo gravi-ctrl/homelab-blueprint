@@ -2,6 +2,7 @@
 
 # @DESCRIPTION: Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure.
 # @FREQUENCY: Varies
+# @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 
 # USAGE:
 # python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
