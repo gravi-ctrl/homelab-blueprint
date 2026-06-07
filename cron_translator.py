@@ -18,6 +18,10 @@ BACKUP_USER = getpass.getuser()
 opts = Options()
 opts.use_24hour_time_format = True
 
+# Env vars too ubiquitous to be worth listing in the reference table.
+# Path shortcuts used by virtually every job — add any others here.
+ENV_REF_SKIPLIST = {"S", "C", "A"}
+
 # Frequency tier classification (checked in order — first match wins)
 # Each entry: (label, matcher_fn)
 # matcher_fn receives the raw cron expression (5-part string or @special)
@@ -318,7 +322,7 @@ def build_env_reference(all_jobs, crontab_vars, var_all_consumers):
 
     for job in all_jobs:
         for var in job["env_vars"]:
-            if var in crontab_vars:
+            if var in crontab_vars and var not in ENV_REF_SKIPLIST:
                 var_job_map[var][job["crontab"]].append(job["label"])
                 vars_seen.add(var)
 
