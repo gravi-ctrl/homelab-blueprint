@@ -16,8 +16,8 @@ This repository functions as the automation engine for my Debian home server. It
 ## 📊 System Maps
 Auto-generated every morning at 05:00:
 
-- **[📜 Script Inventory](./SCRIPTS_INVENTORY.md)** — every script, its purpose, and run frequency
-- **[📅 Automation Schedule](./CRON_SCHEDULE.md)** — full cron schedule in human-readable form
+- **[📜 Script Inventory](./SCRIPTS_INVENTORY.md)** — every script, its purpose, run frequency, and what it needs to run
+- **[📅 Automation Schedule](./CRON_SCHEDULE.md)** — full cron schedule, at-a-glance overview, and configuration reference
 
 ---
 
