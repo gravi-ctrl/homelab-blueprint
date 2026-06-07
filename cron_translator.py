@@ -294,7 +294,7 @@ def build_at_a_glance(all_jobs):
 
         first = True
         for crontab_label, labels in by_crontab.items():
-            jobs_str = ", ".join(f"*{l}*" for l in labels)
+            jobs_str = "<br>".join(f"*{l}*" for l in labels)
             tier_col = tier if first else ""
             md.append(f"| {tier_col} | {crontab_label} | {jobs_str} |")
             first = False

@@ -4,9 +4,9 @@
 ## ⏱️ Schedule At a Glance
 | Frequency Tier | Crontab | Jobs |
 | :--- | :--- | :--- |
-| ⚡ Every few minutes | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor*, *Sync Personal and Work Obsidian vaults to Git* |
+| ⚡ Every few minutes | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>*Sync Personal and Work Obsidian vaults to Git* |
 |  | ⚡ Root | *Emergency shutdown if battery is discharging and below 20%* |
-| 🌙 Daily | 👤 User (gravi-ctrl) | *Rotate backups (retain recent) and purge download watch folder*, *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*, *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*, *Apply file renaming rules to Paperless-ngx documents*, *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*, *Scan docker-compose files and open dependency update PRs on Codeberg* |
+| 🌙 Daily | 👤 User (gravi-ctrl) | *Rotate backups (retain recent) and purge download watch folder*<br>*Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>*Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>*Apply file renaming rules to Paperless-ngx documents*<br>*Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>*Scan docker-compose files and open dependency update PRs on Codeberg* |
 | 📅 Weekly | 👤 User (gravi-ctrl) | *Runs a Borgmatic backup* |
 |  | ⚡ Root | *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)* |
 | 🗓️ Monthly | 👤 User (gravi-ctrl) | *cert-manager: regenerate & upload SSL certs to NPM* |
