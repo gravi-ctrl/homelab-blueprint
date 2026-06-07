@@ -57,24 +57,11 @@
 | `S` | `crontab` |
 | `SERVER_HC_URL` | `crontab` |
 | `STACKS_DIR` | `backup-scripts-git.sh` `bootstrap.sh` `local-opt-backup.sh` |
-| `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard` `cron-guard.py` |
-| `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard` `cron-guard.py` |
+| `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard.py` |
+| `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard.py` |
 | `TOOLS` | `backup-scripts-git.sh` |
 | `WATCHER_TASKS` | `container-watcher.sh` |
 
-
----
-
-## 🔴 Env Annotation Mismatches
-> *Variables declared in one place but missing from the other.*
-> - **Only in script** (`@USES_ENV`) → missing from `.env.example` `@USED_BY`
-> - **Only in `.env`** (`@USED_BY`) → missing from script's `@USES_ENV`
-
-#### `cron-guard` — _No `@USES_ENV` tag found in script_
-- 🔵 **Only in `@USED_BY`** (add to script's `@USES_ENV`): `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN`
-
-#### `cron-guard.py`
-- 🟡 **Only in `@USES_ENV`** (add to `.env.example`): `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN`
 
 ---
 
