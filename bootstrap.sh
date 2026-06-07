@@ -3,7 +3,6 @@
 # @FREQUENCY: Run Once (Disaster Recovery)
 set -euo pipefail
 
-# Decrypts weekly backup, fixes perms, preps for setup.sh
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
 # --- .ENV ---
@@ -11,34 +10,36 @@ source "$HOME/scripts/.env" || { echo "❌ .env file not found in $HOME/scripts"
 
 EXTRACTED=false
 
+# Helper function
+confirm_skip() {
+    read -r -p "$1 (y/n): " choice < /dev/tty
+    [[ "$choice" == [yY]* ]] || { echo "Aborting..."; exit 1; }
+    echo "Skipping backup restoration phase..."
+}
+
 if sudo [ -f "$AGE_KEYFILE" ]; then
-    BACKUP="$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)"
-    [[ -z "$BACKUP" ]] && { echo "ERROR: Key found at $AGE_KEYFILE, but no backup archive found at $HOME" >&2; exit 1; }
-    echo "Using backup: $BACKUP"
+    BACKUP=$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)
+    if [[ -n "$BACKUP" ]]; then
+        read -r -p "📦 Found backup: $BACKUP. Wanna proceed restoring it? (y/n): " choice < /dev/tty
+        if [[ "$choice" == [yY]* ]]; then
+            echo ">>> Installing age & zstd, then decrypting $BACKUP..."
+            sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
+            sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
 
-    echo ">>> Installing age and zstd..."
-    sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
-
-    echo ">>> Decrypting and extracting backup..."
-    sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
-
-    echo ">>> Fixing extracted file ownership..."
-    TARGET_UID=$(id -u)
-    TARGET_GID=$(id -g)
-    BACKUP_UID=$(cut -d: -f1 /tmp/backup-uid.txt)
-    BACKUP_GID=$(cut -d: -f2 /tmp/backup-uid.txt)
-    sudo find /opt/stacks "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
-        -uid "$BACKUP_UID" ! -uid "$TARGET_UID" \
-        -exec chown "$TARGET_UID:$TARGET_GID" {} +
-    sudo rm -f /tmp/backup-uid.txt
-
-    EXTRACTED=true
+            echo ">>> Fixing extracted file ownership..."
+            IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
+            sudo find "$STACKS_DIR" "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
+                -uid "$B_UID" ! -uid "$(id -u)" -exec chown "$(id -u):$(id -g)" {} +
+            sudo rm -f /tmp/backup-uid.txt
+            EXTRACTED=true
+        else
+            echo "Skipping backup restoration phase..."
+        fi
+    else
+        confirm_skip "⚠️  Key found at $AGE_KEYFILE, but no backup archive found! Sure you wanna skip?"
+    fi
 else
-    read -r -p "⚠️  $AGE_KEYFILE doesn't exist! Sure you wanna skip the backup restoration phase? (y/n): " choice < /dev/tty
-    case "$choice" in
-        y|Y) echo "Skipping backup restoration phase..." ;;
-        *) echo "Aborting..."; exit 1 ;;
-    esac
+    confirm_skip "⚠️  $AGE_KEYFILE doesn't exist! Sure you wanna skip the backup restoration phase?"
 fi
 
 echo ">>> Fixing SSH permissions..."
@@ -51,18 +52,12 @@ chmod 644 "$HOME/.ssh"/id_*.pub 2>/dev/null || true
 echo ">>> Removing cloud-init..."
 sudo apt-get purge -y -qq cloud-init
 sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
-sudo systemctl restart ssh
-
-echo ">>> Generating self-destructing re-link script..."
-cat << 'EOF' > "$HOME/re-link.sh"
-#!/bin/bash
+sudo systemctl restart ssh || true
 
 setup_repo() {
     echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
-    if [ -z "$(ls -A "$1" 2>/dev/null)" ]; then
-        sudo chown -R "$(id -u):$(id -g)" "$1"
-    fi
+    [[ -z "$(ls -A "$1" 2>/dev/null)" ]] && sudo chown -R "$(id -u):$(id -g)" "$1"
     git -C "$1" init -b main -q
     git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
     git -C "$1" fetch origin || return 1
@@ -70,30 +65,26 @@ setup_repo() {
 }
 
 echo ">>> Syncing repositories..."
-if setup_repo "$HOME/scripts"       "git@codeberg.org:gravi-ctrl/homelab-blueprint.git" &&
-   setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git" &&
-   setup_repo "/opt/stacks"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git"; then
+LINK_SUCCESS=true
+setup_repo "$HOME/scripts"       "git@codeberg.org:gravi-ctrl/homelab-blueprint.git" && \
+setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git" && \
+setup_repo "$STACKS_DIR"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git" || LINK_SUCCESS=false
+
+if [[ "$LINK_SUCCESS" == true ]]; then
     echo "✅ All repositories successfully linked!"
-    rm -- "$0"
 else
     echo "❌ Re-linking failed (Codeberg might be unreachable)."
-    echo "⚠️  Try running '~/re-link.sh' manually later once the connection is restored."
-    exit 1
 fi
-EOF
-
-chmod +x "$HOME/re-link.sh"
-"$HOME/re-link.sh" || true
 
 echo ">>> Cleaning up..."
-if [[ "$EXTRACTED" == true ]]; then
-    rm -- "$BACKUP"
-fi
+[[ "$EXTRACTED" == true ]] && rm -- "$BACKUP"
 
-cat <<'EOF'
+WARNING_MSG=""
+[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n         (⚠️ Linking failed! Re-run this script and skip restoration)'
+
+cat <<EOF
 ✅ Bootstrap phase complete!
 Next steps:
-  1. Run the installer:  ~/scripts/run_once/setup.sh
-         (If linking failed, run ~/re-link.sh first!)
+  1. Run the installer:  ~/scripts/run_once/setup.sh${WARNING_MSG}
   2. Re-open your SSH session.
 EOF
