@@ -2,6 +2,7 @@
 
 # @DESCRIPTION: Auto-configures containers once they are manually started
 # @FREQUENCY: Run Once
+# @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID, WATCHER_TASKS
 
 source /opt/scripts/.env
 STATE_FILE="/opt/scripts/.ghost_watcher_state"
