@@ -15,6 +15,13 @@ ENV_EXAMPLE_FILE = os.path.join(ROOT_DIR, ".env.example")
 BACKUP_USER = getpass.getuser()
 EXTENSIONS = {".sh", ".py"}
 
+# Names that are valid @USED_BY consumers but are NOT script files.
+# These are skipped during mismatch detection so they don't produce false positives.
+# Add to this list if you introduce other non-script consumers (e.g. "systemd", "docker").
+NON_SCRIPT_CONSUMERS = {
+    "crontab",
+}
+
 
 def is_script_file(file_path):
     if file_path.suffix in EXTENSIONS:
@@ -202,6 +209,9 @@ def generate_inventory():
                     script_name_to_uses_env[item["script_name"]] = item["uses_env"]
 
         for script_name, uses_env_vars in script_name_to_uses_env.items():
+            if script_name in NON_SCRIPT_CONSUMERS:
+                continue
+
             declared_vars = env_declares_for.get(script_name, set())
 
             only_in_script = uses_env_vars - declared_vars
@@ -216,6 +226,8 @@ def generate_inventory():
 
         # Also flag scripts that appear in @USED_BY but have no @USES_ENV at all
         for script_name, declared_vars in env_declares_for.items():
+            if script_name in NON_SCRIPT_CONSUMERS:
+                continue
             if script_name not in script_name_to_uses_env and declared_vars:
                 mismatches.append({
                     "script": script_name,
