@@ -11,6 +11,8 @@
 set -o pipefail
 shopt -s nullglob
 
+[[ $EUID -ne 0 ]] && { echo "❌ ERROR: This script must be run as root (or via sudo)." >&2; exit 1; }
+
 # Get Script Dir
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
