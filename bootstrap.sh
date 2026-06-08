@@ -1,14 +1,12 @@
 #!/bin/bash
 # @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories.
 # @FREQUENCY: Run Once (Disaster Recovery)
-# @USES_ENV: STACKS_DIR, AGE_KEYFILE
+
 set -euo pipefail
 
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
-# --- .ENV ---
-source "$HOME/scripts/.env" || { echo "❌ .env file not found in $HOME/scripts"; exit 1; }
-
+AGE_KEYFILE="/root/.backup-key.txt"
 EXTRACTED=false
 
 # Helper function
@@ -29,7 +27,7 @@ if sudo [ -f "$AGE_KEYFILE" ]; then
 
             echo ">>> Fixing extracted file ownership..."
             IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
-            sudo find "$STACKS_DIR" "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
+            sudo find "/opt/stacks" "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
                 -uid "$B_UID" ! -uid "$(id -u)" -exec chown "$(id -u):$(id -g)" {} +
             sudo rm -f /tmp/backup-uid.txt
             EXTRACTED=true
@@ -69,7 +67,7 @@ echo ">>> Syncing repositories..."
 LINK_SUCCESS=true
 setup_repo "$HOME/scripts"       "git@codeberg.org:gravi-ctrl/homelab-blueprint.git" && \
 setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git" && \
-setup_repo "$STACKS_DIR"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git" || LINK_SUCCESS=false
+setup_repo "/opt/stacks"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git" || LINK_SUCCESS=false
 
 if [[ "$LINK_SUCCESS" == true ]]; then
     echo "✅ All repositories successfully linked!"
