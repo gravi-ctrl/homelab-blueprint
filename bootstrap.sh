@@ -25,7 +25,7 @@ if sudo [ -f "$AGE_KEYFILE" ]; then
         if [[ "$choice" == [yY]* ]]; then
             echo ">>> Installing age & zstd, then decrypting $BACKUP..."
             sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
-            sudo age -d -i "$KEY" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
+            sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
 
             echo ">>> Fixing extracted file ownership..."
             IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
