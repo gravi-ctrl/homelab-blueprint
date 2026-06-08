@@ -2,173 +2,137 @@
 
 # @DESCRIPTION: Auto-configures containers once they are manually started
 # @FREQUENCY: Run Once
-# @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID
+# @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID, WATCHER_TASKS
 
-source /opt/scripts/.env || { echo "❌ .env not found"; exit 1; }
-
+source /opt/scripts/.env
 STATE_FILE="/opt/scripts/.ghost_watcher_state"
-POLL_INTERVAL=10
 touch "$STATE_FILE"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
+# ── 1. Framework Helpers ──────────────────────────────────────────────────────
 is_running() { docker container inspect -f '{{.State.Status}}' "$1" 2>/dev/null | grep -q "running"; }
-is_done()    { grep -q "^$1$"        "$STATE_FILE" 2>/dev/null; }
-is_failed()  { grep -q "^FAILED:$1$" "$STATE_FILE" 2>/dev/null; }
-mark_done()  { echo "$1"        >> "$STATE_FILE"; }
-mark_failed(){ echo "FAILED:$1" >> "$STATE_FILE"; }
+is_done()    { grep -q "^$1$" "$STATE_FILE" 2>/dev/null; }
+mark_done()  { echo "$1" >> "$STATE_FILE"; }
 
-_tg() {
+send_telegram() {
     curl -fsS "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
-        -d "parse_mode=HTML" \
         --data-urlencode "text=$1" > /dev/null
 }
-notify_ok()   { _tg "🔧 <b>Ghost Watcher</b> · $1"; }
-notify_err()  { _tg "❌ <b>Ghost Watcher — FAILED</b> · $1"; }
-notify_warn() { _tg "⚠️ <b>Ghost Watcher</b> · $1"; }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ⚙️  TASKS
+# ⚙️ TASK PAYLOADS
 # ══════════════════════════════════════════════════════════════════════════════
-#
-# To add a task, do these three things in order — all within this section:
-#
-#   ┌─ STEP 1 (optional) ───────────────────────────────────────────────────────
-#   │ If "container is running" isn't enough, add a readiness function.
-#   │ The watcher won't run the task until this returns 0.
-#   │
-#   │   my_ready() { docker exec myapp curl -fs http://localhost/health; }
-#   └───────────────────────────────────────────────────────────────────────────
-#
-#   ┌─ STEP 2 (required) ───────────────────────────────────────────────────────
-#   │ Add a line to the TASKS array. Order here = run order.
-#   │
-#   │   "my_task  CONTAINER=myapp"
-#   │
-#   │   With a readiness check:
-#   │   "my_task  CONTAINER=myapp  READY=my_ready"
-#   └───────────────────────────────────────────────────────────────────────────
-#
-#   ┌─ STEP 3 (required) ───────────────────────────────────────────────────────
-#   │ Write the task function. Name must match what you used in STEP 2.
-#   │ Use notify_ok / notify_warn / notify_err to send Telegram messages.
-#   │
-#   │   my_task() {
-#   │       docker exec myapp some-setup-command
-#   │       notify_ok "My app is configured. ✅"
-#   │   }
-#   └───────────────────────────────────────────────────────────────────────────
-#
-# ══════════════════════════════════════════════════════════════════════════════
+# Create your task_<name> functions here.
+# The active list of tasks is controlled by WATCHER_TASKS in /opt/scripts/.env
 
-# ── Readiness checks ──────────────────────────────────────────────────────────
-
-nc_ready() {
-    docker exec nextcloud test -f /var/www/html/lib/versioncheck.php 2>/dev/null"
-}
-
-# ── Task registry ─────────────────────────────────────────────────────────────
-# Format: "task_name  CONTAINER=name  READY=fn"
-# Order here = run order.
-
-TASKS=(
-    "nextcloud  CONTAINER=nextcloud  READY=nc_ready"
-    "tailscale  CONTAINER=tailscaled"
-    "npm        CONTAINER=npm"
-)
-
-# ── Task functions ────────────────────────────────────────────────────────────
-
-# 🔹 TASK: NEXTCLOUD
-nextcloud() {
+task_nextcloud() {
+    # Scripts
     sudo -u "$(stat -c '%U' /opt/scripts/.)" /opt/scripts/run_once/nextcloud_post-restore_fix.sh
     /opt/scripts/nextcloud-dynamic-watch.sh
 
-    notify_ok "Nextcloud configured.
+    # Message
+    send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
-✅ Post-restore and dynamic-watch scripts executed.
+✅ Nextcloud post-restore and dynamic-watch scripts have been executed
 
 🔍 Verify External storage:
-Ensure <b>assets</b> is listed under Administration → External storage.
-If missing, re-add:
-  Folder name: <code>assets</code> | Type: Local | Path: <code>/mnt/external_files</code>"
+Ensure 'assets' is listed in Administration settings > External storage.
+(Requires 'External storage support' app)
+If missing, manually re-add:
+- Folder name: assets
+- Restrict to: User
+- External storage: Local
+- Storage configuration: /mnt/external_files"
 }
 
-# 🔹 TASK: TAILSCALE
-tailscale() {
+task_tailscale() {
     docker exec tailscaled tailscale serve reset
+
+    # ── Funnels ───────────────────────────────────────────────────────────
+    local funnel_msg=""
 
     if [ -n "$N8N_WEBHOOK_UUID" ]; then
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook/${N8N_WEBHOOK_UUID}"
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook-test/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook-test/${N8N_WEBHOOK_UUID}"
-        local webhook_status="✅ n8n webhooks configured"
+        funnel_msg+="✅ n8n webhooks configured"
     else
-        local webhook_status="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing"
+        funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env\n"
     fi
 
     docker exec tailscaled tailscale funnel --bg --https=443 "http://127.0.0.1:80"
+    funnel_msg+="✅ Obsidian (ignis) configured"
 
-    notify_ok "Tailscale configured.
+    # ── Message ───────────────────────────────────────────────────────────
+    send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
 ━━━━━━━━━━━━━━━
-${webhook_status}
-✅ Obsidian (ignis) configured
+${funnel_msg}
 
-⚠️ If Tailscale fails, regenerate the auth key:
-<a href='https://login.tailscale.com/admin/settings/keys'>tailscale.com → Tick: Reusable → Tags → Select a tag</a>
-Then update <code>TS_AUTHKEY</code> in /opt/stacks/tailscale/.env"
+⚠️ If Tailscale connection fails, regenerate the auth key:
+1. Go to https://login.tailscale.com/admin/settings/keys
+2. Click 'Generate auth key'
+3. Tick: Reusable + Tags → select a tag
+4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env"
 }
 
-# 🔹 TASK: NGINX PROXY MANAGER (NPM)
-npm() {
-    notify_ok "NPM is running.
+task_npm() {
+    send_telegram "🔧 setup.sh's Post-Restore Watcher: NPM
 ━━━━━━━━━━━━━━━
-ℹ️ To init a new CA and regenerate certs:
-  1. <code>cert init</code> then <code>cert regen</code>
-  2. <code>docker restart npm</code>"
+ℹ️ NPM container is now running!
+
+If you need to initialize a new CA and regenerate your local certificates:
+1. Run: 'cert init' and 'cert regen'
+2. Don't forget to restart Nginx right after:
+   'docker restart npm'"
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 🚀 WATCHER ENGINE — Do not touch the below
-# ══════════════════════════════════════════════════════════════════════════════
-
-self_destruct() {
-    systemctl disable container-watcher.service
-    rm -f /etc/systemd/system/container-watcher.service
-    systemctl daemon-reload
-    rm -f "$STATE_FILE"
-}
+# ════════════════════════
+# 🚀 MAIN WATCHER ENGINE
+# ════════════════════════
+mapfile -t TASK_LINES <<< "$WATCHER_TASKS"
 
 while true; do
     ALL_DONE=true
+    HAS_VALID_TASKS=false
 
-    for entry in "${TASKS[@]}"; do
-        # First word is the task name, rest is key=value metadata
-        read -r name rest <<< "$entry"
-        declare -A meta=()
-        for kv in $rest; do meta["${kv%%=*}"]="${kv#*=}"; done
+    for line in "${TASK_LINES[@]}"; do
+        # Ignore empty lines or lines with only spaces
+        [[ -z "${line// /}" ]] && continue
+        # Ignore lines that start with a comment (#)
+        [[ "$line" == \#* ]] && continue
 
-        is_done   "$name" && continue
-        is_failed "$name" && continue
+        HAS_VALID_TASKS=true
+
+        # Unpack the current line into variables
+        IFS="|" read -r task container custom_check <<< "$line"
+
+        # 1. Skip if already completed
+        if is_done "$task"; then
+            continue
+        fi
 
         ALL_DONE=false
 
-        # Container must be running
-        is_running "${meta[CONTAINER]}" || continue
-
-        # Optional readiness check — safe named-function call, no eval
-        [[ -n "${meta[READY]:-}" ]] && { "${meta[READY]}" 2>/dev/null || continue; }
-
-        # Run in a subshell so a crash can't corrupt watcher state
-        if ( "$name" ); then
-            mark_done "$name"
-        else
-            notify_err "Task <b>${name}</b> failed. Check logs on the server."
-            mark_failed "$name"
+        # 2. Check if container is running
+        if is_running "$container"; then
+            # 3. If there is a custom check, evaluate it
+            if [ -z "$custom_check" ] || eval "$custom_check"; then
+                # 4. Check if the payload function exists, run it, and mark done
+                if declare -f "task_${task}" > /dev/null; then
+                    "task_${task}"
+                    mark_done "$task"
+                fi
+            fi
         fi
     done
 
-    [[ "$ALL_DONE" == true ]] && { self_destruct; break; }
+    # ── Self-Destruct Sequence ─────────────────────────────────────────────
+    if [ "$ALL_DONE" = true ] || [ "$HAS_VALID_TASKS" = false ]; then
+        systemctl disable container-watcher.service
+        rm /etc/systemd/system/container-watcher.service
+        systemctl daemon-reload
+        rm "$STATE_FILE"
+        break
+    fi
 
-    sleep "$POLL_INTERVAL"
+    sleep 10
 done
