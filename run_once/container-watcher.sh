@@ -65,7 +65,7 @@ notify_warn() { _tg "⚠️ <b>Ghost Watcher</b> · $1"; }
 # ── Readiness checks ──────────────────────────────────────────────────────────
 
 nc_ready() {
-    docker exec nextcloud php occ status 2>/dev/null | grep -q "installed: true"
+    docker exec nextcloud test -f /var/www/html/lib/versioncheck.php 2>/dev/null"
 }
 
 # ── Task registry ─────────────────────────────────────────────────────────────
