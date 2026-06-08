@@ -103,6 +103,7 @@ fi
 
 task "Write Docker daemon.json"
 sudo mkdir -p /etc/docker
+# Docker DNS: primary = Pi-hole/Unbound (update if server IP changes), fallback = Cloudflare
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
 {
     "dns": ["192.168.1.109", "1.1.1.1"],

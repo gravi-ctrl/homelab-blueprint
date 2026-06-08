@@ -3,8 +3,8 @@
 # @FREQUENCY: On Demand
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.env"
-source "$SCRIPT_DIR/bot-telegram/.env"
+source "$SCRIPT_DIR/.env" || { echo "❌ $SCRIPT_DIR/.env not found"; exit 1; }
+source "$SCRIPT_DIR/bot-telegram/.env" || { echo "❌ $SCRIPT_DIR/bot-telegram/.env not found"; exit 1; }
 
 # ── Uptime ────────────────────────────────────────────────────
 UPTIME=$(uptime -p | sed 's/up //')
