@@ -21,8 +21,9 @@ if sudo [ -f "$AGE_KEYFILE" ]; then
     if [[ -n "$BACKUP" ]]; then
         read -r -p "📦 Found backup: $BACKUP. Wanna proceed restoring it? (y/n): " choice < /dev/tty
         if [[ "$choice" == [yY]* ]]; then
-            echo ">>> Installing age & zstd, then decrypting $BACKUP..."
+            echo ">>> Installing age & zstd..."
             sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
+            echo ">>> Decrypting $BACKUP..."
             sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
 
             echo ">>> Fixing extracted file ownership..."
