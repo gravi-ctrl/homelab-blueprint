@@ -6,7 +6,7 @@
 | :--- | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am | `STACKS_DIR` `TOOLS` |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) | — |
-| `bootstrap.sh` | Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories. | Run Once (Disaster Recovery) | `AGE_KEYFILE` `STACKS_DIR` |
+| `bootstrap.sh` | Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories. | Run Once (Disaster Recovery) | — |
 | `cleanup_script.py` | Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode. | Daily 1am and 1pm | `FILES_TO_KEEP` |
 | `cron-guard.py` | Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure. | Varies | `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
@@ -47,7 +47,7 @@
 | Variable | Used By |
 | :--- | :--- |
 | `A` | `crontab` |
-| `AGE_KEYFILE` | `bootstrap.sh` `local-opt-backup.sh` |
+| `AGE_KEYFILE` | `local-opt-backup.sh` |
 | `BACKUP_DIR` | `local-opt-backup.sh` |
 | `C` | `crontab` |
 | `FILES_TO_KEEP` | `cleanup_script.py` |
@@ -56,7 +56,7 @@
 | `NEXTDNS_URL` | `crontab` |
 | `S` | `crontab` |
 | `SERVER_HC_URL` | `crontab` |
-| `STACKS_DIR` | `backup-scripts-git.sh` `bootstrap.sh` `local-opt-backup.sh` |
+| `STACKS_DIR` | `backup-scripts-git.sh` `local-opt-backup.sh` |
 | `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard.py` |
 | `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard.py` |
 | `TOOLS` | `backup-scripts-git.sh` |
