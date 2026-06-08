@@ -54,7 +54,7 @@ task_tailscale() {
     if [ -n "$N8N_WEBHOOK_UUID" ]; then
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook/${N8N_WEBHOOK_UUID}"
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook-test/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook-test/${N8N_WEBHOOK_UUID}"
-        funnel_msg+="✅ n8n webhooks configured\n"
+        funnel_msg+="✅ n8n webhooks configured"
     else
         funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env\n"
     fi
