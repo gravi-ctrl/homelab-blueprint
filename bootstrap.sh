@@ -36,7 +36,7 @@ if sudo [ -f "$AGE_KEYFILE" ]; then
             echo "Skipping backup restoration phase..."
         fi
     else
-        confirm_skip "⚠️  Key found at $AGE_KEYFILE, but no backup archive found! Sure you wanna skip?"
+        confirm_skip "⚠️  Key found at $AGE_KEYFILE, but no backup archive found at $HOME - Sure you wanna skip?"
     fi
 else
     confirm_skip "⚠️  $AGE_KEYFILE doesn't exist! Sure you wanna skip the backup restoration phase?"
