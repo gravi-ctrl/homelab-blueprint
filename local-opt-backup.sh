@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive
 # @FREQUENCY: Weekly 5:30am on Thursday (root crontab)
-# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL
+# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, SCRIPTS_DIR, CTRL_DIR
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
@@ -14,14 +14,11 @@ shopt -s nullglob
 
 [[ $EUID -ne 0 ]] && { echo "❌ ERROR: This script must be run as root (or via sudo)." >&2; exit 1; }
 
-# Get Script Dir
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # --- .ENV ---
-if [ -f "$SCRIPT_DIR/.env" ]; then
-    source "$SCRIPT_DIR/.env"
+if [ -f "/opt/scripts/.env" ]; then
+    source "/opt/scripts/.env"
 else
-    echo "❌ .env file not found in $SCRIPT_DIR"
+    echo "❌ .env file not found in /opt/scripts"
     exit 1
 fi
 
@@ -231,8 +228,8 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${STACKS_DIR#/}/jdownloader/config/tmp" \
     -C / \
     "${STACKS_DIR#/}" \
-    "${SCRIPT_DIR#/}" \
-    "${USER_HOME#/}/ctrl_s_master" \
+    "${SCRIPTS_DIR#/}" \
+    "${CTRL_DIR#/}" \
     "${USER_HOME#/}/.ssh" \
     "${USER_HOME#/}/.local/share/mkcert" \
     etc/ssh \
