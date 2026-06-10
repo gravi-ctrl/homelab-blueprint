@@ -4,7 +4,7 @@
 ### 📁 Core Scripts
 | Script File | Purpose | Frequency | Env Dependencies |
 | :--- | :--- | :--- | :--- |
-| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am | `STACKS_DIR` `TOOLS` |
+| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am | `CTRL_DIR` `SCRIPTS_DIR` `STACKS_DIR` `TOOLS` |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) | — |
 | `bootstrap.sh` | Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories. | Run Once (Disaster Recovery) | — |
 | `cleanup_script.py` | Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode. | Daily 1am and 1pm | `FILES_TO_KEEP` |
@@ -12,8 +12,8 @@
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies | — |
 | `health-snapshot.sh` | Sends an on-demand health snapshot of the server to Telegram | On Demand | — |
-| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) | `AGE_KEYFILE` `BACKUP_DIR` `KUMA_HC_URL` `STACKS_DIR` |
-| `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) | — |
+| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) | `AGE_KEYFILE` `BACKUP_DIR` `CTRL_DIR` `KUMA_HC_URL` `SCRIPTS_DIR` `STACKS_DIR` |
+| `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) | `DATA_DIR` `NEXTCLOUD_CONTAINER` `NEXTCLOUD_DATA_DIR` `NEXTCLOUD_MOUNT_NAME` `NEXTCLOUD_USER` |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
 
 
@@ -35,8 +35,8 @@
 | `run_once/configure-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once | — |
 | `run_once/container-watcher.sh` | Auto-configures containers once they are manually started | Run Once | `N8N_WEBHOOK_UUID` `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` `WATCHER_TASKS` |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific) | Run Once | — |
-| `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Once | `NEXTCLOUD_USER` |
-| `run_once/setup.sh` | Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) | `SERVER_IP` |
+| `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Once | `NEXTCLOUD_CONTAINER` `NEXTCLOUD_USER` |
+| `run_once/setup.sh` | Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) | `DATA_DIR` `NEXTCLOUD_DATA_DIR` `SERVER_IP` `TIMEZONE` |
 
 
 ---
@@ -46,21 +46,25 @@
 
 | Variable | Used By |
 | :--- | :--- |
-| `A` | `crontab` |
 | `AGE_KEYFILE` | `local-opt-backup.sh` |
 | `BACKUP_DIR` | `local-opt-backup.sh` |
-| `C` | `crontab` |
+| `CTRL_DIR` | `backup-scripts-git.sh` `crontab` `local-opt-backup.sh` |
+| `DATA_DIR` | `crontab` `nextcloud-dynamic-watch.sh` `setup.sh` |
 | `FILES_TO_KEEP` | `cleanup_script.py` |
 | `KUMA_HC_URL` | `local-opt-backup.sh` |
 | `N8N_WEBHOOK_UUID` | `container-watcher.sh` |
-| `NEXTCLOUD_USER` | `nextcloud_post-restore_fix.sh` |
+| `NEXTCLOUD_CONTAINER` | `nextcloud-dynamic-watch.sh` `nextcloud_post-restore_fix.sh` |
+| `NEXTCLOUD_DATA_DIR` | `nextcloud-dynamic-watch.sh` `setup.sh` |
+| `NEXTCLOUD_MOUNT_NAME` | `nextcloud-dynamic-watch.sh` |
+| `NEXTCLOUD_USER` | `nextcloud-dynamic-watch.sh` `nextcloud_post-restore_fix.sh` |
 | `NEXTDNS_URL` | `crontab` |
-| `S` | `crontab` |
+| `SCRIPTS_DIR` | `backup-scripts-git.sh` `crontab` `local-opt-backup.sh` |
 | `SERVER_HC_URL` | `crontab` |
 | `SERVER_IP` | `setup.sh` |
 | `STACKS_DIR` | `backup-scripts-git.sh` `local-opt-backup.sh` |
 | `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard.py` |
 | `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard.py` |
+| `TIMEZONE` | `setup.sh` |
 | `TOOLS` | `backup-scripts-git.sh` |
 | `WATCHER_TASKS` | `container-watcher.sh` |
 
