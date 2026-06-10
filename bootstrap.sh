@@ -67,12 +67,12 @@ sudo systemctl restart ssh || true
 setup_repo() {
     echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
-    
+
     [[ -z "$(ls -A "$1" 2>/dev/null)" ]] && sudo chown -R "$(id -u):$(id -g)" "$1"
-    
+
     if [ -d "$1/.git" ]; then
         echo "   -> Restored repository detected. Syncing new remote commits safely..."
-        git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"        
+        git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
         git -C "$1" fetch origin -q
         git -C "$1" pull origin main --rebase --autostash -q || echo "   ⚠️  Conflict detected in $(basename "$1"). Left for manual merge later."
     else
