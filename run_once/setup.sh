@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
-# @USES_ENV: SERVER_IP
+# @USES_ENV: SERVER_IP, DATA_DIR
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -151,17 +151,17 @@ header "4/10" "Directory Structure & Permissions"
 task "Create /data directory tree"
 sudo mkdir -p /data/nextcloud_data
 sudo mkdir -p /data/paperless/{data,media}
-sudo mkdir -p /data/assets/{torrents,downloads/watch}
-sudo mkdir -p /data/assets/romm/{library,resources}
-sudo mkdir -p /data/assets/Media/{Movies,Shows,Music,Books,Podcasts}
-sudo mkdir -p /data/assets/syncthing/{Apps,Backup,DCIM/paperless-scan,Movies,Music,My_Shit,Shared}
+sudo mkdir -p "${DATA_DIR}"/{torrents,downloads/watch}
+sudo mkdir -p "${DATA_DIR}"/romm/{library,resources}
+sudo mkdir -p "${DATA_DIR}"/Media/{Movies,Shows,Music,Books,Podcasts}
+sudo mkdir -p "${DATA_DIR}"/syncthing/{Apps,Backup,DCIM/paperless-scan,Movies,Music,My_Shit,Shared}
 pass
 
 task "Set ownership & ACLs"
 sudo chown -R "$(id -u):$(id -g)" /data
 sudo chown -R 33:33 /data/nextcloud_data
-quietly sudo setfacl -R -m u:33:rwx /data/assets
-quietly sudo setfacl -R -d -m u:33:rwx /data/assets
+quietly sudo setfacl -R -m u:33:rwx "${DATA_DIR}"
+quietly sudo setfacl -R -d -m u:33:rwx "${DATA_DIR}"
 pass
 
 task "Fix .local ownership"
