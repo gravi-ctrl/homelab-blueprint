@@ -1,10 +1,9 @@
 #!/bin/bash
 # @DESCRIPTION: Sends an on-demand health snapshot of the server to Telegram
 # @FREQUENCY: On Demand
+# @USES_ENV: BACKUP_DIR
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.env" || { echo "❌ $SCRIPT_DIR/.env not found"; exit 1; }
-source "$SCRIPT_DIR/bot-telegram/.env" || { echo "❌ $SCRIPT_DIR/bot-telegram/.env not found"; exit 1; }
+source "$HOME/scripts/.env" || { echo "❌ $HOME/scripts/.env not found"; exit 1; }
 
 # ── Uptime ────────────────────────────────────────────────────
 UPTIME=$(uptime -p | sed 's/up //')
@@ -62,10 +61,4 @@ ${CONTAINER_LINE}
 ${BACKUP_LINE}
 ━━━━━━━━━━━━━━━━━━━━━"
 
-curl -fsS "https://api.telegram.org/bot${VERGIL_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${ALLOWED_USER_ID}" \
-    -d "parse_mode=HTML" \
-    --data-urlencode "text=${MESSAGE}" \
-    > /dev/null
-
-echo "✅ Health snapshot sent."
+echo "$MESSAGE"
