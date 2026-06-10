@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Sends an on-demand health snapshot of the server to Telegram
+# @DESCRIPTION: Prints an on-demand health snapshot of the server
 # @FREQUENCY: On Demand
 # @USES_ENV: BACKUP_DIR
 
@@ -51,7 +51,7 @@ fi
 # ── Timestamp ─────────────────────────────────────────────────
 TIMESTAMP=$(date '+%a %b %d %H:%M')
 
-# ── Assemble & Send ───────────────────────────────────────────
+# ── Assemble & Print ───────────────────────────────────────────
 MESSAGE="🖥️ <b>homeserver</b> — ${TIMESTAMP}
 ━━━━━━━━━━━━━━━━━━━━━
 ⏱️ Uptime: ${UPTIME}
