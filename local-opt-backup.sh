@@ -170,7 +170,6 @@ systemctl stop docker.socket docker.service containerd
 echo "Creating backup (ZSTD)..."
 
 timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
-    --exclude='.git' \
     --exclude='__pycache__' \
     --exclude='node_modules' \
     --exclude='lost+found' \
