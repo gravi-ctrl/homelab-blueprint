@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
-# @USES_ENV: SERVER_IP, DATA_DIR, NEXTCLOUD_DATA_DIR
+# @USES_ENV: SERVER_IP, DATA_DIR, NEXTCLOUD_DATA_DIR, TIMEZONE
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -60,8 +60,8 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 # ══════════════════════════════════════════════════════════════
 header "1/10" "System Update & Dependencies"
 
-task "Set timezone → Africa/Cairo"
-quietly sudo timedatectl set-timezone Africa/Cairo
+task "Set timezone → ${TIMEZONE}"
+quietly sudo timedatectl set-timezone "${TIMEZONE}"
 pass
 
 task "Install base packages (curl, git, rsync, ufw)"
