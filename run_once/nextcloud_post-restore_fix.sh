@@ -1,12 +1,12 @@
 #!/bin/bash
 # @DESCRIPTION: Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime.
 # @FREQUENCY: Run Once
-# @USES_ENV: NEXTCLOUD_USER
+# @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_CONTAINER
 
 [[ -f "$HOME/scripts/.env" ]] || { echo ".env does not exist at $HOME/scripts" >&2; exit 1; }
 source "$HOME/scripts/.env"
 
-CONTAINER="nextcloud"
+CONTAINER="${NEXTCLOUD_CONTAINER}"
 USERNAME="${NEXTCLOUD_USER}"
 
 if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
