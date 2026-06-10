@@ -11,7 +11,7 @@
 | `cron-guard.py` | Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure. | Varies | `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies | — |
-| `health-snapshot.sh` | Sends an on-demand health snapshot of the server to Telegram | On Demand | — |
+| `health-snapshot.sh` | Prints an on-demand health snapshot of the server | On Demand | `BACKUP_DIR` |
 | `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) | `AGE_KEYFILE` `BACKUP_DIR` `CTRL_DIR` `KUMA_HC_URL` `SCRIPTS_DIR` `STACKS_DIR` |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) | `DATA_DIR` `NEXTCLOUD_CONTAINER` `NEXTCLOUD_DATA_DIR` `NEXTCLOUD_MOUNT_NAME` `NEXTCLOUD_USER` |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
@@ -47,7 +47,7 @@
 | Variable | Used By |
 | :--- | :--- |
 | `AGE_KEYFILE` | `local-opt-backup.sh` |
-| `BACKUP_DIR` | `local-opt-backup.sh` |
+| `BACKUP_DIR` | `health-snapshot.sh` `local-opt-backup.sh` |
 | `CTRL_DIR` | `backup-scripts-git.sh` `crontab` `local-opt-backup.sh` |
 | `DATA_DIR` | `crontab` `nextcloud-dynamic-watch.sh` `setup.sh` |
 | `FILES_TO_KEEP` | `cleanup_script.py` |
