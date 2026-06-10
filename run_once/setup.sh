@@ -1,6 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
+# @USES_ENV: SERVER_IP
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -41,6 +42,9 @@ quietly() { "$@" >> "$LOGFILE" 2>&1; }
 if [[ $EUID -eq 0 ]]; then
     echo -e "${RED}ERROR: Do not run this script as root.${NC}"; exit 1
 fi
+
+[[ -f "$HOME/scripts/.env" ]] || { echo -e "${RED}ERROR: .env does not exist at $HOME/scripts.${NC}" >&2; exit 1; }
+source "$HOME/scripts/.env"
 
 printf "\n${BOLD} 🛡️  SERVER BOOTSTRAP${NC}\n"
 printf "    ${DIM}Log → %s${NC}\n" "$LOGFILE"
@@ -106,7 +110,7 @@ sudo mkdir -p /etc/docker
 # Docker DNS: primary = Pi-hole/Unbound (update if server IP changes), fallback = Cloudflare
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
 {
-    "dns": ["192.168.1.109", "1.1.1.1"],
+    "dns": ["${SERVER_IP}", "1.1.1.1"],
     "log-driver": "json-file",
     "log-opts": {
         "max-size": "10m",
