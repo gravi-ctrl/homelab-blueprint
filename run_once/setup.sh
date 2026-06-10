@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
-# @USES_ENV: SERVER_IP, DATA_DIR
+# @USES_ENV: SERVER_IP, DATA_DIR, NEXTCLOUD_DATA_DIR
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -149,7 +149,7 @@ fi
 header "4/10" "Directory Structure & Permissions"
 
 task "Create /data directory tree"
-sudo mkdir -p /data/nextcloud_data
+sudo mkdir -p "${NEXTCLOUD_DATA_DIR}"
 sudo mkdir -p /data/paperless/{data,media}
 sudo mkdir -p "${DATA_DIR}"/{torrents,downloads/watch}
 sudo mkdir -p "${DATA_DIR}"/romm/{library,resources}
