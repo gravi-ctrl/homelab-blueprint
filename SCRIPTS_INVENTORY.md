@@ -35,8 +35,8 @@
 | `run_once/configure-firewall.sh` | Bootstrap: Resets UFW and applies correct rules (Private Server Mode) | Run Once | — |
 | `run_once/container-watcher.sh` | Auto-configures containers once they are manually started | Run Once | `N8N_WEBHOOK_UUID` `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` `WATCHER_TASKS` |
 | `run_once/fix-cpu-thermals.sh` | Restores CPU max frequency to 1.6GHz and restarts TLP after an OS upgrade (Device specific) | Run Once | — |
-| `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Anytime | — |
-| `run_once/setup.sh` | Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) | — |
+| `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Once | `NEXTCLOUD_USER` |
+| `run_once/setup.sh` | Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) | `SERVER_IP` |
 
 
 ---
@@ -53,9 +53,11 @@
 | `FILES_TO_KEEP` | `cleanup_script.py` |
 | `KUMA_HC_URL` | `local-opt-backup.sh` |
 | `N8N_WEBHOOK_UUID` | `container-watcher.sh` |
+| `NEXTCLOUD_USER` | `nextcloud_post-restore_fix.sh` |
 | `NEXTDNS_URL` | `crontab` |
 | `S` | `crontab` |
 | `SERVER_HC_URL` | `crontab` |
+| `SERVER_IP` | `setup.sh` |
 | `STACKS_DIR` | `backup-scripts-git.sh` `local-opt-backup.sh` |
 | `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard.py` |
 | `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard.py` |
