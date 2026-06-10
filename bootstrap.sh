@@ -56,8 +56,8 @@ echo ">>> Fixing SSH permissions..."
 mkdir -p "$HOME/.ssh"
 sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
-chmod 600 "$HOME/.ssh"/id_* 2>/dev/null || echo "⚠️  No private keys found — skipping."
-chmod 644 "$HOME/.ssh"/id_*.pub 2>/dev/null || true
+find "$HOME/.ssh" -type f -exec chmod 600 {} +
+chmod 644 "$HOME/.ssh"/*.pub 2>/dev/null || true
 
 echo ">>> Removing cloud-init..."
 sudo apt-get purge -y -qq cloud-init
