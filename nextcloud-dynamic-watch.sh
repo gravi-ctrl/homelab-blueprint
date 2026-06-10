@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Watches `/data/assets` + Internal Data, scans Nextcloud via Docker
 # @FREQUENCY: Service (Always)
-# @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_DATA_DIR, NEXTCLOUD_CONTAINER, DATA_DIR
+# @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_DATA_DIR, NEXTCLOUD_CONTAINER, NEXTCLOUD_MOUNT_NAME, DATA_DIR
 
 [[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
 source "/opt/scripts/.env"
@@ -53,7 +53,7 @@ fi
 # --- CONFIGURATION -----------------------------------------------------------
 NC_USER="${NEXTCLOUD_USER}"
 # This must match the name you gave the folder in 'External Storage' settings exactly:
-NC_MOUNT_NAME="assets"
+NC_MOUNT_NAME="${NEXTCLOUD_MOUNT_NAME}"
 REAL_ASSETS_DIR="${DATA_DIR}"
 HOST_DATA_DIR="${NEXTCLOUD_DATA_DIR}"
 CONTAINER_NAME="${NEXTCLOUD_CONTAINER}"
