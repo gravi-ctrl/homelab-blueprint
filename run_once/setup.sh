@@ -159,7 +159,7 @@ pass
 
 task "Set ownership & ACLs"
 sudo chown -R "$(id -u):$(id -g)" /data
-sudo chown -R 33:33 /data/nextcloud_data
+sudo chown -R 33:33 "${NEXTCLOUD_DATA_DIR}"
 quietly sudo setfacl -R -m u:33:rwx "${DATA_DIR}"
 quietly sudo setfacl -R -d -m u:33:rwx "${DATA_DIR}"
 pass
