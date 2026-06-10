@@ -4,9 +4,19 @@
 
 set -euo pipefail
 
+# ==============================================================================
+# ⚙️ CONFIGURATION
+# ==============================================================================
+GIT_HOST="codeberg.org"
+GIT_USER="gravi-ctrl"
+REPO_SCRIPTS="homelab-blueprint"
+REPO_CTRL="ctrl-s-master"
+REPO_STACKS="server-docker-backup"
+AGE_KEYFILE="/root/.backup-key.txt"
+# ==============================================================================
+
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
-AGE_KEYFILE="/root/.backup-key.txt"
 EXTRACTED=false
 
 # Helper function
@@ -66,9 +76,9 @@ setup_repo() {
 
 echo ">>> Syncing repositories..."
 LINK_SUCCESS=true
-setup_repo "$HOME/scripts"       "git@codeberg.org:gravi-ctrl/homelab-blueprint.git" && \
-setup_repo "$HOME/ctrl_s_master" "git@codeberg.org:gravi-ctrl/ctrl-s-master.git" && \
-setup_repo "/opt/stacks"         "git@codeberg.org:gravi-ctrl/server-docker-backup.git" || LINK_SUCCESS=false
+setup_repo "$HOME/scripts"       "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" && \
+setup_repo "$HOME/ctrl_s_master" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" && \
+setup_repo "/opt/stacks"         "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
 
 if [[ "$LINK_SUCCESS" == true ]]; then
     echo "✅ All repositories successfully linked!"
