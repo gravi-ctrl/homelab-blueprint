@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PATH=/home/gravi-ctrl/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 BASH_ENV=$HOME/scripts/.env
 
 # .------------ minute (0 - 59)

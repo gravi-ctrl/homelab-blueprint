@@ -131,11 +131,6 @@ def main():
     log_queue = collections.deque(maxlen=15) # Increased to 15 lines
 
     child_env = os.environ.copy()
-    venv_bin = os.path.expanduser(
-        os.path.join("~", ".venv", "Scripts" if os.name == "nt" else "bin")
-    )
-    if os.path.isdir(venv_bin) and venv_bin not in child_env.get("PATH", ""):
-        child_env["PATH"] = venv_bin + os.pathsep + child_env.get("PATH", "")
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
     child_env["PYTHONUNBUFFERED"] = "1"
