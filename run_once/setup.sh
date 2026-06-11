@@ -181,10 +181,20 @@ fi
 # ══════════════════════════════════════════════════════════════
 header "5/10" "Python Libraries"
 
-task "Install pip packages from backup list"
+VENV_DIR="$HOME/.venv"
+
+task "Create Python venv → ~/.venv"
+if [ ! -d "$VENV_DIR" ]; then
+    quietly python3 -m venv "$VENV_DIR"
+    pass "created"
+else
+    pass "already exists"
+fi
+
+task "Install pip packages into venv"
 PIP_PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_pip_packages.txt"
 if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
-    quietly xargs -a "$PIP_PACKAGES_FILE" pip3 install --break-system-packages
+    quietly xargs -a "$PIP_PACKAGES_FILE" "$VENV_DIR/bin/pip" install
     pass
 else
     skip "list not found"

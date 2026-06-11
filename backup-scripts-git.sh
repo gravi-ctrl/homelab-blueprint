@@ -49,8 +49,8 @@ fi
 apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
 # C. Python (PIP) Packages
-pip3 list -v --not-required --disable-pip-version-check 2>/dev/null \
-    | awk '$3 ~ /^\// && $3 !~ /^\/usr\/lib\/python/ {print $1}' \
+"$HOME/.venv/bin/pip" list --not-required --disable-pip-version-check 2>/dev/null \
+    | awk 'NR>2 {print $1}' \
     | grep -viE "^(pip|setuptools|wheel|distribute)$" > "$SNAPSHOT_DIR/my_pip_packages.txt" || true
 
 # D. APT Repositories (PPAs)
