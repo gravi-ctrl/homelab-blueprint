@@ -15,7 +15,6 @@ source "$HOME/scripts/.env"
 IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
 
-CTRL_S_DIR="${CTRL_DIR}"
 SNAPSHOT_DIR="${SCRIPTS_DIR}/run_once/system_configs"
 MASTER_SCRIPT="${SCRIPTS_DIR}/git-auto-sync.py"
 
