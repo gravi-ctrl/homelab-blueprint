@@ -4,7 +4,7 @@
 ### 📁 Core Scripts
 | Script File | Purpose | Frequency | Env Dependencies |
 | :--- | :--- | :--- | :--- |
-| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am | `CTRL_DIR` `SCRIPTS_DIR` `STACKS_DIR` `TOOLS` |
+| `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am | `CTRL_DIR` `STACKS_DIR` `TOOLS` |
 | `battery_monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) | — |
 | `bootstrap.sh` | Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories. | Run Once (Disaster Recovery) | — |
 | `cleanup_script.py` | Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode. | Daily 1am and 1pm | `FILES_TO_KEEP` |
@@ -59,7 +59,7 @@
 | `NEXTCLOUD_USER` | `nextcloud-dynamic-watch.sh` `nextcloud_post-restore_fix.sh` |
 | `NEXTDNS_URL` | `crontab` |
 | `PATH` | `crontab` |
-| `SCRIPTS_DIR` | `backup-scripts-git.sh` `crontab` |
+| `SCRIPTS_DIR` | `crontab` |
 | `SERVER_HC_URL` | `crontab` |
 | `SERVER_IP` | `setup.sh` |
 | `STACKS_DIR` | `backup-scripts-git.sh` `local-opt-backup.sh` |

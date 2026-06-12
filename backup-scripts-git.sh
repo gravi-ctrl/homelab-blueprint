@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`
 # @FREQUENCY: Daily 5am
-# @USES_ENV: STACKS_DIR, CTRL_DIR, SCRIPTS_DIR, TOOLS
+# @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================
@@ -15,12 +15,12 @@ source "/opt/scripts/.env"
 IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
 
-SNAPSHOT_DIR="${SCRIPTS_DIR}/run_once/system_configs"
-MASTER_SCRIPT="${SCRIPTS_DIR}/git-auto-sync.py"
+SNAPSHOT_DIR="/opt/scripts/run_once/system_configs"
+MASTER_SCRIPT="/opt/scripts/git-auto-sync.py"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
-mkdir -p "${SCRIPTS_DIR}/run_once/dotfiles"
+mkdir -p "/opt/scripts/run_once/dotfiles"
 
 # A. System Files & Raw Crons
 cp /etc/hosts "$SNAPSHOT_DIR/hosts.txt"
@@ -33,15 +33,15 @@ else
 fi
 
 # --- GENERATE HUMAN READABLE SCHEDULE ---
-if [ -f "${SCRIPTS_DIR}/cron_translator.py" ]; then
+if [ -f "/opt/scripts/cron_translator.py" ]; then
     echo "Generating cron schedule..."
-    "${SCRIPTS_DIR}/cron_translator.py"
+    "/opt/scripts/cron_translator.py"
 fi
 
 # --- GENERATE SCRIPT INVENTORY ---
-if [ -f "${SCRIPTS_DIR}/script_indexer.py" ]; then
+if [ -f "/opt/scripts/script_indexer.py" ]; then
     echo "Indexing Scripts..."
-    "${SCRIPTS_DIR}/script_indexer.py"
+    "/opt/scripts/script_indexer.py"
 fi
 
 # B. Installed Packages
@@ -78,13 +78,13 @@ grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' \
     | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt" || true
 
 # E. Dotfiles
-[ -f ~/.zshrc ] && cp ~/.zshrc "${SCRIPTS_DIR}/run_once/dotfiles/zshrc"
-[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "${SCRIPTS_DIR}/run_once/dotfiles/p10k.zsh"
-[ -f /etc/nanorc ] && cp /etc/nanorc "${SCRIPTS_DIR}/run_once/dotfiles/nanorc"
-[ -f ~/.hushlogin ] && cp ~/.hushlogin "${SCRIPTS_DIR}/run_once/dotfiles/hushlogin"
+[ -f ~/.zshrc ] && cp ~/.zshrc "/opt/scripts/run_once/dotfiles/zshrc"
+[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "/opt/scripts/run_once/dotfiles/p10k.zsh"
+[ -f /etc/nanorc ] && cp /etc/nanorc "/opt/scripts/run_once/dotfiles/nanorc"
+[ -f ~/.hushlogin ] && cp ~/.hushlogin "/opt/scripts/run_once/dotfiles/hushlogin"
 
 # Mirror specific .config folders
-CONFIG_DEST="${SCRIPTS_DIR}/run_once/dotfiles/config"
+CONFIG_DEST="/opt/scripts/run_once/dotfiles/config"
 mkdir -p "$CONFIG_DEST"
 
 for tool in "${TOOLS_ARRAY[@]}"; do
@@ -100,7 +100,7 @@ done
 echo "🚀 Syncing Repositories..."
 
 # --- 2. HANDOFF TO MASTER SCRIPT ---
-"$MASTER_SCRIPT" "${SCRIPTS_DIR}" "Scripts & System Configs"
+"$MASTER_SCRIPT" "/opt/scripts" "Scripts & System Configs"
 
 # --- 3. Sync ctrl_s_master ---
 "$MASTER_SCRIPT" "${CTRL_DIR}" "Security Master Update"
