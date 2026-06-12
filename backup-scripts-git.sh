@@ -58,11 +58,14 @@ mkdir -p "$REPOS_BACKUP_DIR/keyrings/usr_share"
 mkdir -p "$REPOS_BACKUP_DIR/keyrings/etc_apt"
 
 # Copy source list files
+# Optimized:
 for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
-    [ -f "$f" ] && cp "$f" "$REPOS_BACKUP_DIR/"
+    [ -f "$f" ] || continue
+    [[ "$(basename "$f")" =~ ^(ubuntu|debian)\.sources$ ]] && continue
+    cp "$f" "$REPOS_BACKUP_DIR/"
 done
 
-# Copy keyrings — preserve which directory they came from (ignoring base OS keys)
+# Copy keyrings — preserve which directory they came from
 for f in /usr/share/keyrings/*; do
     [[ ! "$(basename "$f")" =~ ^(debian|ubuntu)- ]] && [ -f "$f" ] && cp "$f" "$REPOS_BACKUP_DIR/keyrings/usr_share/"
 done
