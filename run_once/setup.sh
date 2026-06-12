@@ -113,10 +113,14 @@ quietly sudo apt-get upgrade -y
 pass
 
 task "Configure sudoers for backup cron"
-echo "$USER ALL=(root) NOPASSWD: /usr/bin/crontab -l" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null
-sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
+sudo tee /usr/local/bin/read-root-crontab > /dev/null <<'EOF'
+#!/bin/bash
+exec /usr/bin/crontab -l
+EOF
+quietly sudo chmod 755 /usr/local/bin/read-root-crontab
+echo "$USER ALL=(root) NOPASSWD: /usr/local/bin/read-root-crontab" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null
+quietly sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
 pass
-
 
 # ══════════════════════════════════════════════════════════════
 # [2/10] DOCKER INSTALLATION & CONFIGURATION

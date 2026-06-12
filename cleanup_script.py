@@ -46,7 +46,7 @@ def clean_backup_folder(folder_path, num_to_keep):
 
         if len(all_items) > num_to_keep:
             # Sort by modification time (newest first)
-            all_items.sort(key=os.path.getmtime, reverse=True)
+            all_items.sort(key=lambda p: max(os.path.getctime(p), os.path.getmtime(p)), reverse=True)
             items_to_delete = all_items[num_to_keep:]
 
             for item_path in items_to_delete:
