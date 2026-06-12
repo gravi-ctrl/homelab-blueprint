@@ -327,10 +327,9 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
 done
 
 if [ -n "$STUCK" ]; then
-    echo "Restarting stuck containers..."
-    while IFS= read -r container; do
-        [ -n "$container" ] && docker restart "$container"
-    done <<< "$STUCK"
+    echo "⚠️ Containers still unhealthy after backup:"
+    echo "$STUCK" | sed 's/^/  • /'
+    exit 1
 fi
 
 echo "🎉 All tasks finished."
