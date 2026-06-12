@@ -228,9 +228,9 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     -C / \
     "${STACKS_DIR#/}" \
     "${CTRL_DIR#/}" \
+    "${USER_HOME#/}/scripts" \
     "${USER_HOME#/}/.ssh" \
     "${USER_HOME#/}/.local/share/mkcert" \
-    home/gravi-ctrl/scripts \
     etc/ssh \
     tmp/backup-uid.txt \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
