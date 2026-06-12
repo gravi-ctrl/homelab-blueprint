@@ -103,7 +103,7 @@ curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o /tmp/bo
 # or if down
 curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o /tmp/bootstrap.sh
 
-echo "<paste_trusted_hash_here>  /tmp/bootstrap.sh" | sha256sum --check -
+echo "<paste_trusted_hash_here> /tmp/bootstrap.sh" | sha256sum --check -
 bash /tmp/bootstrap.sh
 ```
 > [!NOTE]
