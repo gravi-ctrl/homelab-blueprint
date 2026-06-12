@@ -86,9 +86,11 @@ setup_repo() {
 
 echo ">>> Syncing repositories..."
 LINK_SUCCESS=true
-setup_repo "$HOME/scripts"       "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" && \
-setup_repo "$HOME/ctrl_s_master" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" && \
+set +e
+setup_repo "$HOME/scripts"       "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || LINK_SUCCESS=false
+setup_repo "$HOME/ctrl_s_master" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || LINK_SUCCESS=false
 setup_repo "/opt/stacks"         "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
+set -e
 
 if [[ "$LINK_SUCCESS" == true ]]; then
     echo "✅ All repositories successfully linked!"

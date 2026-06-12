@@ -65,7 +65,9 @@ if [ "$NCDATA_EXISTS" = false ] || [ "$USER_DIR_EXISTS" = false ]; then
         /var/www/html/data/appdata_"${INSTANCE_ID}"/preview
 
     # Fix permissions
+    docker exec -u www-data "$CONTAINER" php occ maintenance:mode --on
     docker exec "$CONTAINER" chown -R www-data:www-data /var/www/html/data
+    docker exec -u www-data "$CONTAINER" php occ maintenance:mode --off
 
     echo ">>> Running system scans and maintenance repairs..."
     docker exec -u www-data "$CONTAINER" php occ files:scan --all

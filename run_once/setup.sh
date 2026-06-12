@@ -69,16 +69,42 @@ quietly sudo apt-get update
 quietly sudo apt-get install -y software-properties-common curl git rsync ufw
 pass
 
-task "Restore custom PPAs"
+task "Restore APT repositories"
+REPOS_BACKUP_DIR="$HOME/scripts/run_once/system_configs/apt_sources"
 REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
+_restored=0
+# Restore signing keyrings first (source files reference them)
+if [ -d "$REPOS_BACKUP_DIR/keyrings" ]; then
+    for f in "$REPOS_BACKUP_DIR/keyrings"/*; do
+        [ -f "$f" ] || continue
+        fname=$(basename "$f")
+        # Restore to original location based on extension
+        if [[ "$fname" == *.gpg ]]; then
+            quietly sudo cp "$f" "/usr/share/keyrings/$fname"
+        else
+            quietly sudo cp "$f" "/etc/apt/keyrings/$fname"
+        fi
+        quietly sudo chmod 644 "/usr/share/keyrings/$fname" 2>/dev/null || \
+        quietly sudo chmod 644 "/etc/apt/keyrings/$fname" 2>/dev/null || true
+    done
+fi
+# Restore .list and .sources files
+if [ -d "$REPOS_BACKUP_DIR" ]; then
+    for f in "$REPOS_BACKUP_DIR"/*.list "$REPOS_BACKUP_DIR"/*.sources; do
+        [ -f "$f" ] || continue
+        quietly sudo cp "$f" "/etc/apt/sources.list.d/$(basename "$f")"
+        _restored=$((_restored + 1))
+    done
+fi
+# Legacy PPAs via add-apt-repository
 if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
     while IFS= read -r ppa; do
         quietly sudo add-apt-repository -y --no-update "$ppa"
+        _restored=$((_restored + 1))
     done < "$REPOS_FILE"
-    pass
-else
-    skip "not found"
 fi
+
+[ "$_restored" -gt 0 ] && pass "$_restored source(s) restored" || skip "none found"
 
 task "Full system upgrade"
 quietly sudo apt-get update

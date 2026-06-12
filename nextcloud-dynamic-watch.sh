@@ -78,10 +78,10 @@ while true; do
     sleep 10
     if [ -s "$QUEUE_FILE" ]; then
         mv "$QUEUE_FILE" "${QUEUE_FILE}.processing"
-        TARGETS=$(sort -u "${QUEUE_FILE}.processing")
+        touch "$QUEUE_FILE"
 
         IFS=$'\n'
-        for DIR_PATH in $TARGETS; do
+        for DIR_PATH in $(sort -u "${QUEUE_FILE}.processing"); do
             SCAN_PATH=""
 
             # CASE A: External Assets
@@ -95,27 +95,20 @@ while true; do
                 SCAN_PATH="${RELATIVE}"
             fi
 
-            SCAN_PATH=${SCAN_PATH%/}
+            SCAN_PATH="${SCAN_PATH%/}"
+            [ -z "$SCAN_PATH" ] && continue
 
-            if [ ! -z "$SCAN_PATH" ]; then
-                # If the file doesn't exist on disk, we MUST scan its parent directory
-                if [ ! -e "$DIR_PATH" ]; then
-                    SCAN_PATH=$(dirname "$SCAN_PATH")
-                fi
+            # Always collapse to parent directory — one scan covers all siblings
+            SCAN_PATH=$(dirname "$SCAN_PATH")
 
-                # Append to a temporary targets list for deduplication
-                echo "$SCAN_PATH" >> "${QUEUE_FILE}.targets"
-            fi
+            echo "$SCAN_PATH" >> "${QUEUE_FILE}.targets"
         done
         unset IFS
 
         # 3. EXECUTE DEDUPLICATED SCANS
         if [ -f "${QUEUE_FILE}.targets" ]; then
-            # Deduplicate the Nextcloud paths (e.g., 5 files deleted in same folder = 1 folder scan)
-            FINAL_TARGETS=$(sort -u "${QUEUE_FILE}.targets")
-
             IFS=$'\n'
-            for SCAN_PATH in $FINAL_TARGETS; do
+            for SCAN_PATH in $(sort -u "${QUEUE_FILE}.targets"); do
                 echo "[$(date '+%H:%M:%S')] Scanning: $SCAN_PATH"
                 docker exec -u 33 "$CONTAINER_NAME" php occ files:scan --path="$SCAN_PATH"
             done

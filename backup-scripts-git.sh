@@ -52,8 +52,23 @@ apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
     | awk 'NR>2 {print $1}' \
     | grep -viE "^(pip|setuptools|wheel|distribute)$" > "$SNAPSHOT_DIR/my_pip_packages.txt" || true
 
-# D. APT Repositories (PPAs)
-grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' /etc/apt/sources.list.d/ 2>/dev/null \
+# D. APT Repositories — backup source files + keyrings as-is
+REPOS_BACKUP_DIR="$SNAPSHOT_DIR/apt_sources"
+mkdir -p "$REPOS_BACKUP_DIR/keyrings"
+
+# Copy all source list files
+for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+    [ -f "$f" ] && cp "$f" "$REPOS_BACKUP_DIR/"
+done
+
+# Copy all signing keyrings
+for f in /etc/apt/keyrings/* /usr/share/keyrings/*; do
+    [ -f "$f" ] && cp "$f" "$REPOS_BACKUP_DIR/keyrings/"
+done
+
+# Legacy PPA list for add-apt-repository compatibility
+grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' \
+    /etc/apt/sources.list.d/ 2>/dev/null \
     | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt" || true
 
 # E. Dotfiles
