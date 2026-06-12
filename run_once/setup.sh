@@ -43,9 +43,6 @@ if [[ $EUID -eq 0 ]]; then
     echo -e "${RED}ERROR: Do not run this script as root.${NC}"; exit 1
 fi
 
-[[ -f "$HOME/scripts/.env" ]] || { echo -e "${RED}ERROR: .env does not exist at $HOME/scripts.${NC}" >&2; exit 1; }
-source "$HOME/scripts/.env"
-
 printf "\n${BOLD} 🛡️  SERVER BOOTSTRAP${NC}\n"
 printf "    ${DIM}Log → %s${NC}\n" "$LOGFILE"
 
@@ -54,6 +51,24 @@ if ! sudo -v; then
 fi
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
+# ══════════════════════════════════════════════════════════════
+# [0/10] ESTABLISH SYSTEM PATHS (ONE SOURCE OF TRUTH)
+# ══════════════════════════════════════════════════════════════
+
+header "0/10" "Establishing System Paths"
+
+task "Symlink user scripts → /opt/scripts"
+if [ ! -L /opt/scripts ]; then
+    quietly sudo ln -sf "$HOME/scripts" /opt/scripts
+    pass "created"
+else
+    pass "already linked"
+fi
+
+task "Load environment configuration"
+[[ -f "/opt/scripts/.env" ]] || { echo -e "${RED}❌ ERROR: .env does not exist at /opt/scripts.${NC}" >&2; exit 1; }
+source "/opt/scripts/.env"
+pass "loaded"
 
 # ══════════════════════════════════════════════════════════════
 # [1/10] SYSTEM UPDATE & DEPENDENCIES
@@ -70,8 +85,8 @@ quietly sudo apt-get install -y software-properties-common curl git rsync ufw
 pass
 
 task "Restore APT repositories"
-REPOS_BACKUP_DIR="$HOME/scripts/run_once/system_configs/apt_sources"
-REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
+REPOS_BACKUP_DIR="/opt/scripts/run_once/system_configs/apt_sources"
+REPOS_FILE="/opt/scripts/run_once/system_configs/my_repos.txt"
 _restored=0
 _keyrings=0
 
@@ -165,14 +180,13 @@ pass
 header "3/10" "Restore Installed Packages"
 
 task "Install packages from backup list"
-PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_installed_apps.txt"
+PACKAGES_FILE="/opt/scripts/run_once/system_configs/my_installed_apps.txt"
 if [ -f "$PACKAGES_FILE" ]; then
     quietly xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
     pass
 else
     skip "list not found"
 fi
-
 
 # ══════════════════════════════════════════════════════════════
 # [4/10] DIRECTORY STRUCTURE & PERMISSIONS
@@ -199,14 +213,6 @@ task "Fix .local ownership"
 sudo chown -R "$(id -u):$(id -g)" "$HOME/.local"
 pass
 
-task "Symlink user scripts → /opt/scripts"
-if [ ! -L /opt/scripts ]; then
-    quietly sudo ln -sf "$HOME/scripts" /opt/scripts
-    pass "created"
-else
-    pass "already linked"
-fi
-
 # ══════════════════════════════════════════════════════════════
 # [5/10] PYTHON LIBRARIES
 # ══════════════════════════════════════════════════════════════
@@ -231,18 +237,9 @@ else
 fi
 
 task "Install pip packages into venv"
-PIP_PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_pip_packages.txt"
+PIP_PACKAGES_FILE="/opt/scripts/run_once/system_configs/my_pip_packages.txt"
 if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
     quietly xargs -a "$PIP_PACKAGES_FILE" "$VENV_DIR/bin/pip" install
-    pass
-else
-    skip "list not found"
-fi
-
-task "Install pip packages into venv"
-PIP_PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_pip_packages.txt"
-if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
-    quietly xargs -a "$PIP_PACKAGES_FILE" "$HOME/.venv/bin/pip" install
     pass
 else
     skip "list not found"
@@ -289,7 +286,7 @@ else
 fi
 
 task "Restore dotfiles"
-DOTFILES_DIR="$HOME/scripts/run_once/dotfiles"
+DOTFILES_DIR="/opt/scripts/run_once/dotfiles"
 if [ -d "$DOTFILES_DIR" ]; then
     [ -f "$DOTFILES_DIR/zshrc" ]     && cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     [ -f "$DOTFILES_DIR/p10k.zsh" ]  && cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
@@ -373,7 +370,7 @@ pass
 # ══════════════════════════════════════════════════════════════
 header "8/10" "System Configurations"
 
-SYSTEM_CONFIGS_DIR="$HOME/scripts/run_once/system_configs"
+SYSTEM_CONFIGS_DIR="/opt/scripts/run_once/system_configs"
 
 task "Restore /etc/hosts"
 if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
@@ -421,7 +418,7 @@ fi
 header "9/10" "Firewall Rules"
 
 task "Run firewall setup script"
-FIREWALL_SCRIPT="$HOME/scripts/run_once/configure-firewall.sh"
+FIREWALL_SCRIPT="/opt/scripts/run_once/configure-firewall.sh"
 if [ -f "$FIREWALL_SCRIPT" ]; then
     quietly bash "$FIREWALL_SCRIPT"
     pass
@@ -435,7 +432,7 @@ fi
 header "10/10" "Background Tasks"
 task "Create Docker watcher daemon"
 
-WATCHER_SCRIPT="$HOME/scripts/run_once/container-watcher.sh"
+WATCHER_SCRIPT="/opt/scripts/run_once/container-watcher.sh"
 
 if [ -f "$WATCHER_SCRIPT" ]; then
     chmod +x "$WATCHER_SCRIPT"
