@@ -231,9 +231,10 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     etc/ssh \
     tmp/backup-uid.txt \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
-set -e
 
 TAR_EXIT_CODE=${PIPESTATUS[0]}
+AGE_EXIT_CODE=${PIPESTATUS[1]}
+set -e
 
 # Explicit restart for immediate healthchecks
 systemctl unmask docker.socket
@@ -263,7 +264,7 @@ else
 fi
 
 # Validation
-if [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; then
+if { [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; } && [ $AGE_EXIT_CODE -eq 0 ]; then
     if [ $TAR_EXIT_CODE -eq 1 ]; then
         echo "⚠️  Backup succeeded with warnings (some files changed during read)."
     else
