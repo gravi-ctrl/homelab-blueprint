@@ -77,12 +77,13 @@ def main():
     run_command(["git", "add", "."])
 
     # 4. Commit ONLY if there are changes
-    diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"])
-    
-    if diff_check.returncode != 0:
+    head_check = run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True)
+    fresh_repo = head_check.returncode != 0
+    diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"]) if not fresh_repo else None
+
+    if fresh_repo or (diff_check and diff_check.returncode != 0):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        commit_msg = f"{label}: {timestamp}"
-        run_command(["git", "commit", "-m", commit_msg])
+        run_command(["git", "commit", "-m", f"{label}: {timestamp}"])
     else:
         print("Everything up-to-date.")
 
