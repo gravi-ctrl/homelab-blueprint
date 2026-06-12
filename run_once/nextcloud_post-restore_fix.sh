@@ -3,8 +3,8 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_CONTAINER
 
-[[ -f "$HOME/scripts/.env" ]] || { echo ".env does not exist at $HOME/scripts" >&2; exit 1; }
-source "$HOME/scripts/.env"
+[[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
+source "/opt/scripts/.env"
 
 CONTAINER="${NEXTCLOUD_CONTAINER}"
 USERNAME="${NEXTCLOUD_USER}"

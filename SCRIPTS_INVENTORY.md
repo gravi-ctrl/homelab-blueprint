@@ -58,6 +58,7 @@
 | `NEXTCLOUD_MOUNT_NAME` | `nextcloud-dynamic-watch.sh` |
 | `NEXTCLOUD_USER` | `nextcloud-dynamic-watch.sh` `nextcloud_post-restore_fix.sh` |
 | `NEXTDNS_URL` | `crontab` |
+| `PATH` | `crontab` |
 | `SCRIPTS_DIR` | `backup-scripts-git.sh` `crontab` `local-opt-backup.sh` |
 | `SERVER_HC_URL` | `crontab` |
 | `SERVER_IP` | `setup.sh` |

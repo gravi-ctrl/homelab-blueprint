@@ -3,7 +3,7 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: BACKUP_DIR
 
-source "$HOME/scripts/.env" || { echo "❌ $HOME/scripts/.env not found"; exit 1; }
+source "/opt/scripts/.env" || { echo "❌ /opt/scripts/.env not found"; exit 1; }
 
 # ── Uptime ────────────────────────────────────────────────────
 UPTIME=$(uptime -p | sed 's/up //')
