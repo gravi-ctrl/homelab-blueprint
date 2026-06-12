@@ -73,23 +73,21 @@ task "Restore APT repositories"
 REPOS_BACKUP_DIR="$HOME/scripts/run_once/system_configs/apt_sources"
 REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
 _restored=0
-# Restore signing keyrings first (source files reference them)
-if [ -d "$REPOS_BACKUP_DIR/keyrings" ]; then
-    for f in "$REPOS_BACKUP_DIR/keyrings"/*; do
-        [ -f "$f" ] || continue
-        fname=$(basename "$f")
-        # Restore to original location based on extension
-        if [[ "$fname" == *.gpg ]]; then
-            quietly sudo cp "$f" "/usr/share/keyrings/$fname"
-        else
-            quietly sudo cp "$f" "/etc/apt/keyrings/$fname"
-        fi
-        quietly sudo chmod 644 "/usr/share/keyrings/$fname" 2>/dev/null || \
-        quietly sudo chmod 644 "/etc/apt/keyrings/$fname" 2>/dev/null || true
-    done
-fi
-# Restore .list and .sources files
+
 if [ -d "$REPOS_BACKUP_DIR" ]; then
+    # Restore keyrings to their original locations
+    for f in "$REPOS_BACKUP_DIR/keyrings/usr_share"/*; do
+        [ -f "$f" ] || continue
+        quietly sudo cp "$f" "/usr/share/keyrings/$(basename "$f")"
+        quietly sudo chmod 644 "/usr/share/keyrings/$(basename "$f")"
+    done
+    for f in "$REPOS_BACKUP_DIR/keyrings/etc_apt"/*; do
+        [ -f "$f" ] || continue
+        quietly sudo mkdir -p /etc/apt/keyrings
+        quietly sudo cp "$f" "/etc/apt/keyrings/$(basename "$f")"
+        quietly sudo chmod 644 "/etc/apt/keyrings/$(basename "$f")"
+    done
+    # Restore .list and .sources files
     for f in "$REPOS_BACKUP_DIR"/*.list "$REPOS_BACKUP_DIR"/*.sources; do
         [ -f "$f" ] || continue
         quietly sudo cp "$f" "/etc/apt/sources.list.d/$(basename "$f")"
