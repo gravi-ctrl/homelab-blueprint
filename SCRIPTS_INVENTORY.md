@@ -59,7 +59,7 @@
 | `NEXTCLOUD_USER` | `nextcloud-dynamic-watch.sh` `nextcloud_post-restore_fix.sh` |
 | `NEXTDNS_URL` | `crontab` |
 | `PATH` | `crontab` |
-| `SCRIPTS_DIR` | `backup-scripts-git.sh` `crontab` `local-opt-backup.sh` |
+| `SCRIPTS_DIR` | `backup-scripts-git.sh` `crontab` |
 | `SERVER_HC_URL` | `crontab` |
 | `SERVER_IP` | `setup.sh` |
 | `STACKS_DIR` | `backup-scripts-git.sh` `local-opt-backup.sh` |
@@ -78,7 +78,7 @@
 > - **Only in `.env`** (`@USED_BY`) → missing from script's `@USES_ENV`
 
 #### `local-opt-backup.sh`
-- 🔵 **Only in `@USED_BY`** (add to script's `@USES_ENV`): `SCRIPTS_DIR`
+- 🟡 **Only in `@USES_ENV`** (add to `.env.example`): `CTRL_DIR`
 
 ---
 
