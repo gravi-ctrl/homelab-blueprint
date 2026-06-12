@@ -73,6 +73,7 @@ task "Restore APT repositories"
 REPOS_BACKUP_DIR="$HOME/scripts/run_once/system_configs/apt_sources"
 REPOS_FILE="$HOME/scripts/run_once/system_configs/my_repos.txt"
 _restored=0
+_keyrings=0
 
 if [ -d "$REPOS_BACKUP_DIR" ]; then
     # Restore keyrings to their original locations
@@ -80,12 +81,14 @@ if [ -d "$REPOS_BACKUP_DIR" ]; then
         [ -f "$f" ] || continue
         quietly sudo cp "$f" "/usr/share/keyrings/$(basename "$f")"
         quietly sudo chmod 644 "/usr/share/keyrings/$(basename "$f")"
+        _keyrings=$((_keyrings + 1))
     done
     for f in "$REPOS_BACKUP_DIR/keyrings/etc_apt"/*; do
         [ -f "$f" ] || continue
         quietly sudo mkdir -p /etc/apt/keyrings
         quietly sudo cp "$f" "/etc/apt/keyrings/$(basename "$f")"
         quietly sudo chmod 644 "/etc/apt/keyrings/$(basename "$f")"
+        _keyrings=$((_keyrings + 1))
     done
     # Restore .list and .sources files
     for f in "$REPOS_BACKUP_DIR"/*.list "$REPOS_BACKUP_DIR"/*.sources; do
@@ -102,7 +105,7 @@ if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
     done < "$REPOS_FILE"
 fi
 
-[ "$_restored" -gt 0 ] && pass "$_restored source(s) restored" || skip "none found"
+[ "$_restored" -gt 0 ] || [ "$_keyrings" -gt 0 ] && pass "$_restored source(s), $_keyrings keyring(s) restored" || skip "none found"
 
 task "Full system upgrade"
 quietly sudo apt-get update
