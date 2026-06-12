@@ -299,38 +299,67 @@ fi
 
 # Healthcheck — only check stacks we actually restarted
 echo "Waiting for containers to settle..."
-MAX_WAIT=120
-ELAPSED=0
 INTERVAL=10
-STUCK=""
+STUCK_THRESHOLD=3
+HEALTH_WARNINGS=""
+declare -A stuck_count
 
-while [ $ELAPSED -lt $MAX_WAIT ]; do
-    STUCK=""
-    if [ -f "$RUNNING_STACKS_FILE" ]; then
+if [ ! -f "$RUNNING_STACKS_FILE" ]; then
+    echo "⚠️  No snapshot found. Skipping health check."
+else
+    while true; do
+        ALL_HEALTHY=true
+        CURRENT_STUCK=""
+
         while IFS= read -r stack_dir; do
             if [ -f "$stack_dir/compose.yml" ]; then
                 PROBLEMS=$(docker compose -f "$stack_dir/compose.yml" ps -a \
                     --format '{{.Name}} {{.Status}}' 2>/dev/null \
                     | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
-                [ -n "$PROBLEMS" ] && STUCK+="$PROBLEMS"$'\n'
+
+                if [ -n "$PROBLEMS" ]; then
+                    ALL_HEALTHY=false
+                    while IFS= read -r container; do
+                        stuck_count[$container]=$(( ${stuck_count[$container]:-0} + 1 ))
+                        CURRENT_STUCK+="$container (${stuck_count[$container]}/${STUCK_THRESHOLD})"$'\n'
+                    done <<< "$PROBLEMS"
+                else
+                    while IFS= read -r container; do
+                        stuck_count[$container]=0
+                    done < <(docker compose -f "$stack_dir/compose.yml" ps -a \
+                        --format '{{.Name}}' 2>/dev/null)
+                fi
             fi
         done < "$RUNNING_STACKS_FILE"
-        STUCK=$(echo "$STUCK" | sed '/^$/d')
-    fi
 
-    if [ -z "$STUCK" ]; then
-        echo "✅ All containers healthy."
-        break
-    fi
-    sleep $INTERVAL
-    ELAPSED=$((ELAPSED + INTERVAL))
-done
+        if [ "$ALL_HEALTHY" = true ]; then
+            echo "✅ All containers healthy."
+            break
+        fi
 
-if [ -n "$STUCK" ]; then
-    echo "⚠️ Containers still unhealthy after backup:"
-    echo "$STUCK" | sed 's/^/  • /'
-    exit 1
+        THRESHOLD_HIT=true
+        while IFS= read -r container; do
+            [ -n "$container" ] || continue
+            name=$(echo "$container" | awk '{print $1}')
+            if [ "${stuck_count[$name]:-0}" -lt "$STUCK_THRESHOLD" ]; then
+                THRESHOLD_HIT=false
+                break
+            fi
+        done <<< "$CURRENT_STUCK"
+
+        if [ "$THRESHOLD_HIT" = true ]; then
+            HEALTH_WARNINGS=$(echo "$CURRENT_STUCK" | sed '/^$/d' | sed 's/^/  • /')
+            echo "⚠️  Containers still unhealthy after $STUCK_THRESHOLD consecutive checks:"
+            echo "$HEALTH_WARNINGS"
+            break
+        fi
+
+        echo "⏳ Some containers not yet healthy, rechecking in ${INTERVAL}s..."
+        echo "$CURRENT_STUCK" | sed '/^$/d' | sed 's/^/  • /'
+        sleep $INTERVAL
+    done
 fi
 
-echo "🎉 All tasks finished."
+echo "🎉 Backup finished successfully."
+[ -n "$HEALTH_WARNINGS" ] && echo "⚠️  Note: some containers may need attention (see above)."
 exit 0
