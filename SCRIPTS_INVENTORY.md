@@ -12,7 +12,7 @@
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies | — |
 | `health-snapshot.sh` | Prints an on-demand health snapshot of the server | On Demand | `BACKUP_DIR` |
-| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) | `AGE_KEYFILE` `BACKUP_DIR` `CTRL_DIR` `KUMA_HC_URL` `SCRIPTS_DIR` `STACKS_DIR` |
+| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) | `AGE_KEYFILE` `BACKUP_DIR` `CTRL_DIR` `KUMA_HC_URL` `STACKS_DIR` |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) | `DATA_DIR` `NEXTCLOUD_CONTAINER` `NEXTCLOUD_DATA_DIR` `NEXTCLOUD_MOUNT_NAME` `NEXTCLOUD_USER` |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings | Daily 5am (triggered by `backup-scripts-git.sh`) | — |
 
@@ -69,6 +69,16 @@
 | `TOOLS` | `backup-scripts-git.sh` |
 | `WATCHER_TASKS` | `container-watcher.sh` |
 
+
+---
+
+## 🔴 Env Annotation Mismatches
+> *Variables declared in one place but missing from the other.*
+> - **Only in script** (`@USES_ENV`) → missing from `.env.example` `@USED_BY`
+> - **Only in `.env`** (`@USED_BY`) → missing from script's `@USES_ENV`
+
+#### `local-opt-backup.sh`
+- 🔵 **Only in `@USED_BY`** (add to script's `@USES_ENV`): `SCRIPTS_DIR`
 
 ---
 
