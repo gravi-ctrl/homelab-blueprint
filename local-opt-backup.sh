@@ -44,7 +44,7 @@ if [ -t 0 ]; then
         echo "📜 View last run:           journalctl -u $UNIT_NAME --since today"
         echo "📆 View previous Thursday:  journalctl -u $UNIT_NAME --since \"last Thursday\""
         echo "🔍 Check status:            systemctl status $UNIT_NAME"
-        echo "🛑 Stop backup:             systemctl stop $UNIT_NAME"
+        echo "🛑 Stop backup:             sudo systemctl stop $UNIT_NAME"
         exit 0
     else
         echo "❌ systemd-run not found. Proceeding in foreground (Do not close SSH)."
