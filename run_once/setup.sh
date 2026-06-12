@@ -201,7 +201,7 @@ pass
 
 task "Symlink user scripts → /opt/scripts"
 if [ ! -L /opt/scripts ]; then
-    sudo ln -s "$HOME/scripts" /opt/scripts
+    quietly sudo ln -sf "$HOME/scripts" /opt/scripts
     pass "created"
 else
     pass "already linked"
@@ -212,20 +212,26 @@ fi
 # ══════════════════════════════════════════════════════════════
 header "5/10" "Python Libraries"
 
-VENV_DIR="$HOME/.venv"
-
 task "Create Python venv → ~/.venv"
-if [ ! -d "$VENV_DIR" ]; then
-    quietly python3 -m venv "$VENV_DIR"
+if [ ! -d "$HOME/.venv" ]; then
+    quietly python3 -m venv "$HOME/.venv"
     pass "created"
 else
     pass "already exists"
 fi
 
+task "Link global $HOME/.venv → /opt/venv"
+if [ ! -L /opt/venv ]; then
+    quietly sudo ln -sf "$HOME/.venv" /opt/venv
+    pass "created"
+else
+    pass "already linked"
+fi
+
 task "Install pip packages into venv"
 PIP_PACKAGES_FILE="$HOME/scripts/run_once/system_configs/my_pip_packages.txt"
 if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
-    quietly xargs -a "$PIP_PACKAGES_FILE" "$VENV_DIR/bin/pip" install
+    quietly xargs -a "$PIP_PACKAGES_FILE" "$HOME/.venv/bin/pip" install
     pass
 else
     skip "list not found"
