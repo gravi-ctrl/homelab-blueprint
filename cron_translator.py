@@ -29,7 +29,7 @@ FREQUENCY_TIERS = [
     ("⚡ Every few minutes",  lambda e: bool(re.match(r'\*/\d+\s', e)) and int(re.match(r'\*/(\d+)', e).group(1)) < 60),
     ("🕐 Hourly",             lambda e: bool(re.match(r'\d+\s\*\s', e))),
     ("🌙 Daily",              lambda e: bool(re.match(r'[\d,]+\s[\d,]+\s\*\s\*\s\*', e)) or e.startswith('@daily') or e.startswith('@midnight')),
-    ("📅 Weekly",             lambda e: (not re.match(r'.+\*$', e) and re.match(r'[\d,]+\s[\d,]+\s\*\s\*\s[\d,a-z]+', e, re.I)) or e.startswith('@weekly'),
+    ("📅 Weekly",             lambda e: (not re.match(r'.+\*$', e) and bool(re.match(r'[\d,]+\s[\d,]+\s\*\s\*\s[\d,a-z]+', e, re.I))) or e.startswith('@weekly')),
     ("🗓️ Monthly",            lambda e: re.match(r'[\d,]+\s[\d,]+\s[\d,]+\s\*\s\*', e) or e.startswith('@monthly')),
     ("📆 Yearly",             lambda e: e.startswith('@yearly') or e.startswith('@annually')),
     ("🔁 On Reboot",          lambda e: e.startswith('@reboot')),
