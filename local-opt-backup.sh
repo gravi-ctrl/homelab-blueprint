@@ -9,7 +9,7 @@
 #   3. Restart SSH:         sudo systemctl restart ssh
 #   4. Start Docker:        sudo systemctl start docker
 # ==============================================================================
-set -o pipefail
+set -euo pipefail
 shopt -s nullglob
 
 [[ $EUID -ne 0 ]] && { echo "❌ ERROR: This script must be run as root (or via sudo)." >&2; exit 1; }
@@ -71,18 +71,13 @@ fi
 echo $$ > "$LOCKFILE"
 
 # --- CONFIGURATION ---
-if [ ! -f "$AGE_KEYFILE" ]; then
-    echo "❌ Age key file not found at $AGE_KEYFILE"
-    exit 1
-fi
-
-if [ -z "$KUMA_HC_URL" ] || [ -z "$AGE_KEYFILE" ] || [ -z "$STACKS_DIR" ] || [ -z "$BACKUP_DIR" ]; then
+if [ -z "$KUMA_HC_URL" ] || [ -z "$AGE_KEYFILE" ] || [ -z "$STACKS_DIR" ] || [ -z "$BACKUP_DIR" ] || [ -z "$CTRL_DIR" ]; then
     echo "❌ Missing configuration in .env"
     exit 1
 fi
 
-if [ ! -d "$USER_HOME" ]; then
-    echo "❌ $USER_HOME does not exist"
+if [ ! -f "$AGE_KEYFILE" ]; then
+    echo "❌ Age key file not found at $AGE_KEYFILE"
     exit 1
 fi
 
@@ -104,13 +99,14 @@ mkdir -p "$BACKUP_DIR"
 # HEARTBEAT FUNCTION
 keep_kuma_alive() {
     while true; do
-        curl -fsS --retry 3 "$KUMA_HC_URL" > /dev/null
+        curl -fsS --retry 3 "$KUMA_HC_URL" > /dev/null || true
         sleep 240
     done
 }
 
 # SAFETY & CLEANUP FUNCTION
 cleanup() {
+    set +e
     # 1. Remove lock & stacks snapshot
     rm -f "$LOCKFILE"
     rm -f "$RUNNING_STACKS_FILE"
@@ -118,8 +114,8 @@ cleanup() {
 
     # 2. Kill Heartbeat
     if [ -n "$HEARTBEAT_PID" ]; then
-        kill $HEARTBEAT_PID 2>/dev/null
-        wait $HEARTBEAT_PID 2>/dev/null
+        kill $HEARTBEAT_PID 2>/dev/null || true
+        wait $HEARTBEAT_PID 2>/dev/null || true
     fi
 
     # 3. Ensure Docker is unmasked and started
@@ -158,7 +154,7 @@ if [ -f "$RUNNING_STACKS_FILE" ]; then
     while IFS= read -r stack_dir; do
         if [ -f "$stack_dir/compose.yml" ]; then
             echo "  → Stopping $(basename "$stack_dir")"
-            docker compose -f "$stack_dir/compose.yml" down --timeout 30
+            docker compose -f "$stack_dir/compose.yml" down --timeout 30 || true
         fi
     done < "$RUNNING_STACKS_FILE"
 fi
@@ -169,6 +165,7 @@ systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
 
+set +e
 timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='__pycache__' \
     --exclude='node_modules' \
@@ -234,6 +231,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     etc/ssh \
     tmp/backup-uid.txt \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
+set -e
 
 TAR_EXIT_CODE=${PIPESTATUS[0]}
 
@@ -243,7 +241,7 @@ systemctl start containerd docker.socket docker.service
 
 echo "Waiting for Docker socket..."
 for i in $(seq 1 30); do
-    docker info &>/dev/null && break
+    if docker info &>/dev/null; then break; fi
     sleep 2
 done
 
@@ -315,7 +313,7 @@ else
             if [ -f "$stack_dir/compose.yml" ]; then
                 PROBLEMS=$(docker compose -f "$stack_dir/compose.yml" ps -a \
                     --format '{{.Name}} {{.Status}}' 2>/dev/null \
-                    | grep -iE "exited|unhealthy|restarting" | awk '{print $1}')
+                    | grep -iE "exited|unhealthy|restarting" | awk '{print $1}' || true)
 
                 if [ -n "$PROBLEMS" ]; then
                     ALL_HEALTHY=false
