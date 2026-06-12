@@ -31,7 +31,7 @@ if [ -t 0 ]; then
         UNIT_NAME="docker-backup-manual"
 
         # Clean up any previous failed run
-        systemctl reset-failed "$UNIT_NAME" 2>/dev/null
+        systemctl reset-failed "$UNIT_NAME" 2>/dev/null || true
 
         systemd-run --unit="$UNIT_NAME" \
                     --quiet \
