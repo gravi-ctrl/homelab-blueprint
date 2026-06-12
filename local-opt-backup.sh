@@ -166,6 +166,7 @@ systemctl stop docker.socket docker.service containerd
 echo "Creating backup (ZSTD)..."
 
 set +e
+
 timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='__pycache__' \
     --exclude='node_modules' \
@@ -232,8 +233,11 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     tmp/backup-uid.txt \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
 
-TAR_EXIT_CODE=${PIPESTATUS[0]}
-AGE_EXIT_CODE=${PIPESTATUS[1]}
+STATUSES=("${PIPESTATUS[@]}")
+
+TAR_EXIT_CODE=${STATUSES[0]}
+AGE_EXIT_CODE=${STATUSES[1]}
+
 set -e
 
 # Explicit restart for immediate healthchecks
@@ -264,7 +268,7 @@ else
 fi
 
 # Validation
-if { [ $TAR_EXIT_CODE -eq 0 ] || [ $TAR_EXIT_CODE -eq 1 ]; } && [ $AGE_EXIT_CODE -eq 0 ]; then
+if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]]; then
     if [ $TAR_EXIT_CODE -eq 1 ]; then
         echo "⚠️  Backup succeeded with warnings (some files changed during read)."
     else
