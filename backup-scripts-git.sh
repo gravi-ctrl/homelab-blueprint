@@ -9,8 +9,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-[[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
-source "/opt/scripts/.env"
+[[ -f "${SCRIPTS_DIR}/.env" ]] || { echo ".env does not exist at ${SCRIPTS_DIR}" >&2; exit 1; }
+source "${SCRIPTS_DIR}/.env"
 
 IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
