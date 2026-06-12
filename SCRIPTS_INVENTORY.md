@@ -72,16 +72,6 @@
 
 ---
 
-## 🔴 Env Annotation Mismatches
-> *Variables declared in one place but missing from the other.*
-> - **Only in script** (`@USES_ENV`) → missing from `.env.example` `@USED_BY`
-> - **Only in `.env`** (`@USED_BY`) → missing from script's `@USES_ENV`
-
-#### `local-opt-backup.sh`
-- 🟡 **Only in `@USES_ENV`** (add to `.env.example`): `CTRL_DIR`
-
----
-
 ## ⚠️ Undocumented Scripts
 > *These scripts are missing `@DESCRIPTION:` or `@FREQUENCY:` tags.*
 - `StackDeck/docker_dash.py`

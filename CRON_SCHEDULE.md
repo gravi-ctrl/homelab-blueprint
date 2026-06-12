@@ -45,7 +45,7 @@
 
 | Variable | Used In | Jobs |
 | :--- | :--- | :--- |
-| `CTRL_DIR` | ⚡ Root | *ctrl_s_master Project* _(also used by: `backup-scripts-git.sh`)_ |
+| `CTRL_DIR` | ⚡ Root | *ctrl_s_master Project* _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh`)_ |
 | `DATA_DIR` | 👤 User (gravi-ctrl) | *Sync Personal and Work Obsidian vaults to Git*, *Rotate backups (retain recent) and purge download watch folder* _(also used by: `setup.sh` `nextcloud-dynamic-watch.sh`)_ |
 | `NEXTDNS_URL` | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor* |
 | `SCRIPTS_DIR` | 👤 User (gravi-ctrl) | *Sync Personal and Work Obsidian vaults to Git*, *Rotate backups (retain recent) and purge download watch folder*, *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*, *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*, *Apply file renaming rules to Paperless-ngx documents*, *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*, *Scan docker-compose files and open dependency update PRs on Codeberg*, *Runs a Borgmatic backup*, *cert-manager: regenerate & upload SSL certs to NPM* _(also used by: `backup-scripts-git.sh`)_ |
