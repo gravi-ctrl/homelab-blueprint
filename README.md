@@ -83,21 +83,30 @@ The bootstrap script is designed to handle both a **Full Recovery** (decrypts ar
 Choose your scenario before running the script:
 
 *   **Option A: Full Recovery**
-    Ensure `docker-stacks-*.tar.zst.age` is in `$HOME`, then paste your decryption key:
+    Ensure `docker-stacks-*.tar.zst.age` is in `$HOME`. Retrieve your age decryption key and paste it:
     ```bash
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
     ```
 *   **Option B: Fresh Start (No Backup)**
-    Simply place your Git deploy keys into `~/.ssh/` from your password manager. The script will securely fix their permissions for you.
+    Simply place your Git deploy keys into `~/.ssh/` from your password manager.
 
-**2. Run Bootstrap:**
+**2. Verify and Run Bootstrap:**
+
+For maximum supply-chain security, we verify the script's cryptographic hash before executing it as root.
+
+1. Retrieve the **trusted SHA-256 hash** of `bootstrap.sh` from your password manager.
+2. Run the command below, replacing `<paste_trusted_hash_here>` with your stored hash:
+
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh | bash
+curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o /tmp/bootstrap.sh
 # or if down
-curl -fsSL --proto '=https' --tlsv1.2 github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh | bash
+curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o /tmp/bootstrap.sh
+
+echo "<paste_trusted_hash_here>  /tmp/bootstrap.sh" | sha256sum --check -
+bash /tmp/bootstrap.sh
 ```
-> [!NOTE]  
+> [!NOTE]
 > If doing a Fresh Start, the script will detect the missing key and ask if you want to skip the backup restoration. Press `y`. It will then initialize your environment and automatically clone all necessary Git repositories.
 
 <details>
@@ -121,7 +130,7 @@ Run the main installer:
 
 At the end, it spawns the **Ghost Watcher** (`container-watcher.sh`), a background service that waits for containers to come online and runs their post-start configuration tasks.
 
-> [!NOTE]  
+> [!NOTE]
 > **The Ghost Watcher Engine:**
 > The watcher is fully modular and controlled via `WATCHER_TASKS` in `/opt/scripts/.env`. You do not need to modify the engine to add new containers; simply define the payload function and add the container's name to the `.env` registry. Once all tasks complete, the daemon deletes its state file and self-destructs.
 
