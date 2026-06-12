@@ -199,7 +199,8 @@ def main():
 
     if not success:
         print(f"❌ Push Failed after {max_retries} attempts.")
-        run_command(["git", "push"])  # Run once unsuppressed to show traceback logs to the wrapper
+        if push_result.stderr:
+            print(push_result.stderr.strip())
         sys.exit(1)
 
 if __name__ == "__main__":

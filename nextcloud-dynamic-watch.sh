@@ -66,10 +66,12 @@ trap "pkill -P $$; exit" SIGINT SIGTERM
 echo "Starting Nextcloud Docker Watcher..."
 
 # 1. START LISTENER
+WATCH_LIST=("${HOST_DATA_DIR}/${NC_USER}/files" "${REAL_ASSETS_DIR}")
+
 inotifywait -m -r -e close_write -e moved_to -e delete \
     --format '%w%f' \
     --exclude '/\.' \
-    $WATCH_LIST | while read DIR_PATH; do
+    "${WATCH_LIST[@]}" | while IFS= read -r DIR_PATH; do
         echo "$DIR_PATH" >> "$QUEUE_FILE"
     done &
 
