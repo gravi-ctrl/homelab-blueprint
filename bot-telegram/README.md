@@ -14,7 +14,7 @@ A Python bot that runs server commands via Telegram. Commands are defined entire
 
 ### 1. Install Dependencies
 ```bash
-~/.venv/bin/pip install python-telegram-bot python-dotenv
+/opt/venv/bin/pip install python-telegram-bot python-dotenv
 ```
 
 ### 2. Configure
