@@ -6,10 +6,12 @@
 | :--- | :--- | :--- |
 | ⚡ Every few minutes | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>*Sync Personal and Work Obsidian vaults to Git* |
 |  | ⚡ Root | *Emergency shutdown if battery is discharging and below 20%* |
+| 🕐 Hourly | 👤 User (gravi-ctrl) | *Disk Space Alerts* |
 | 🌙 Daily | 👤 User (gravi-ctrl) | *Rotate backups (retain recent) and purge download watch folder*<br>*Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>*Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>*Apply file renaming rules to Paperless-ngx documents*<br>*Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>*Scan docker-compose files and open dependency update PRs on Codeberg* |
 | 📅 Weekly | 👤 User (gravi-ctrl) | *Runs a Borgmatic backup* |
 |  | ⚡ Root | *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)* |
 | 🗓️ Monthly | 👤 User (gravi-ctrl) | *cert-manager: regenerate & upload SSL certs to NPM* |
+| 🔁 On Reboot | 👤 User (gravi-ctrl) | *Notify on Server Boot* |
 | 🔀 Other | ⚡ Root | *ctrl_s_master Project* |
 
 
@@ -18,8 +20,10 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
+| **Notify on Server Boot** | On every boot/restart | `sleep 60 && $SCRIPTS_DIR/cron-guard.py --mode all "Server Startup" "echo 'Host OS has booted. Docker services should ...` |
 | **Update NextDNS IP and Healthchecks.io server/internet monitor** | Every 5 minutes | `curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"` |
 | **Sync Personal and Work Obsidian vaults to Git** | Every 30 minutes | `$SCRIPTS_DIR/cron-guard.py --mode fail "Obsidian Notes Sync" "$SCRIPTS_DIR/git-auto-sync.py '$DATA_DIR/syncthing/Back...` |
+| **Disk Space Alerts** | Every hour | `$SCRIPTS_DIR/cron-guard.py --mode fail "Disk Monitor" "$SCRIPTS_DIR/disk-monitor.sh"` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `$SCRIPTS_DIR/cron-guard.py --mode fail "Cleanup Job" "$SCRIPTS_DIR/cleanup_script.py $DATA_DIR/syncthing/Backup/self-...` |
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:00 | `$SCRIPTS_DIR/cron-guard.py --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://...` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:00 | `$SCRIPTS_DIR/cron-guard.py --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calc...` |
@@ -33,7 +37,7 @@
 ## ⚡ Root Cron
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$SCRIPTS_DIR/battery_monitor.sh > /dev/null 2>&1` |
+| **Emergency shutdown if battery is discharging and below 20%** | Every 5 minutes | `$SCRIPTS_DIR/battery-monitor.sh > /dev/null 2>&1` |
 | **Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)** | At 05:30, only on Thursday | `$SCRIPTS_DIR/cron-guard.py --mode all "Docker Stacks Backup" "$SCRIPTS_DIR/local-opt-backup.sh"` |
 | **ctrl_s_master Project** | At 02:00, on the **2nd and 4th Friday** of the month | `[ "$(date +\%u)" = 5 ] && $SCRIPTS_DIR/cron-guard.py --mode fail "ctrl_s_master" "$CTRL_DIR/run.sh"` |
 
@@ -48,7 +52,7 @@
 | `CTRL_DIR` | ⚡ Root | *ctrl_s_master Project* _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh`)_ |
 | `DATA_DIR` | 👤 User (gravi-ctrl) | *Sync Personal and Work Obsidian vaults to Git*, *Rotate backups (retain recent) and purge download watch folder* _(also used by: `setup.sh` `nextcloud-dynamic-watch.sh`)_ |
 | `NEXTDNS_URL` | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor* |
-| `SCRIPTS_DIR` | 👤 User (gravi-ctrl) | *Sync Personal and Work Obsidian vaults to Git*, *Rotate backups (retain recent) and purge download watch folder*, *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*, *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*, *Apply file renaming rules to Paperless-ngx documents*, *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*, *Scan docker-compose files and open dependency update PRs on Codeberg*, *Runs a Borgmatic backup*, *cert-manager: regenerate & upload SSL certs to NPM* |
+| `SCRIPTS_DIR` | 👤 User (gravi-ctrl) | *Notify on Server Boot*, *Sync Personal and Work Obsidian vaults to Git*, *Disk Space Alerts*, *Rotate backups (retain recent) and purge download watch folder*, *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*, *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*, *Apply file renaming rules to Paperless-ngx documents*, *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*, *Scan docker-compose files and open dependency update PRs on Codeberg*, *Runs a Borgmatic backup*, *cert-manager: regenerate & upload SSL certs to NPM* |
 |  | ⚡ Root | *Emergency shutdown if battery is discharging and below 20%*, *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)*, *ctrl_s_master Project* |
 | `SERVER_HC_URL` | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor* |
 

@@ -8,11 +8,17 @@ BASH_ENV=/opt/scripts/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
+# Notify on Server Boot
+@reboot sleep 60 && $SCRIPTS_DIR/cron-guard.py --mode all "Server Startup" "echo 'Host OS has booted. Docker services should be initializing.'"
+
 # Update NextDNS IP and Healthchecks.io server/internet monitor
 */5 * * * * curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"
 
 # Sync Personal and Work Obsidian vaults to Git
 */30 * * * * $SCRIPTS_DIR/cron-guard.py --mode fail "Obsidian Notes Sync" "$SCRIPTS_DIR/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; $SCRIPTS_DIR/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
+
+# Disk Space Alerts
+0 * * * * $SCRIPTS_DIR/cron-guard.py --mode fail "Disk Monitor" "$SCRIPTS_DIR/disk-monitor.sh"
 
 # Rotate backups (retain recent) and purge download watch folder
 0 0,12 * * * $SCRIPTS_DIR/cron-guard.py --mode fail "Cleanup Job" "$SCRIPTS_DIR/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
