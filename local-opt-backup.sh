@@ -290,6 +290,7 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
             | xargs -r rm -f
     else
         echo "❌ Backup CORRUPT or key mismatch."
+        rm -f "$BACKUP_DIR/$DOCKER_FILENAME"
         exit 1
     fi
 elif [ $TAR_EXIT_CODE -eq 124 ]; then
@@ -298,6 +299,7 @@ elif [ $TAR_EXIT_CODE -eq 124 ]; then
     exit 1
 else
     echo "❌ Tar backup failed (Code $TAR_EXIT_CODE)!"
+    rm -f "$BACKUP_DIR/$DOCKER_FILENAME"
     exit 1
 fi
 
