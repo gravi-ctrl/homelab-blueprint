@@ -4,6 +4,11 @@
 # @FREQUENCY: Varies
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 
+# USAGE:
+# python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
+# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)
+# python cron-guard.py --mode success "Health Check" "curl ..." (Only notify if it works)
+
 import sys
 import os
 import subprocess
