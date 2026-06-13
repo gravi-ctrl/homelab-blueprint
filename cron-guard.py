@@ -4,11 +4,6 @@
 # @FREQUENCY: Varies
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 
-# USAGE:
-# python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
-# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)
-# python cron-guard.py --mode success "Health Check" "curl ..." (Only notify if it works)
-
 import sys
 import os
 import subprocess
@@ -45,17 +40,23 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
         status_header = "🚨 <b>TASK FAILURE</b>"
         status_label = f"Failed (Code {exit_code})"
 
-    # --- Smart Truncation & Log Path Notification ---
     truncated_msg = ""
     max_log_chars = 3000
 
-    if total_lines > 15:
-        truncated_msg = f"\n⚠️ <i>Showing last 15 of {total_lines} lines.</i>\n📁 <b>Full Log:</b> {html.escape(full_log_path)}\n"
-
-    if len(log_tail) > max_log_chars:
-        log_tail = "...[TRUNCATED BY CHAR LIMIT]\n" + log_tail[-max_log_chars:]
-        if not truncated_msg:
-            truncated_msg = f"\n⚠️ <i>Output exceeded character limit.</i>\n📁 <b>Full Log:</b> {html.escape(full_log_path)}\n"
+    # Format message dynamically based on if we kept a log file
+    if full_log_path:
+        if total_lines > 15:
+            truncated_msg += f"\n⚠️ <i>Showing last 15 of {total_lines} lines.</i>"
+        if len(log_tail) > max_log_chars:
+            truncated_msg += f"\n⚠️ <i>Output exceeded character limit.</i>"
+            log_tail = "...[TRUNCATED BY CHAR LIMIT]\n" + log_tail[-max_log_chars:]
+            
+        if truncated_msg:
+            truncated_msg += f"\n📁 <b>Full Log:</b> {html.escape(full_log_path)}\n"
+    else:
+        # No file kept, but we must protect TG API
+        if len(log_tail) > max_log_chars:
+            log_tail = "...[TRUNCATED BY CHAR LIMIT]\n" + log_tail[-max_log_chars:]
 
     text = (
         f"{status_header}\n"
@@ -150,7 +151,6 @@ def main():
 
     process = None
 
-    # Forward termination signals to child process safely
     def forward_signal(signum, frame):
         if process and process.poll() is None:
             log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process...")
@@ -163,9 +163,8 @@ def main():
         signal.signal(signal.SIGTERM, forward_signal)
         signal.signal(signal.SIGINT, forward_signal)
     except ValueError:
-        pass # Handle thread/Windows limitations safely
+        pass 
 
-    # Setup local log file path safely (with fallback if disk permissions fail)
     safe_job_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', args.job_name)
     log_dir = os.path.join(script_dir, "logs")
     full_log_path = os.path.join(log_dir, f"{safe_job_name}_latest.log")
@@ -174,8 +173,8 @@ def main():
     try:
         os.makedirs(log_dir, exist_ok=True)
         log_file_handle = open(full_log_path, 'w', encoding='utf-8')
-    except Exception as e:
-        full_log_path = f"Log file creation failed ({e})"
+    except Exception:
+        full_log_path = None
 
     try:
         process = subprocess.Popen(
@@ -190,25 +189,23 @@ def main():
             env=child_env
         )
 
-        # Process the output stream
         for line in iter(process.stdout.readline, ''):
             clean_line = line.rstrip('\n')
-            print(clean_line) # Output to system journal / stdout
+            print(clean_line) 
             
             if log_file_handle:
                 log_file_handle.write(clean_line + '\n')
-                log_file_handle.flush() # Ensure it writes to disk immediately
+                log_file_handle.flush() 
                 
             log_queue.append(clean_line)
             total_lines += 1
-
-        if log_file_handle:
-            log_file_handle.close()
 
         exit_code = process.wait()
     except Exception as e:
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
+    finally:
+        # Guaranteed closure of file stream to unlock it for Windows deletion
         if log_file_handle and not log_file_handle.closed:
             log_file_handle.close()
 
@@ -223,9 +220,26 @@ def main():
     elif args.mode == "success" and exit_code == 0:
         should_send = True
 
+    # Check if we should keep the log file
+    log_tail = "\n".join(log_queue) or "No output."
+    keep_file = False
+
     if should_send:
-        log_tail = "\n".join(log_queue) or "No output."
-        send_telegram_alert(token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, full_log_path)
+        # Keep file ONLY if message is sent AND limits are exceeded
+        if total_lines > 15 or len(log_tail) > 3000:
+            keep_file = True
+
+    # Delete the file cleanly if we don't need it
+    if not keep_file and full_log_path and os.path.exists(full_log_path):
+        try:
+            os.remove(full_log_path)
+        except OSError:
+            pass
+
+    # Send the Telegram message
+    if should_send:
+        final_log_path = full_log_path if keep_file else None
+        send_telegram_alert(token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, final_log_path)
 
     sys.exit(exit_code)
 
