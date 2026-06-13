@@ -34,7 +34,7 @@ Both list (`- "key=value"`) and dict (`key: value`) label formats are supported.
 
 1. **Install requirements:**
 ```bash
-~/.venv/bin/pip install pyyaml requests python-dotenv
+/opt/venv/bin/pip install pyyaml requests python-dotenv
 ```
 
 2. **Configure environment variables:**
