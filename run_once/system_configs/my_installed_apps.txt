@@ -16,6 +16,7 @@ btrfs-progs
 ca-certificates
 chrony
 containerd.io
+coreutils
 cryptsetup
 curl
 dash
