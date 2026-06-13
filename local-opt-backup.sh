@@ -294,6 +294,7 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
     fi
 elif [ $TAR_EXIT_CODE -eq 124 ]; then
     echo "❌ Backup TIMED OUT (>60m). Docker restarted."
+    rm -f "$BACKUP_DIR/$DOCKER_FILENAME"
     exit 1
 else
     echo "❌ Tar backup failed (Code $TAR_EXIT_CODE)!"
