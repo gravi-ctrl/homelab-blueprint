@@ -1,4 +1,6 @@
+argon2-cffi
 cron_descriptor
+cryptography
 Flask
 git-filter-repo
 PySocks
