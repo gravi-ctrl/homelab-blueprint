@@ -58,31 +58,45 @@ REAL_ASSETS_DIR="${DATA_DIR}"
 HOST_DATA_DIR="${NEXTCLOUD_DATA_DIR}"
 CONTAINER_NAME="${NEXTCLOUD_CONTAINER}"
 
-QUEUE_FILE="/tmp/nextcloud_events.log"
+QUEUE_DIR="/tmp/nextcloud_queue"
+mkdir -p "$QUEUE_DIR"
 
 trap "pkill -P $$; exit" SIGINT SIGTERM
 
 echo "Starting Nextcloud Docker Watcher..."
 
-# 1. START LISTENER
+# 1. START LISTENER (Writes uniquely named files per event)
 WATCH_LIST=("${HOST_DATA_DIR}/${NC_USER}/files" "${REAL_ASSETS_DIR}")
 
 inotifywait -m -r -e close_write -e moved_to -e delete \
     --format '%w%f' \
     --exclude '/\.' \
     "${WATCH_LIST[@]}" | while IFS= read -r DIR_PATH; do
-        echo "$DIR_PATH" >> "$QUEUE_FILE"
+        EVENT_ID=$(date +%s%N)_$RANDOM
+        # Force queue directory existence to prevent race conditions during mv/mkdir swaps
+        mkdir -p "$QUEUE_DIR"
+        echo "$DIR_PATH" > "${QUEUE_DIR}/event_${EVENT_ID}"
     done &
 
 # 2. START PROCESSOR
 while true; do
     sleep 10
-    if [ -s "$QUEUE_FILE" ]; then
-        mv "$QUEUE_FILE" "${QUEUE_FILE}.processing"
-        touch "$QUEUE_FILE"
 
-        IFS=$'\n'
-        for DIR_PATH in $(sort -u "${QUEUE_FILE}.processing"); do
+    # Check safely if any event files exist
+    event_files=( "$QUEUE_DIR"/event_* )
+    if [ -e "${event_files[0]}" ]; then
+        # 2a. DIRECTORY ROTATION
+        PROCESSING_DIR="/tmp/nextcloud_processing_$(date +%s%N)"
+        mv "$QUEUE_DIR" "$PROCESSING_DIR"
+        mkdir -p "$QUEUE_DIR" # Instantly recreate the queue folder for new writes
+
+        TARGETS_FILE="/tmp/nextcloud_targets_$(date +%s%N).log"
+        touch "$TARGETS_FILE"
+
+        # 2b. PARSE ALL CAPTURED EVENTS
+        for event_file in "$PROCESSING_DIR"/event_*; do
+            [ -f "$event_file" ] || continue
+            DIR_PATH=$(cat "$event_file")
             SCAN_PATH=""
 
             # CASE A: External Assets
@@ -102,22 +116,21 @@ while true; do
             # Always collapse to parent directory — one scan covers all siblings
             SCAN_PATH=$(dirname "$SCAN_PATH")
 
-            echo "$SCAN_PATH" >> "${QUEUE_FILE}.targets"
+            echo "$SCAN_PATH" >> "$TARGETS_FILE"
         done
-        unset IFS
 
         # 3. EXECUTE DEDUPLICATED SCANS
-        if [ -f "${QUEUE_FILE}.targets" ]; then
+        if [ -s "$TARGETS_FILE" ]; then
             IFS=$'\n'
-            for SCAN_PATH in $(sort -u "${QUEUE_FILE}.targets"); do
+            for SCAN_PATH in $(sort -u "$TARGETS_FILE"); do
                 echo "[$(date '+%H:%M:%S')] Scanning: $SCAN_PATH"
                 docker exec -u 33 "$CONTAINER_NAME" php occ files:scan --path="$SCAN_PATH"
             done
             unset IFS
-
-            rm "${QUEUE_FILE}.targets"
         fi
 
-        rm "${QUEUE_FILE}.processing"
+        # 2c. CLEANUP
+        rm -f "$TARGETS_FILE"
+        rm -rf "$PROCESSING_DIR"
     fi
 done
