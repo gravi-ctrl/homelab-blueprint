@@ -93,7 +93,7 @@ Choose your scenario before running the script:
 
 **2. Verify and Run Bootstrap:**
 
-For maximum supply-chain security, we verify the script's cryptographic hash before executing it as root.
+For maximum supply-chain security, we verify the script's cryptographic hash before executing it (the script will securely request sudo permissions as needed).
 
 1. Retrieve the **trusted SHA-256 hash** of `bootstrap.sh` from your password manager.
 2. Run the command below, replacing `<paste_trusted_hash_here>` with your stored hash:
