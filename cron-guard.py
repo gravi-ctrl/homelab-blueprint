@@ -4,11 +4,6 @@
 # @FREQUENCY: Varies
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 
-# USAGE:
-# python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
-# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)
-# python cron-guard.py --mode success "Health Check" "curl ..." (Only notify if it works)
-
 import sys
 import os
 import subprocess
@@ -19,6 +14,8 @@ import time
 import html
 import collections
 import argparse
+import signal
+import re
 
 def load_dotenv(filepath):
     if not os.path.isfile(filepath): return
@@ -30,24 +27,40 @@ def load_dotenv(filepath):
                 key, val = line.split('=', 1)
                 os.environ[key.strip()] = val.strip().strip('"\'')
 
-def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration):  # noqa: log_tail now used in fallback too
+def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
     if exit_code == 0:
         status_header = "✅ <b>TASK SUCCESSFUL</b>"
         status_label = "Success"
+    elif exit_code in (-15, 143, 130, -2): # Standard SIGTERM/SIGINT codes (Linux & Windows)
+        status_header = "🛑 <b>TASK KILLED</b>"
+        status_label = "Terminated by OS/User"
     else:
         status_header = "🚨 <b>TASK FAILURE</b>"
-        status_label = "Failed"
+        status_label = f"Failed (Code {exit_code})"
+
+    # --- Smart Truncation & Log Path Notification ---
+    truncated_msg = ""
+    max_log_chars = 3000
+
+    if total_lines > 15:
+        truncated_msg = f"\n⚠️ <i>Showing last 15 of {total_lines} lines.</i>\n📁 <b>Full Log:</b> {html.escape(full_log_path)}\n"
+
+    if len(log_tail) > max_log_chars:
+        log_tail = "...[TRUNCATED BY CHAR LIMIT]\n" + log_tail[-max_log_chars:]
+        if not truncated_msg:
+            truncated_msg = f"\n⚠️ <i>Output exceeded character limit.</i>\n📁 <b>Full Log:</b> {html.escape(full_log_path)}\n"
 
     text = (
         f"{status_header}\n"
         f"━━━━━━━━━━━━━━━\n"
         f"📂 <b>Job:</b> {html.escape(job_name)}\n"
-        f"📊 <b>Status:</b> {status_label} (Code {exit_code})\n"
+        f"📊 <b>Status:</b> {status_label}\n"
         f"⏱️ <b>Duration:</b> {duration}\n"
         f"⏰ <b>Finished:</b> {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"━━━━━━━━━━━━━━━\n"
+        f"{truncated_msg}"
         f"📜 <b>Last Logs:</b>\n<pre>{html.escape(log_tail)}</pre>"
     )
 
@@ -78,22 +91,17 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration)
         f"  Error    : {last_error}\n"
     )
 
-    # 1) stderr — captured by syslog/journald on Linux, Event Viewer on Windows
     print(alert_msg, file=sys.stderr)
 
-    # 2) failed_alerts.log — sits next to cron-guard.py for manual inspection
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_dir = os.path.dirname(os.path.realpath(__file__))
         fallback_log = os.path.join(script_dir, 'failed_alerts.log')
         with open(fallback_log, 'a', encoding='utf-8') as f:
             f.write(
                 f"{timestamp} | job={job_name!r} | exit={exit_code} | duration={duration} | error={last_error}\n"
-                f"--- last logs ---\n"
-                f"{log_tail}\n"
-                f"-----------------\n"
+                f"--- last logs ---\n{log_tail}\n-----------------\n"
             )
     except Exception as log_err:
-        # If even the file write fails, at least stderr already has it
         print(f"[cron-guard] WARNING: Could not write to failed_alerts.log: {log_err}", file=sys.stderr)
 
     return False
@@ -120,20 +128,49 @@ def main():
             import shlex
             full_cmd = shlex.join(args.command)
 
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     load_dotenv(os.path.join(script_dir, '.env'))
 
     token = os.environ.get("TELEGRAM_DANTE_BOT_TOKEN", "YOUR_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_ID")
 
-    # Capture start time
     start_time = time.time()
-    log_queue = collections.deque(maxlen=15) # Increased to 15 lines
+    log_queue = collections.deque(maxlen=15)
+    total_lines = 0
 
     child_env = os.environ.copy()
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
     child_env["PYTHONUNBUFFERED"] = "1"
+
+    process = None
+
+    # Forward termination signals to child process safely
+    def forward_signal(signum, frame):
+        if process and process.poll() is None:
+            log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process...")
+            try:
+                process.terminate()
+            except Exception:
+                pass
+
+    try:
+        signal.signal(signal.SIGTERM, forward_signal)
+        signal.signal(signal.SIGINT, forward_signal)
+    except ValueError:
+        pass # Handle thread/Windows limitations safely
+
+    # Setup local log file path safely (with fallback if disk permissions fail)
+    safe_job_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', args.job_name)
+    log_dir = os.path.join(script_dir, "logs")
+    full_log_path = os.path.join(log_dir, f"{safe_job_name}_latest.log")
+    log_file_handle = None
+
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        log_file_handle = open(full_log_path, 'w', encoding='utf-8')
+    except Exception as e:
+        full_log_path = f"Log file creation failed ({e})"
 
     try:
         process = subprocess.Popen(
@@ -148,21 +185,31 @@ def main():
             env=child_env
         )
 
-        # Stream output in real-time
+        # Process the output stream
         for line in iter(process.stdout.readline, ''):
             clean_line = line.rstrip('\n')
-            print(clean_line)
+            print(clean_line) # Output to system journal / stdout
+            
+            if log_file_handle:
+                log_file_handle.write(clean_line + '\n')
+                log_file_handle.flush() # Ensure it writes to disk immediately
+                
             log_queue.append(clean_line)
+            total_lines += 1
+
+        if log_file_handle:
+            log_file_handle.close()
 
         exit_code = process.wait()
     except Exception as e:
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
+        if log_file_handle and not log_file_handle.closed:
+            log_file_handle.close()
 
     duration_seconds = int(time.time() - start_time)
     duration_str = str(datetime.timedelta(seconds=duration_seconds))
 
-    # Logic to determine if we should send the alert
     should_send = False
     if args.mode == "all":
         should_send = True
@@ -173,7 +220,7 @@ def main():
 
     if should_send:
         log_tail = "\n".join(log_queue) or "No output."
-        send_telegram_alert(token, chat_id, args.job_name, exit_code, log_tail, duration_str)
+        send_telegram_alert(token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, full_log_path)
 
     sys.exit(exit_code)
 
