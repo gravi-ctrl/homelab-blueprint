@@ -4,15 +4,15 @@
 ## ⏱️ Schedule At a Glance
 | Frequency Tier | Crontab | Jobs |
 | :--- | :--- | :--- |
-| ⚡ Every few minutes | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>*Sync Personal and Work Obsidian vaults to Git* |
-|  | ⚡ Root | *Emergency shutdown if battery is discharging and below 20%* |
-| 🕐 Hourly | 👤 User (gravi-ctrl) | *Disk Space Alerts* |
-| 🌙 Daily | 👤 User (gravi-ctrl) | *Rotate backups (retain recent) and purge download watch folder*<br>*Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>*Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>*Apply file renaming rules to Paperless-ngx documents*<br>*Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>*Scan docker-compose files and open dependency update PRs on Codeberg* |
-| 📅 Weekly | 👤 User (gravi-ctrl) | *Runs a Borgmatic backup* |
-|  | ⚡ Root | *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)* |
-| 🗓️ Monthly | 👤 User (gravi-ctrl) | *cert-manager: regenerate & upload SSL certs to NPM* |
-| 🔁 On Reboot | 👤 User (gravi-ctrl) | *Notify on Server Boot* |
-| 🔀 Other | ⚡ Root | *ctrl_s_master Project* |
+| ⚡ Every few minutes | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>- *Sync Personal and Work Obsidian vaults to Git* |
+|  | ⚡ Root | - *Emergency shutdown if battery is discharging and below 20%* |
+| 🕐 Hourly | 👤 User (gravi-ctrl) | - *Disk Space Alerts* |
+| 🌙 Daily | 👤 User (gravi-ctrl) | - *Rotate backups (retain recent) and purge download watch folder*<br>- *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>- *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>- *Apply file renaming rules to Paperless-ngx documents*<br>- *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>- *Scan docker-compose files and open dependency update PRs on Codeberg* |
+| 📅 Weekly | 👤 User (gravi-ctrl) | - *Runs a Borgmatic backup* |
+|  | ⚡ Root | - *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)* |
+| 🗓️ Monthly | 👤 User (gravi-ctrl) | - *cert-manager: regenerate & upload SSL certs to NPM* |
+| 🔁 On Reboot | 👤 User (gravi-ctrl) | - *Notify on Server Boot* |
+| 🔀 Other | ⚡ Root | - *ctrl_s_master Project* |
 
 
 ---
@@ -49,10 +49,10 @@
 
 | Variable | Used In | Jobs |
 | :--- | :--- | :--- |
-| `CTRL_DIR` | ⚡ Root | *ctrl_s_master Project* _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh`)_ |
-| `DATA_DIR` | 👤 User (gravi-ctrl) | *Sync Personal and Work Obsidian vaults to Git*, *Rotate backups (retain recent) and purge download watch folder* _(also used by: `setup.sh` `nextcloud-dynamic-watch.sh`)_ |
-| `NEXTDNS_URL` | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor* |
-| `SCRIPTS_DIR` | 👤 User (gravi-ctrl) | *Notify on Server Boot*, *Sync Personal and Work Obsidian vaults to Git*, *Disk Space Alerts*, *Rotate backups (retain recent) and purge download watch folder*, *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*, *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*, *Apply file renaming rules to Paperless-ngx documents*, *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*, *Scan docker-compose files and open dependency update PRs on Codeberg*, *Runs a Borgmatic backup*, *cert-manager: regenerate & upload SSL certs to NPM* |
-|  | ⚡ Root | *Emergency shutdown if battery is discharging and below 20%*, *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)*, *ctrl_s_master Project* |
-| `SERVER_HC_URL` | 👤 User (gravi-ctrl) | *Update NextDNS IP and Healthchecks.io server/internet monitor* |
+| `CTRL_DIR` | ⚡ Root | - *ctrl_s_master Project*<br>⚠️ _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh`)_ |
+| `DATA_DIR` | 👤 User (gravi-ctrl) | - *Sync Personal and Work Obsidian vaults to Git*<br>- *Rotate backups (retain recent) and purge download watch folder*<br>⚠️ _(also used by: `setup.sh` `nextcloud-dynamic-watch.sh`)_ |
+| `NEXTDNS_URL` | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor* |
+| `SCRIPTS_DIR` | 👤 User (gravi-ctrl) | - *Notify on Server Boot*<br>- *Sync Personal and Work Obsidian vaults to Git*<br>- *Disk Space Alerts*<br>- *Rotate backups (retain recent) and purge download watch folder*<br>- *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>- *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>- *Apply file renaming rules to Paperless-ngx documents*<br>- *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>- *Scan docker-compose files and open dependency update PRs on Codeberg*<br>- *Runs a Borgmatic backup*<br>- *cert-manager: regenerate & upload SSL certs to NPM* |
+|  | ⚡ Root | - *Emergency shutdown if battery is discharging and below 20%*<br>- *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)*<br>- *ctrl_s_master Project* |
+| `SERVER_HC_URL` | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor* |
 

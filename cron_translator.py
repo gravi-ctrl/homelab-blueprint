@@ -294,7 +294,7 @@ def build_at_a_glance(all_jobs):
 
         first = True
         for crontab_label, labels in by_crontab.items():
-            jobs_str = "<br>".join(f"*{l}*" for l in labels)
+            jobs_str = "<br>".join(f"- *{l}*" for l in labels)
             tier_col = tier if first else ""
             md.append(f"| {tier_col} | {crontab_label} | {jobs_str} |")
             first = False
@@ -344,12 +344,12 @@ def build_env_reference(all_jobs, crontab_vars, var_all_consumers):
         first = True
         for crontab_label, job_labels in consumers.items():
             var_col = f"`{var}`" if first else ""
-            jobs_str = ", ".join(f"*{l}*" for l in job_labels)
 
-            # Append also-used-by footnote on the first row of this var
+            jobs_str = "<br>".join(f"- *{l}*" for l in job_labels)
+
             if first and also_used_by:
                 also_str = " ".join(f"`{s}`" for s in also_used_by)
-                jobs_str += f" _(also used by: {also_str})_"
+                jobs_str += f"<br>⚠️ _(also used by: {also_str})_"
 
             md.append(f"| {var_col} | {crontab_label} | {jobs_str} |")
             first = False
