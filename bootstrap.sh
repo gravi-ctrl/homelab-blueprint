@@ -52,6 +52,18 @@ else
     confirm_skip "⚠️  $AGE_KEYFILE doesn't exist! Sure you wanna skip the backup restoration phase?"
 fi
 
+if [[ "$EXTRACTED" == false ]]; then
+    PRIVATE_KEYS=$(find "$HOME/.ssh" -maxdepth 1 -type f -name "*.pub" | while read -r pub; do
+        priv="${pub%.pub}"
+        [[ -f "$priv" ]] && echo "$priv"
+    done | wc -l)
+    if [[ "$PRIVATE_KEYS" -eq 0 ]]; then
+        echo "❌ ERROR: No SSH private keys found in $HOME/.ssh and no backup was restored." >&2
+        echo "   Place your private key(s) in $HOME/.ssh before re-running, or restore from backup." >&2
+        exit 1
+    fi
+fi
+
 echo ">>> Fixing SSH permissions..."
 mkdir -p "$HOME/.ssh"
 sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
