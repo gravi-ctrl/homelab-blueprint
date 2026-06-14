@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+
+# @DESCRIPTION: Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard
+# @FREQUENCY: On Demand
+
 """
 docker_dash.py  —  Docker Stack Dashboard Generator
 ────────────────────────────────────────────────────
-Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy
-Manager, and generates a self-contained HTML dashboard.
 
 Setup:
     cp .env.example .env

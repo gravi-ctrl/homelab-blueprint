@@ -19,6 +19,12 @@
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings | Daily 5am (triggered by `backup-scripts-git.sh`) | — | — |
 
 
+### 📁 Stackdeck
+| Script File | Purpose | Frequency | Crontab | Env Dependencies |
+| :--- | :--- | :--- | :--- | :--- |
+| `StackDeck/docker_dash.py` | Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard | On Demand | — | — |
+
+
 ### 📁 Bot-Telegram
 | Script File | Purpose | Frequency | Crontab | Env Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
@@ -70,11 +76,6 @@
 | `WATCHER_TASKS` | `container-watcher.sh` |
 
 
----
-
-## ⚠️ Undocumented Scripts
-> *These scripts are missing `@DESCRIPTION:` or `@FREQUENCY:` tags.*
-- `StackDeck/docker_dash.py`
 ---
 
 ## 📝 How to Document New Scripts
