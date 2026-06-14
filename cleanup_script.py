@@ -2,6 +2,7 @@
 # @DESCRIPTION: Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode.
 # @FREQUENCY: Daily 1am and 1pm
 # @USES_ENV: FILES_TO_KEEP
+# @CRON: user
 #
 # --- USAGE EXAMPLES ---
 # 1. Standard (Keep 2 most recent):
