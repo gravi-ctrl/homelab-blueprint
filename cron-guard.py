@@ -4,6 +4,8 @@
 # @FREQUENCY: Varies
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 
+# optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
+
 # USAGE:
 # python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
 # python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)

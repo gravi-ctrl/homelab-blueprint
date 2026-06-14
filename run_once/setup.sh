@@ -60,6 +60,8 @@ header "0/10" "Establishing System Paths"
 task "Symlink user scripts → /opt/scripts"
 if [ ! -L /opt/scripts ]; then
     quietly sudo ln -sf "$HOME/scripts" /opt/scripts
+    # symlinking my wrapper for crontabs and easy use
+    quietly sudo ln -sf /opt/scripts/cron-guard.py /usr/local/bin/cron-guard
     pass "created"
 else
     pass "already linked"
