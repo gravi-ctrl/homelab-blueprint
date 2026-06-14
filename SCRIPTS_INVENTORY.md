@@ -75,3 +75,14 @@
 ## ⚠️ Undocumented Scripts
 > *These scripts are missing `@DESCRIPTION:` or `@FREQUENCY:` tags.*
 - `StackDeck/docker_dash.py`
+---
+
+## 📝 How to Document New Scripts
+> *To automatically include a new `.sh` or `.py` script in this inventory, add this header block right below your shebang:*
+```bash
+#!/bin/bash
+# @DESCRIPTION: One-line summary of what the script does.
+# @FREQUENCY:   How often it runs (e.g., Daily 5am, On Demand, etc.)
+# @CRON:        User, Root       # (Optional) Which crontab it runs in
+# @USES_ENV:    VAR1, VAR2       # (Optional) Config variables it depends on
+```
