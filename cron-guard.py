@@ -3,6 +3,7 @@
 # @DESCRIPTION: Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure.
 # @FREQUENCY: Varies
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
+# @CRON: user, root
 
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
 
