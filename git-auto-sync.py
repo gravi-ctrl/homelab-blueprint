@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Master logic to push/pull Git repos
 # @FREQUENCY: Varies
+# @CRON: user
 # ==============================================================================
 # GENERIC GIT AUTO-SYNC SCRIPT
 # Usage: python git_auto_sync.py "/path/to/repo" "Commit Label"
