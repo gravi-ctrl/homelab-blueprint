@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
+# @DESCRIPTION: Phase 2 System Provisioning: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
 # @USES_ENV: SERVER_IP, DATA_DIR, NEXTCLOUD_DATA_DIR, TIMEZONE
 # ==============================================================================
