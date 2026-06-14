@@ -59,10 +59,9 @@
 | `NEXTCLOUD_USER` | `nextcloud-dynamic-watch.sh` `nextcloud_post-restore_fix.sh` |
 | `NEXTDNS_URL` | `crontab` |
 | `PATH` | `crontab` |
-| `SCRIPTS_DIR` | `crontab` |
 | `SERVER_HC_URL` | `crontab` |
 | `SERVER_IP` | `setup.sh` |
-| `STACKS_DIR` | `backup-scripts-git.sh` `local-opt-backup.sh` |
+| `STACKS_DIR` | `backup-scripts-git.sh` `crontab` `local-opt-backup.sh` |
 | `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard.py` |
 | `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard.py` |
 | `TIMEZONE` | `setup.sh` |

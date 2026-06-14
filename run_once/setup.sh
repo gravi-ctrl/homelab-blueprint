@@ -53,18 +53,30 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 # ══════════════════════════════════════════════════════════════
 # [0/10] ESTABLISH SYSTEM PATHS (ONE SOURCE OF TRUTH)
+# Change these here if your source files are located somewhere else
 # ══════════════════════════════════════════════════════════════
 
 header "0/10" "Establishing System Paths"
 
+MY_SCRIPTS="$HOME/scripts"
+LOCAL_VENV="$HOME/.venv" # Used in step [5/10]
+
 task "Symlink user scripts → /opt/scripts"
 if [ ! -L /opt/scripts ]; then
-    quietly sudo ln -sf "$HOME/scripts" /opt/scripts
-    # symlinking my wrapper for crontabs and easy use
-    quietly sudo ln -sf /opt/scripts/cron-guard.py /usr/local/bin/cron-guard
+    quietly sudo ln -sf "$MY_SCRIPTS" /opt/scripts
     pass "created"
 else
     pass "already linked"
+fi
+
+task "Create global command → cron-guard"
+if [ -f "/opt/scripts/cron-guard.py" ]; then
+    quietly sudo chmod +x /opt/scripts/cron-guard.py
+    # symlinking my wrapper for crontabs and easy use
+    quietly sudo ln -sf /opt/scripts/cron-guard.py /usr/local/bin/cron-guard
+    pass "linked"
+else
+    skip "cron-guard.py not found"
 fi
 
 task "Load environment configuration"
@@ -220,19 +232,17 @@ pass
 # ══════════════════════════════════════════════════════════════
 header "5/10" "Python Libraries"
 
-VENV_DIR="$HOME/.venv"
-
-task "Create Python venv → ~/.venv"
-if [ ! -d "$VENV_DIR" ]; then
-    quietly python3 -m venv "$VENV_DIR"
+task "Create Python venv → $LOCAL_VENV"
+if [ ! -d "$LOCAL_VENV" ]; then
+    quietly python3 -m venv "$LOCAL_VENV"
     pass "created"
 else
     pass "already exists"
 fi
 
-task "Symlink $VENV_DIR → /opt/venv"
+task "Symlink $LOCAL_VENV → /opt/venv"
 if [ ! -L /opt/venv ]; then
-    quietly sudo ln -sf "$VENV_DIR" /opt/venv
+    quietly sudo ln -sf "$LOCAL_VENV" /opt/venv
     pass "linked"
 else
     pass "already linked"
@@ -241,7 +251,7 @@ fi
 task "Install pip packages into venv"
 PIP_PACKAGES_FILE="/opt/scripts/run_once/system_configs/my_pip_packages.txt"
 if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
-    quietly xargs -a "$PIP_PACKAGES_FILE" "$VENV_DIR/bin/pip" install
+    quietly xargs -a "$PIP_PACKAGES_FILE" "/opt/venv/bin/pip" install
     pass
 else
     skip "list not found"
