@@ -17,53 +17,59 @@ AGE_KEYFILE="/root/.backup-key.txt"
 
 [[ $EUID -eq 0 ]] && { echo "ERROR: Don't run as root." >&2; exit 1; }
 
-EXTRACTED=false
+echo "======================================================="
+echo " 🛡️  SERVER BOOTSTRAP: DEPLOYMENT MODE"
+echo "======================================================="
+echo "  1) Full Recovery (Restore from age-encrypted backup)"
+echo "  2) Fresh Start   (Clone repos, no backup restoration)"
+echo "======================================================="
+while true; do
+    read -r -p "Select an option [1-2]: " choice < /dev/tty
+    case $choice in
+        1) MODE="RESTORE"; break ;;
+        2) MODE="FRESH"; break ;;
+        *) echo "⚠️ Invalid option." ;;
+    esac
+done
+echo ""
 
-# Helper function
-confirm_skip() {
-    read -r -p "$1 (y/n): " choice < /dev/tty
-    [[ "$choice" == [yY]* ]] || { echo "Aborting..."; exit 1; }
-    echo "Skipping backup restoration phase..."
-}
+# --- PHASE 1A: RESTORE ---
+if [[ "$MODE" == "RESTORE" ]]; then
+    sudo [ -f "$AGE_KEYFILE" ] || { echo "❌ ERROR: Decryption key not found at $AGE_KEYFILE"; exit 1; }
 
-if sudo [ -f "$AGE_KEYFILE" ]; then
     BACKUP=$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)
-    if [[ -n "$BACKUP" ]]; then
-        read -r -p "📦 Found backup: $BACKUP. Wanna proceed restoring it? (y/n): " choice < /dev/tty
-        if [[ "$choice" == [yY]* ]]; then
-            echo ">>> Installing age & zstd..."
-            sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
-            echo ">>> Decrypting $BACKUP..."
-            sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
+    [[ -z "$BACKUP" ]] && { echo "❌ ERROR: No backup archive found in $HOME"; exit 1; }
 
-            echo ">>> Fixing extracted file ownership..."
-            IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
-            sudo find "/opt/stacks" "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
-                -uid "$B_UID" ! -uid "$(id -u)" -exec chown "$(id -u):$(id -g)" {} +
-            sudo rm -f /tmp/backup-uid.txt
-            EXTRACTED=true
-        else
-            echo "Skipping backup restoration phase..."
-        fi
-    else
-        confirm_skip "⚠️  Key found at $AGE_KEYFILE, but no backup archive found at $HOME - Sure you wanna skip?"
+    echo ">>> Installing age & zstd..."
+    sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
+
+    echo ">>> Decrypting $BACKUP..."
+    sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
+
+    echo ">>> Fixing extracted file ownership..."
+    if [ -f "/tmp/backup-uid.txt" ]; then
+        IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
+        sudo find "/opt/stacks" "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
+            -uid "$B_UID" ! -uid "$(id -u)" -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
+        sudo rm -f /tmp/backup-uid.txt
     fi
-else
-    confirm_skip "⚠️  $AGE_KEYFILE doesn't exist! Sure you wanna skip the backup restoration phase?"
 fi
 
-if [[ "$EXTRACTED" == false ]]; then
+# --- PHASE 1B: FRESH ---
+if [[ "$MODE" == "FRESH" ]]; then
     PRIVATE_KEYS=$(find "$HOME/.ssh" -maxdepth 1 -type f -name "*.pub" | while read -r pub; do
         priv="${pub%.pub}"
         [[ -f "$priv" ]] && echo "$priv"
     done | wc -l)
+
     if [[ "$PRIVATE_KEYS" -eq 0 ]]; then
-        echo "❌ ERROR: No SSH private keys found in $HOME/.ssh and no backup was restored." >&2
-        echo "   Place your private key(s) in $HOME/.ssh before re-running, or restore from backup." >&2
+        echo "❌ ERROR: No SSH private keys found in $HOME/.ssh." >&2
+        echo "   Please place your private key(s) in $HOME/.ssh before running a Fresh Start." >&2
         exit 1
     fi
 fi
 
+# --- PHASE 2: SYSTEM PREP ---
 echo ">>> Fixing SSH permissions..."
 mkdir -p "$HOME/.ssh"
 sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
@@ -76,6 +82,7 @@ sudo apt-get purge -y -qq cloud-init
 sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
 sudo systemctl restart ssh || true
 
+# --- PHASE 3: REPOSITORIES ---
 setup_repo() {
     echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
@@ -104,19 +111,15 @@ setup_repo "$HOME/ctrl_s_master" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" 
 setup_repo "/opt/stacks"         "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
 set -e
 
-if [[ "$LINK_SUCCESS" == true ]]; then
-    echo "✅ All repositories successfully linked!"
-else
-    echo "❌ Re-linking failed (Codeberg might be unreachable)."
-fi
-
+# --- PHASE 4: CLEANUP & SUMMARY ---
 echo ">>> Cleaning up..."
-[[ "$EXTRACTED" == true ]] && rm -- "$BACKUP"
+[[ "$MODE" == "RESTORE" && -n "${BACKUP:-}" ]] && rm -- "$BACKUP"
 
 WARNING_MSG=""
-[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n         (⚠️ Linking failed! Re-run this script and skip restoration)'
+[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script and try again)'
 
 cat <<EOF
+
 ✅ Bootstrap phase complete!
 Next steps:
   1. Run the installer:  ~/scripts/run_once/setup.sh${WARNING_MSG}
