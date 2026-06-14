@@ -29,9 +29,6 @@ The server snapshots its own state daily: scripts, crontabs, package lists, etc,
 
 The result: the server largely runs itself, and when something does go wrong, you already know about it before you notice.
 
-> [!TIP]
-> For the full picture, see the **[Script Inventory](./SCRIPTS_INVENTORY.md)** and **[Automation Schedule](./CRON_SCHEDULE.md)**.
-
 ---
 
 ## 🚨 Deployment & Recovery

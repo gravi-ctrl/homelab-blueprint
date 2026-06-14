@@ -27,13 +27,13 @@ BASH_ENV=/opt/scripts/.env
 0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/scripts/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
 
 # Update Pi-hole Gravity (adlists) and apply mmotti regex rules
-0 1 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
+10 1 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-0 4 * * * cron-guard --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
+10 4 * * * cron-guard --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
 
 # Apply file renaming rules to Paperless-ngx documents
-15 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
+25 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
 # Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git
 0 5 * * * cron-guard --mode fail "Scripts & System Configs Backup" "/opt/scripts/backup-scripts-git.sh"
