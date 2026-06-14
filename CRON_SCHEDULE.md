@@ -4,7 +4,7 @@
 ## ⏱️ Schedule At a Glance
 | Frequency Tier | Crontab | Jobs |
 | :--- | :--- | :--- |
-| ⚡ Every few minutes | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>- *Sync Personal and Work Obsidian vaults to Git* |
+| ⚡ Every few minutes | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>- *Pulls and deploys stack updates done by Renovate*<br>- *Sync Personal and Work Obsidian vaults to Git* |
 |  | ⚡ Root | - *Emergency shutdown if battery is discharging and below 20%* |
 | 🕐 Hourly | 👤 User (gravi-ctrl) | - *Disk Space Alerts* |
 | 🌙 Daily | 👤 User (gravi-ctrl) | - *Rotate backups (retain recent) and purge download watch folder*<br>- *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>- *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>- *Apply file renaming rules to Paperless-ngx documents*<br>- *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>- *Scan docker-compose files and open dependency update PRs on Codeberg* |
@@ -22,6 +22,7 @@
 | :--- | :--- | :--- |
 | **Notify on Server Boot** | On every boot/restart | `sleep 60 && cron-guard --mode success "Server Startup" "echo 'Host OS has booted. Docker services should be initializ...` |
 | **Update NextDNS IP and Healthchecks.io server/internet monitor** | Every 5 minutes | `curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"` |
+| **Pulls and deploys stack updates done by Renovate** | Every 15 minutes | `cron-guard --mode fail "GitOps Deployer" "/opt/scripts/gitops-deploy.sh"` |
 | **Sync Personal and Work Obsidian vaults to Git** | Every 30 minutes | `cron-guard --mode fail "Obsidian Notes Sync" "/opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-note...` |
 | **Disk Space Alerts** | Every hour | `cron-guard --mode fail "Disk Monitor" "/opt/scripts/disk-monitor.sh"` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `cron-guard --mode fail "Cleanup Job" "/opt/scripts/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-...` |
@@ -53,5 +54,5 @@
 | `DATA_DIR` | 👤 User (gravi-ctrl) | - *Sync Personal and Work Obsidian vaults to Git*<br>- *Rotate backups (retain recent) and purge download watch folder*<br>⚠️ _(also used by: `setup.sh` `nextcloud-dynamic-watch.sh`)_ |
 | `NEXTDNS_URL` | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor* |
 | `SERVER_HC_URL` | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor* |
-| `STACKS_DIR` | 👤 User (gravi-ctrl) | - *Scan docker-compose files and open dependency update PRs on Codeberg*<br>⚠️ _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh`)_ |
+| `STACKS_DIR` | 👤 User (gravi-ctrl) | - *Scan docker-compose files and open dependency update PRs on Codeberg*<br>⚠️ _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh` `gitops-deploy.sh`)_ |
 
