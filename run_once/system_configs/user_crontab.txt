@@ -14,6 +14,9 @@ BASH_ENV=/opt/scripts/.env
 # Update NextDNS IP and Healthchecks.io server/internet monitor
 */5 * * * * curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"
 
+# Pulls and deploys stack updates done by Renovate
+*/15 * * * * cron-guard --mode fail "GitOps Deployer" "/opt/scripts/gitops-deploy.sh"
+
 # Sync Personal and Work Obsidian vaults to Git
 */30 * * * * cron-guard --mode fail "Obsidian Notes Sync" "/opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
