@@ -1,6 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: If battery is discharging and under 20%, shutdown the server
 # @FREQUENCY: Every 5 minutes (root crontab)
+# @CRON: root
 # Get battery percentage
 BATTERY_LEVEL=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | awk '{print $2}' | tr -d '%')
 STATUS=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep state | awk '{print $2}')
