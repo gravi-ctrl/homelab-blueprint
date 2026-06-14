@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: If battery is discharging and under 20%, shutdown the server
-# @FREQUENCY: Every 5 minutes (root crontab)
+# @FREQUENCY: Every 5 minutes
 # @CRON: root
 # =============================
 # Get battery percentage

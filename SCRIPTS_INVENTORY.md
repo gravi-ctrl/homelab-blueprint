@@ -5,7 +5,7 @@
 | Script File | Purpose | Frequency | Crontab | Env Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
 | `backup-scripts-git.sh` | Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh` | Daily 5am | 👤 User | `CTRL_DIR` `STACKS_DIR` `TOOLS` |
-| `battery-monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes (root crontab) | ⚡ Root | — |
+| `battery-monitor.sh` | If battery is discharging and under 20%, shutdown the server | Every 5 minutes | ⚡ Root | — |
 | `bootstrap.sh` | Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories. | Run Once (Disaster Recovery) | — | — |
 | `cleanup_script.py` | Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode. | Daily 1am and 1pm | 👤 User | `FILES_TO_KEEP` |
 | `cron-guard.py` | Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure. | Varies | 👤 User, ⚡ Root | `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` |
@@ -14,7 +14,7 @@
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies | 👤 User | — |
 | `gitops-deploy.sh` | Monitors /opt/stacks for remote Codeberg changes done by Renovate and auto-deploys updated compose stacks. | Every 15 minutes | 👤 User | `STACKS_DIR` `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` |
 | `health-snapshot.sh` | Prints an on-demand health snapshot of the server | On Demand | — | `BACKUP_DIR` |
-| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday (root crontab) | ⚡ Root | `AGE_KEYFILE` `BACKUP_DIR` `CTRL_DIR` `KUMA_HC_URL` `STACKS_DIR` |
+| `local-opt-backup.sh` | Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive | Weekly 5:30am on Thursday | ⚡ Root | `AGE_KEYFILE` `BACKUP_DIR` `CTRL_DIR` `KUMA_HC_URL` `STACKS_DIR` |
 | `nextcloud-dynamic-watch.sh` | Watches `/data/assets` + Internal Data, scans Nextcloud via Docker | Service (Always) | — | `DATA_DIR` `NEXTCLOUD_CONTAINER` `NEXTCLOUD_DATA_DIR` `NEXTCLOUD_MOUNT_NAME` `NEXTCLOUD_USER` |
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings | Daily 5am (triggered by `backup-scripts-git.sh`) | — | — |
 
