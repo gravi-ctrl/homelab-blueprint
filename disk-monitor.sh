@@ -1,6 +1,8 @@
 #!/bin/bash
 # @DESCRIPTION: Check if root (/) or /data exceeds 90%
 # @FREQUENCY: Every hour
+# @CRON: user
+
 THRESHOLD=90
 ROOT_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
 DATA_USAGE=$(df /data | awk 'NR==2 {print $5}' | sed 's/%//')
