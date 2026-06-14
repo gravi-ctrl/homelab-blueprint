@@ -16,12 +16,9 @@ BACKUP_USER = getpass.getuser()
 EXTENSIONS = {".sh", ".py"}
 
 # Names that are valid @USED_BY consumers but are NOT script files.
-# These are skipped during mismatch detection so they don't produce false positives.
-# Add to this list if you introduce other non-script consumers (e.g. "systemd", "docker").
 NON_SCRIPT_CONSUMERS = {
     "crontab",
 }
-
 
 def is_script_file(file_path):
     if file_path.suffix in EXTENSIONS:
@@ -36,11 +33,11 @@ def is_script_file(file_path):
 
     return False
 
-
 def get_metadata(file_path):
-    """Reads @DESCRIPTION, @FREQUENCY, and @USES_ENV from a script's header."""
+    """Reads @DESCRIPTION, @FREQUENCY, @CRON, and @USES_ENV from a script's header."""
     desc = None
     freq = None
+    cron_ctx = None
     uses_env = []
 
     try:
@@ -58,31 +55,18 @@ def get_metadata(file_path):
                     desc = stripped.split(":", 1)[1].strip()
                 elif "@FREQUENCY:" in upper:
                     freq = stripped.split(":", 1)[1].strip()
+                elif "@CRON:" in upper:
+                    cron_ctx = stripped.split(":", 1)[1].strip()
                 elif "@USES_ENV:" in upper:
                     raw = stripped.split(":", 1)[1].strip()
-                    # Support comma or space separated var names
                     uses_env = [v.strip() for v in re.split(r'[,\s]+', raw) if v.strip()]
     except:
         pass
 
-    return desc, freq, uses_env
-
+    return desc, freq, uses_env, cron_ctx
 
 def parse_env_example(env_path):
-    """
-    Parses .env.example and returns:
-      - env_used_by: dict { VAR_NAME -> [script, script, ...] }  (from @USED_BY tags)
-      - all_vars:    set of all variable names declared in the file
-
-    pending_used_by is STICKY — once set by a @USED_BY comment it applies to every
-    consecutive variable line that follows, until one of these resets it:
-      - a blank line
-      - a section-divider comment (e.g. # ===... or # ---)
-      - a new @USED_BY comment (which immediately replaces it)
-    This lets a single @USED_BY tag cover a group of related variables without
-    having to repeat the tag on every line.
-    """
-    env_used_by = {}   # VAR -> list of scripts claimed by @USED_BY
+    env_used_by = {}   
     all_vars = set()
     pending_used_by = None
 
@@ -98,71 +82,53 @@ def parse_env_example(env_path):
     for line in lines:
         stripped = line.strip()
 
-        # ── Blank line → reset sticky tag ─────────────────────────────────────
         if not stripped:
             pending_used_by = None
             continue
 
-        # ── Section-divider comment (=== or ---) → reset sticky tag ───────────
-        # Regular comments (without dividers) do NOT reset, so descriptive
-        # comments between vars in a group are safe.
         if re.match(r'^#\s*[=\-]{3,}', stripped):
             pending_used_by = None
             continue
 
-        # ── @USED_BY detection ─────────────────────────────────────────────────
         used_by_match = re.search(r'@USED_BY:\s*(.+)', stripped, re.IGNORECASE)
         if used_by_match:
             raw_scripts = used_by_match.group(1).strip().split('#')[0].strip()
             scripts = [s.strip() for s in re.split(r'[,\s]+', raw_scripts) if s.strip()]
 
-            # Inline comment on a var declaration line — resolve immediately
             var_inline = re.match(r'^(?:export\s+)?([A-Z_][A-Z0-9_]*)\s*=', stripped.split('#')[0])
             if var_inline:
                 var_name = var_inline.group(1)
                 all_vars.add(var_name)
                 env_used_by[var_name] = scripts
-                # Don't touch pending_used_by — an inline tag on one var
-                # shouldn't override a group tag still in effect for the others
             else:
-                # Standalone comment — becomes the new sticky tag
                 pending_used_by = scripts
             continue
 
-        # ── Variable declaration ───────────────────────────────────────────────
         var_decl = re.match(r'^(?:export\s+)?([A-Z_][A-Z0-9_]*)(?:\s*=.*)?$', stripped.split('#')[0].strip())
         if var_decl and ('=' in stripped.split('#')[0] or stripped.startswith('export ')):
             var_name = var_decl.group(1)
             all_vars.add(var_name)
             if pending_used_by is not None:
                 env_used_by[var_name] = pending_used_by
-                # ✦ DO NOT clear pending_used_by here — keep it sticky for the
-                #   next var in the same group
             continue
 
-        # ── Any other non-blank, non-comment content → reset ──────────────────
         if not stripped.startswith('#'):
             pending_used_by = None
 
     return env_used_by, all_vars
 
-
 def generate_inventory():
-    # ── 1. Parse .env.example ─────────────────────────────────────────────────
     env_used_by, all_env_vars = parse_env_example(ENV_EXAMPLE_FILE)
     has_env = bool(all_env_vars)
 
-    # Build reverse map: script_name -> vars declared in .env.example
-    # (used later for mismatch detection)
-    env_declares_for = collections.defaultdict(set)  # script -> vars from @USED_BY
+    env_declares_for = collections.defaultdict(set)
     for var, scripts in env_used_by.items():
         for script in scripts:
             env_declares_for[script].add(var)
 
-    # ── 2. Walk and index scripts ──────────────────────────────────────────────
     categorized_inventory = collections.defaultdict(list)
     undocumented = []
-    all_scripts_uses_env = {}   # rel_path_str -> set of vars from @USES_ENV
+    all_scripts_uses_env = {}
 
     for root, _, files in os.walk(ROOT_DIR):
         for file in files:
@@ -170,10 +136,10 @@ def generate_inventory():
             if not is_script_file(file_path):
                 continue
 
-            desc, freq, uses_env = get_metadata(file_path)
+            desc, freq, uses_env, cron_ctx = get_metadata(file_path)
             rel_path = file_path.relative_to(ROOT_DIR)
             rel_str = str(rel_path)
-            script_name = file  # bare filename for matching against @USED_BY
+            script_name = file  
 
             if uses_env:
                 all_scripts_uses_env[rel_str] = set(uses_env)
@@ -188,19 +154,16 @@ def generate_inventory():
                 "script_name": script_name,
                 "desc": desc,
                 "freq": freq,
+                "cron_ctx": cron_ctx,
                 "full_path": rel_str,
                 "uses_env": set(uses_env),
             })
 
-    # ── 3. Build mismatch data ─────────────────────────────────────────────────
-    # For each script that has ANY env annotation (either source), compare both.
-    # We match scripts by bare filename (e.g. "local-opt-backup.sh").
     mismatches = []
 
     if has_env:
-        # Collect all script names we have data for
         all_script_names = set()
-        script_name_to_uses_env = {}  # bare name -> vars from @USES_ENV
+        script_name_to_uses_env = {}
 
         for category_items in categorized_inventory.values():
             for item in category_items:
@@ -224,7 +187,6 @@ def generate_inventory():
                     "only_in_env": sorted(only_in_env),
                 })
 
-        # Also flag scripts that appear in @USED_BY but have no @USES_ENV at all
         for script_name, declared_vars in env_declares_for.items():
             if script_name in NON_SCRIPT_CONSUMERS:
                 continue
@@ -236,22 +198,17 @@ def generate_inventory():
                     "note": "No `@USES_ENV` tag found in script"
                 })
 
-    # ── 4. Build env variable reference table ─────────────────────────────────
-    # Merge data from both sources: @USED_BY in .env + @USES_ENV in scripts
-    env_var_reference = collections.defaultdict(set)  # VAR -> set of script names
+    env_var_reference = collections.defaultdict(set)
 
-    # From .env.example @USED_BY
     for var, scripts in env_used_by.items():
         for s in scripts:
             env_var_reference[var].add(s)
 
-    # From scripts @USES_ENV
     for category_items in categorized_inventory.values():
         for item in category_items:
             for var in item["uses_env"]:
                 env_var_reference[var].add(item["script_name"])
 
-    # ── 5. Render Markdown ─────────────────────────────────────────────────────
     md = [
         "# 📂 Script Inventory",
         "> 🤖 Auto-generated by `script_indexer.py`\n"
@@ -267,26 +224,42 @@ def generate_inventory():
     for category in sorted(categorized_inventory.keys()):
         md.append(f"### 📁 {category.title()}")
 
+        # Added the "Crontab" column
         if show_env_col:
-            md.append("| Script File | Purpose | Frequency | Env Dependencies |")
-            md.append("| :--- | :--- | :--- | :--- |")
+            md.append("| Script File | Purpose | Frequency | Crontab | Env Dependencies |")
+            md.append("| :--- | :--- | :--- | :--- | :--- |")
         else:
-            md.append("| Script File | Purpose | Frequency |")
-            md.append("| :--- | :--- | :--- |")
+            md.append("| Script File | Purpose | Frequency | Crontab |")
+            md.append("| :--- | :--- | :--- | :--- |")
 
         for item in sorted(categorized_inventory[category], key=lambda x: x['script']):
+            
+            # Format the Cron Badge cleanly (supports single or comma-separated values)
+            cron_badge = "—"
+            if item["cron_ctx"]:
+                parts = [p.strip() for p in item["cron_ctx"].split(",") if p.strip()]
+                badges = []
+                for part in parts:
+                    p_lower = part.lower()
+                    if p_lower == "root":
+                        badges.append("⚡ Root")
+                    elif p_lower == "user":
+                        badges.append("👤 User")
+                    else:
+                        badges.append(part)
+                cron_badge = ", ".join(badges)
+
             if show_env_col:
                 if item["uses_env"]:
                     env_badges = " ".join(f"`{v}`" for v in sorted(item["uses_env"]))
                 else:
                     env_badges = "—"
-                md.append(f"| `{item['full_path']}` | {item['desc']} | {item['freq']} | {env_badges} |")
+                md.append(f"| `{item['full_path']}` | {item['desc']} | {item['freq']} | {cron_badge} | {env_badges} |")
             else:
-                md.append(f"| `{item['full_path']}` | {item['desc']} | {item['freq']} |")
+                md.append(f"| `{item['full_path']}` | {item['desc']} | {item['freq']} | {cron_badge} |")
 
         md.append("\n")
 
-    # ── Env Variable Reference ─────────────────────────────────────────────────
     if env_var_reference:
         md.append("---\n")
         md.append("## 🔑 Environment Variable Reference")
@@ -300,7 +273,6 @@ def generate_inventory():
 
         md.append("\n")
 
-    # ── Mismatch Warnings ──────────────────────────────────────────────────────
     if mismatches:
         md.append("---\n")
         md.append("## 🔴 Env Annotation Mismatches")
@@ -323,7 +295,6 @@ def generate_inventory():
 
             md.append("")
 
-    # ── Undocumented Scripts ───────────────────────────────────────────────────
     if undocumented:
         md.append("---\n")
         md.append("## ⚠️ Undocumented Scripts")
@@ -334,7 +305,6 @@ def generate_inventory():
     with open(OUTPUT_FILE, 'w') as f:
         f.write("\n".join(md))
 
-    # ── Console summary ────────────────────────────────────────────────────────
     total = sum(len(v) for v in categorized_inventory.values())
     print(f"✅ Inventory generated: {OUTPUT_FILE}")
     print(f"   {total} documented scripts across {len(categorized_inventory)} categories")
@@ -344,7 +314,6 @@ def generate_inventory():
         print(f"   ⚠️  {len(mismatches)} env annotation mismatch(es) detected")
     if undocumented:
         print(f"   ⚠️  {len(undocumented)} undocumented script(s)")
-
 
 if __name__ == "__main__":
     generate_inventory()
