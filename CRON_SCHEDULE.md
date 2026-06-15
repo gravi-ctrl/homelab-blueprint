@@ -26,7 +26,7 @@
 | **Sync Personal and Work Obsidian vaults to Git** | Every 30 minutes | `cron-guard --mode fail "Obsidian Notes Sync" "/opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-note...` |
 | **Disk Space Alerts** | Every hour | `cron-guard --mode fail "Disk Monitor" "/opt/scripts/disk-monitor.sh"` |
 | **Rotate backups (retain recent) and purge download watch folder** | At 00:00 and 12:00 | `cron-guard --mode fail "Cleanup Job" "/opt/scripts/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-...` |
-| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 01:10 | `cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubuserco...` |
+| **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 03:55 | `cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubuserco...` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:10 | `cron-guard --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/w...` |
 | **Apply file renaming rules to Paperless-ngx documents** | At 04:25 | `cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
 | **Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git** | At 05:00 | `cron-guard --mode fail "Scripts & System Configs Backup" "/opt/scripts/backup-scripts-git.sh"` |
