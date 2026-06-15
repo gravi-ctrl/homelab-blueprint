@@ -105,7 +105,9 @@ curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o "$HO
 echo "<hash> $HOME/bootstrap.sh" | sha256sum --check - && bash "$HOME/bootstrap.sh"
 ```
 > [!NOTE]
-> If doing a Fresh Start, the script will detect the missing key and ask if you want to skip the backup restoration. Press `y`. It will then initialize your environment and automatically clone all necessary Git repositories.
+> This script bootstraps your server by handling system configuration, SSH setup, and Git repository cloning. It offers two paths:
+> - **Full Recovery:** Decrypts and restores from an existing backup archive.
+> - **Fresh Start:** Initializes clean repositories (requires your SSH private keys to be in `~/.ssh` before starting).
 
 <details>
 <summary><b>Fresh Start Only: Initialize .env files</b></summary>
