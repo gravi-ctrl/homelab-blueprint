@@ -92,18 +92,16 @@ Choose your scenario before running the script:
 
 **2. Verify and Run Bootstrap:**
 
-For maximum supply-chain security, we verify the script's cryptographic hash before executing it (the script will securely request sudo permissions as needed).
+For maximum security, we verify the script's cryptographic hash before executing it.
 
 1. Retrieve the **trusted SHA-256 hash** of `bootstrap.sh` from your password manager.
-2. Run the command below, replacing `<paste_trusted_hash_here>` with your stored hash:
+2. Run the command below, replacing `<hash>` with your stored hash:
 
 ```bash
-curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o /tmp/bootstrap.sh
-# or if down
-curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o /tmp/bootstrap.sh
+curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o "$HOME/bootstrap.sh" || \
+curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o "$HOME/bootstrap.sh"
 
-echo "<paste_trusted_hash_here> /tmp/bootstrap.sh" | sha256sum --check -
-bash /tmp/bootstrap.sh
+echo "<hash> $HOME/bootstrap.sh" | sha256sum --check - && bash "$HOME/bootstrap.sh"
 ```
 > [!NOTE]
 > If doing a Fresh Start, the script will detect the missing key and ask if you want to skip the backup restoration. Press `y`. It will then initialize your environment and automatically clone all necessary Git repositories.
