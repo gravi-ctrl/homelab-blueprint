@@ -121,7 +121,9 @@ echo ">>> Cleaning up..."
 [[ "$MODE" == "RESTORE" && -n "${BACKUP:-}" ]] && rm -- "$BACKUP"
 
 WARNING_MSG=""
-[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script and try again)'
+[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script , select the "Fresh Start", and try again)'
+
+rm -f "${BASH_SOURCE[0]}"
 
 cat <<EOF
 
