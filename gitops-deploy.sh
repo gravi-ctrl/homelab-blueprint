@@ -1,8 +1,7 @@
 #!/bin/bash
-# @DESCRIPTION: Monitors /opt/stacks for remote Codeberg changes done by Renovate and auto-deploys updated compose stacks.
+# @DESCRIPTION: Monitors /opt/stacks for remote Codeberg changes and auto-deploys updated compose stacks.
 # @FREQUENCY: Every 15 minutes
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
-# @CRON: user
 
 set -euo pipefail
 
@@ -10,8 +9,8 @@ set -euo pipefail
 source "/opt/scripts/.env"
 
 cd "${STACKS_DIR}"
+PAUSE_FILE="/tmp/gitops_paused"
 
-# ── Telegram Helper ──
 send_telegram() {
     if [ -n "${TELEGRAM_DANTE_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
         curl -fsS "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
@@ -20,33 +19,40 @@ send_telegram() {
     fi
 }
 
-# Enforce that we are strictly on the main branch
+# Enforce main branch tracking
 git checkout -q main
-
-# Fetch remote changes silently
 git fetch -q origin main
 
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse origin/main)
 
-# If they don't match, we have merged a PR!
 if [ "$LOCAL" != "$REMOTE" ]; then
     echo "🔄 GitOps: Upstream changes detected on main branch."
-
-    # Strictly triggers ONLY if the compose.yml file itself was modified
+    
+    # Trigger only if a compose.yml file was modified
     CHANGED_DIRS=$(git diff --name-only HEAD origin/main | grep '/compose\.yml$' | cut -d/ -f1 | sort -u || true)
+    
+    # Attempt pull with autostash. Trigger lockout on failure.
+    if ! git pull -q origin main --rebase --autostash; then
+        if [ ! -f "$PAUSE_FILE" ]; then
+            send_telegram "🚨 GitOps Paused: Merge Conflict Detected
+━━━━━━━━━━━━━━━
+GitOps has been paused on the server to prevent spam. 
 
-    # Pull the new docker-compose files
-    git pull -q origin main
-
-    # Re-deploy only the affected stacks that are currently active
+Please SSH into the machine and resolve the conflict manually. The script will automatically resume once resolved."
+            touch "$PAUSE_FILE"
+        fi
+        exit 0
+    fi
+    
+    # Redeploy active stacks
     if [ -n "$CHANGED_DIRS" ]; then
         REDEPLOYED_STACKS=""
-
+        
         for dir in $CHANGED_DIRS; do
             if [ -d "$dir" ] && [ -f "$dir/compose.yml" ]; then
-
-                # Check if the stack has any active running containers
+                
+                # Check if the stack has active running containers
                 if [ -n "$(cd "$dir" && docker compose ps --services --status=running 2>/dev/null)" ]; then
                     echo "🚀 GitOps: Redeploying active stack: $dir"
                     (cd "$dir" && docker compose pull -q && docker compose up -d)
@@ -54,11 +60,10 @@ if [ "$LOCAL" != "$REMOTE" ]; then
                 else
                     echo "⏭️  GitOps: Skipping stopped stack: $dir (Files updated, but container left offline)"
                 fi
-
+                
             fi
         done
-
-        # ── Send the success notification! ──
+        
         if [ -n "$REDEPLOYED_STACKS" ]; then
             send_telegram "🔄 GitOps Sync: Successful
 ━━━━━━━━━━━━━━━
@@ -66,5 +71,13 @@ The following stacks were successfully updated and restarted:
 $REDEPLOYED_STACKS"
         fi
     fi
+    
+    rm -f "$PAUSE_FILE"
     echo "✅ GitOps: Sync complete."
+fi
+
+# Clear old pause file if user resolved the conflict manually
+if [ "$LOCAL" == "$REMOTE" ] && [ -f "$PAUSE_FILE" ]; then
+    echo "🧹 GitOps: Repository is in sync. Clearing old pause flag."
+    rm -f "$PAUSE_FILE"
 fi
