@@ -43,6 +43,7 @@ GitOps has been paused on the server to prevent spam.
 Please SSH into the machine and resolve the conflict manually. The script will automatically resume once resolved."
             touch "$PAUSE_FILE"
         fi
+        # Exit 0 here so cron-guard wouldn't keep spamming failures
         exit 0
     fi
 
