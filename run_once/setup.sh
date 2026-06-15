@@ -21,7 +21,8 @@ BOLD='\033[1m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-set -e
+set -euo pipefail
+
 trap '
     $IN_TASK && printf "${RED}✗${NC}\n"
     printf "\n${RED}  ❌ FAILED → %s (line %d)${NC}\n" "$CURRENT" "$LINENO"
