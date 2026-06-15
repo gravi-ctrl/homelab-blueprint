@@ -58,7 +58,7 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
         if len(log_tail) > max_log_chars:
             truncated_msg += f"\n⚠️ <i>Output exceeded character limit.</i>"
             log_tail = "...[TRUNCATED BY CHAR LIMIT]\n" + log_tail[-max_log_chars:]
-            
+
         if truncated_msg:
             truncated_msg += f"\n📁 <b>Full Log:</b> {html.escape(full_log_path)}\n"
     else:
@@ -171,7 +171,7 @@ def main():
         signal.signal(signal.SIGTERM, forward_signal)
         signal.signal(signal.SIGINT, forward_signal)
     except ValueError:
-        pass 
+        pass
 
     safe_job_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', args.job_name)
     log_dir = os.path.join(script_dir, "logs")
@@ -199,12 +199,12 @@ def main():
 
         for line in iter(process.stdout.readline, ''):
             clean_line = line.rstrip('\n')
-            print(clean_line) 
-            
+            print(clean_line)
+
             if log_file_handle:
                 log_file_handle.write(clean_line + '\n')
-                log_file_handle.flush() 
-                
+                log_file_handle.flush()
+
             log_queue.append(clean_line)
             total_lines += 1
 

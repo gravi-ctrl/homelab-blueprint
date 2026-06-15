@@ -27,7 +27,7 @@ def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     else:
         stdout_dest = None
         stderr_dest = subprocess.DEVNULL if suppress_errors else None
-    
+
     return subprocess.run(
         command,
         cwd=cwd,
@@ -44,7 +44,7 @@ def main():
     ssh_opts = "-q -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
     os.environ["GIT_SSH_COMMAND"] = f"ssh {ssh_opts}"
     os.environ["GIT_TERMINAL_PROMPT"] = "0"
-        
+
     hostname = socket.gethostname()
     os.environ["GIT_AUTHOR_NAME"] = "AutoSync Bot"
     os.environ["GIT_AUTHOR_EMAIL"] = f"auto-sync@{hostname}.local"
@@ -62,12 +62,12 @@ def main():
     label = sys.argv[2] if len(sys.argv) > 2 else "Auto-Sync"
 
     print(f"\n--- Processing: {label} ({target_dir}) ---")
-  
+
     # 2. Navigate to the folder
     if not os.path.isdir(target_dir):
         print(f"❌ Error: Could not find directory: {target_dir}")
         sys.exit(1)
-    
+
     try:
         os.chdir(target_dir)
     except OSError as e:
@@ -94,25 +94,25 @@ def main():
         if branch_proc.returncode != 0:
             print("❌ Error: Not a git repository or no HEAD found.")
             sys.exit(1)
-        
+
         current_branch = branch_proc.stdout.strip()
-        
+
         max_retries = 3
         count = 0
         success = False
-        
+
         while count < max_retries:
             print(f"⬇️  Pulling changes from origin/{current_branch} (Attempt {count+1}/{max_retries})...")
-            
+
             pull_proc = run_command(["git", "pull", "origin", current_branch, "--no-edit", "--rebase", "--autostash"], capture_output=True)
-            
+
             if pull_proc.returncode == 0:
                 print(pull_proc.stdout.strip() if pull_proc.stdout else "✅ Pull successful.")
                 success = True
                 break
-                
+
             err_low = pull_proc.stderr.lower() if pull_proc.stderr else ""
-            
+
             # 5a. Conflict Check
             status_proc = run_command(["git", "status"], capture_output=True)
             status_out = status_proc.stdout.lower() if status_proc.stdout else ""
@@ -121,7 +121,7 @@ def main():
                 print("⚠️ Attempting to abort stuck rebase to restore clean state...")
                 run_command(["git", "rebase", "--abort"], suppress_errors=True)
                 sys.exit(1)
-            
+
             # 5b. Auth/Permission Check
             if "permission denied" in err_low or "authentication failed" in err_low:
                 print("❌ CRITICAL: Authentication/Permission error. Check your SSH keys/token.")
@@ -136,11 +136,11 @@ def main():
             print(f"⚠️ Pull failed (Network/Server Error). Retrying in {jitter_sleep}s...")
             time.sleep(jitter_sleep)
             count += 1
-            
+
         if not success:
             print(f"❌ Pull failed after {max_retries} attempts.")
             sys.exit(1)
-        
+
     except Exception as e:
         print(f"❌ Unexpected logic error during pull: {e}")
         sys.exit(1)
@@ -152,7 +152,7 @@ def main():
 
     while count < max_retries:
         print(f"🚀 Pushing updates to all remotes (Attempt {count + 1}/{max_retries})...")
-        
+
         push_result = run_command(["git", "push"], capture_output=True)
 
         if push_result.returncode == 0:
