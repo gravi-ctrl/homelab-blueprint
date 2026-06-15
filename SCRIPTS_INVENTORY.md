@@ -25,12 +25,6 @@
 | `StackDeck/docker_dash.py` | Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard | On Demand | — | — |
 
 
-### 📁 Bot-Telegram
-| Script File | Purpose | Frequency | Crontab | Env Dependencies |
-| :--- | :--- | :--- | :--- | :--- |
-| `bot-telegram/bot.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram | — | — |
-
-
 ### 📁 Cert-Manager
 | Script File | Purpose | Frequency | Crontab | Env Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
@@ -44,6 +38,12 @@
 | `run_once/container-watcher.sh` | Auto-configures containers once they are manually started | Run Once | — | `N8N_WEBHOOK_UUID` `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` `WATCHER_TASKS` |
 | `run_once/nextcloud_post-restore_fix.sh` | Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime. | Run Once | — | `NEXTCLOUD_CONTAINER` `NEXTCLOUD_USER` |
 | `run_once/setup.sh` | Phase 2 System Provisioning: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS. | Run Once (Disaster Recovery) | — | `DATA_DIR` `NEXTCLOUD_DATA_DIR` `SERVER_IP` `TIMEZONE` |
+
+
+### 📁 Tg-Vergil
+| Script File | Purpose | Frequency | Crontab | Env Dependencies |
+| :--- | :--- | :--- | :--- | :--- |
+| `tg-vergil/vergil.py` | Runs scripts and commands directly on server with logs (programmed in the .env file) | On Demand - Telegram | — | — |
 
 
 ---
