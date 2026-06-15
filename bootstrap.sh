@@ -12,6 +12,11 @@ GIT_USER="gravi-ctrl"
 REPO_SCRIPTS="homelab-blueprint"
 REPO_CTRL="ctrl-s-master"
 REPO_STACKS="server-docker-backup"
+
+DIR_SCRIPTS="$HOME/scripts"
+DIR_CTRL="$HOME/ctrl_s_master"
+DIR_STACKS="/opt/stacks"
+
 AGE_KEYFILE="/root/.backup-key.txt"
 # ==============================================================================
 
@@ -49,7 +54,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
     echo ">>> Fixing extracted file ownership..."
     if [ -f "/tmp/backup-uid.txt" ]; then
         IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
-        sudo find "/opt/stacks" "$HOME/scripts" "$HOME/ctrl_s_master" "$HOME/.ssh" \
+        sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
             -uid "$B_UID" ! -uid "$(id -u)" -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
         sudo rm -f /tmp/backup-uid.txt
     fi
@@ -106,9 +111,9 @@ setup_repo() {
 echo ">>> Syncing repositories..."
 LINK_SUCCESS=true
 set +e
-setup_repo "$HOME/scripts"       "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || LINK_SUCCESS=false
-setup_repo "$HOME/ctrl_s_master" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || LINK_SUCCESS=false
-setup_repo "/opt/stacks"         "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
+setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || LINK_SUCCESS=false
+setup_repo "$DIR_CTRL"    "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || LINK_SUCCESS=false
+setup_repo "$DIR_STACKS"  "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
 set -e
 
 # --- PHASE 4: CLEANUP & SUMMARY ---
@@ -122,6 +127,6 @@ cat <<EOF
 
 ✅ Bootstrap phase complete!
 Next steps:
-  1. Run the installer:  ~/scripts/run_once/setup.sh${WARNING_MSG}
+  1. Run the installer:  ${DIR_SCRIPTS}/run_once/setup.sh${WARNING_MSG}
   2. Re-open your SSH session.
 EOF
