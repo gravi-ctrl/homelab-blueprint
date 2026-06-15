@@ -8,9 +8,6 @@ BASH_ENV=/opt/scripts/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# Notify on Server Boot
-@reboot sleep 60 && cron-guard --mode success "Server Startup" "echo 'Host OS has booted. Docker services should be initializing.'"
-
 # Update NextDNS IP and Healthchecks.io server/internet monitor
 */5 * * * * curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"
 

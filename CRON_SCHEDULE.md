@@ -11,7 +11,6 @@
 | 📅 Weekly | 👤 User (gravi-ctrl) | - *Runs a Borgmatic backup* |
 |  | ⚡ Root | - *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)* |
 | 🗓️ Monthly | 👤 User (gravi-ctrl) | - *cert-manager: regenerate & upload SSL certs to NPM* |
-| 🔁 On Reboot | 👤 User (gravi-ctrl) | - *Notify on Server Boot* |
 | 🔀 Other | ⚡ Root | - *ctrl_s_master Project* |
 
 
@@ -20,7 +19,6 @@
 ## 👤 User Cron (gravi-ctrl)
 | Task Name / Description | Frequency | Command |
 | :--- | :--- | :--- |
-| **Notify on Server Boot** | On every boot/restart | `sleep 60 && cron-guard --mode success "Server Startup" "echo 'Host OS has booted. Docker services should be initializ...` |
 | **Update NextDNS IP and Healthchecks.io server/internet monitor** | Every 5 minutes | `curl -Z -fsS --retry 3 "$SERVER_HC_URL" "$NEXTDNS_URL"` |
 | **Pulls and deploys stack updates done by Renovate** | Every 15 minutes | `cron-guard --mode fail "GitOps Deployer" "/opt/scripts/gitops-deploy.sh"` |
 | **Sync Personal and Work Obsidian vaults to Git** | Every 30 minutes | `cron-guard --mode fail "Obsidian Notes Sync" "/opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-note...` |
