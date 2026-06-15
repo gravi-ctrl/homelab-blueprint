@@ -32,6 +32,12 @@ DELETE_ALL_TRIGGER = "::DELETE_ALL"
 DRY_RUN = os.environ.get("DRY_RUN", "0") == "1"
 # --- END OF CONFIGURATION ---
 
+def get_best_timestamp(path):
+    stat = os.stat(path)
+    if os.name == 'nt':
+        return stat.st_ctime  # Windows: true creation time
+    return stat.st_mtime      # Linux: mtime avoids false ctime updates (chmod, chown, etc.)
+
 def clean_backup_folder(folder_path, num_to_keep):
     """
     Rotates files/folders, keeping only the most recent 'num_to_keep' items.
@@ -42,12 +48,10 @@ def clean_backup_folder(folder_path, num_to_keep):
         return False
 
     try:
-        # Get all files and directories
         all_items = glob.glob(os.path.join(folder_path, '*'))
 
         if len(all_items) > num_to_keep:
-            # Sort by modification time (newest first)
-            all_items.sort(key=lambda p: max(os.path.getctime(p), os.path.getmtime(p)), reverse=True)
+            all_items.sort(key=lambda p: get_best_timestamp(p), reverse=True)  # ← here
             items_to_delete = all_items[num_to_keep:]
 
             for item_path in items_to_delete:
