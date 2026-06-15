@@ -132,7 +132,7 @@ At the end, it spawns the **Ghost Watcher** (`container-watcher.sh`), a backgrou
 
 > [!NOTE]
 > **The Ghost Watcher Engine:**
-> The watcher is fully modular and controlled via `WATCHER_TASKS` in `/opt/scripts/.env`. You do not need to modify the engine to add new containers; simply define the payload function and add the container's name to the `.env` registry. Once all tasks complete, the daemon deletes its state file and self-destructs.
+> The watcher is fully modular and controlled via `WATCHER_TASKS` in `/opt/scripts/.env`. Once all tasks complete, the daemon deletes its state file and self-destructs.
 
 ---
 
