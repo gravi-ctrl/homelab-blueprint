@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole.
-# @FREQUENCY: On Demand
+# @FREQUENCY: On Demand - At 03:00, on day 1 of the month
 # @CRON: user
 
 # Usage:
