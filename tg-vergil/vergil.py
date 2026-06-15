@@ -61,7 +61,21 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
             stderr=subprocess.PIPE,
             text=True
         )
+
         output = (result.stdout + result.stderr).strip() or "Success (No Output)"
+
+        target_key = f"MUTE_{trigger}".upper()
+        mute_on_success = any(
+            k.upper() == target_key and v.strip().lower() == "true"
+            for k, v in os.environ.items()
+        )
+
+        if mute_on_success and result.returncode == 0:
+            await status_msg.edit_text(
+                f"✅ <b>{trigger}</b> completed successfully!", 
+                parse_mode=ParseMode.HTML
+            )
+            return
 
         if len(output) > 4000:
             file_obj = io.BytesIO(output.encode('utf-8'))
@@ -102,7 +116,7 @@ After=network.target
 [Service]
 User={service_user}
 WorkingDirectory={SCRIPT_DIR}
-ExecStart=/usr/bin/python3 {SCRIPT_PATH} --running-as-service
+ExecStart=/opt/venv/bin/python3 {SCRIPT_PATH} --running-as-service
 Restart=always
 RestartSec=10
 
