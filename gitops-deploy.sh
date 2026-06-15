@@ -23,15 +23,15 @@ send_telegram() {
 git checkout -q main
 git fetch -q origin main
 
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse origin/main)
+# Count how many remote commits we are missing
+BEHIND=$(git rev-list HEAD..origin/main | wc -l)
 
-if [ "$LOCAL" != "$REMOTE" ]; then
+if [ "$BEHIND" -gt 0 ]; then
     echo "🔄 GitOps: Upstream changes detected on main branch."
-
+    
     # Trigger only if a compose.yml file was modified
     CHANGED_DIRS=$(git diff --name-only HEAD origin/main | grep '/compose\.yml$' | cut -d/ -f1 | sort -u || true)
-
+    
     # Attempt pull with autostash. Trigger lockout on failure.
     if ! git pull -q origin main --rebase --autostash; then
         if [ ! -f "$PAUSE_FILE" ]; then
@@ -44,14 +44,14 @@ Please SSH into the machine and resolve the conflict manually. The script will a
         fi
         exit 0
     fi
-
+    
     # Redeploy active stacks
     if [ -n "$CHANGED_DIRS" ]; then
         REDEPLOYED_STACKS=""
-
+        
         for dir in $CHANGED_DIRS; do
             if [ -d "$dir" ] && [ -f "$dir/compose.yml" ]; then
-
+                
                 # Check if the stack has active running containers
                 if [ -n "$(cd "$dir" && docker compose ps --services --status=running 2>/dev/null)" ]; then
                     echo "🚀 GitOps: Redeploying active stack: $dir"
@@ -60,10 +60,10 @@ Please SSH into the machine and resolve the conflict manually. The script will a
                 else
                     echo "⏭️  GitOps: Skipping stopped stack: $dir (Files updated, but container left offline)"
                 fi
-
+                
             fi
         done
-
+        
         if [ -n "$REDEPLOYED_STACKS" ]; then
             send_telegram "🔄 GitOps Sync: Successful
 ━━━━━━━━━━━━━━━
@@ -71,13 +71,13 @@ The following stacks were successfully updated and restarted:
 $REDEPLOYED_STACKS"
         fi
     fi
-
+    
     rm -f "$PAUSE_FILE"
     echo "✅ GitOps: Sync complete."
 fi
 
-# Clear old pause file if user resolved the conflict manually
-if [ "$LOCAL" == "$REMOTE" ] && [ -f "$PAUSE_FILE" ]; then
+# Clear old pause file if the repository is now fully in sync
+if [ "$BEHIND" -eq 0 ] && [ -f "$PAUSE_FILE" ]; then
     echo "🧹 GitOps: Repository is in sync. Clearing old pause flag."
     rm -f "$PAUSE_FILE"
 fi
