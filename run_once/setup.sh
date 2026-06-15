@@ -80,10 +80,11 @@ else
     skip "cron-guard.py not found"
 fi
 
-task "Load environment configuration"
+task "Load and secure environment configuration"
 [[ -f "/opt/scripts/.env" ]] || { echo -e "${RED}❌ ERROR: .env does not exist at /opt/scripts.${NC}" >&2; exit 1; }
+quietly chmod 600 "/opt/scripts/.env"
 source "/opt/scripts/.env"
-pass "loaded"
+pass "loaded & secured"
 
 # ══════════════════════════════════════════════════════════════
 # [1/10] SYSTEM UPDATE & DEPENDENCIES
