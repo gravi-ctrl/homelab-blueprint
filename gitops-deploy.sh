@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Monitors /opt/stacks for remote Codeberg changes and auto-deploys updated compose stacks.
+# @DESCRIPTION: Monitors /opt/stacks for remote Codeberg changes done by Renovate and auto-deploys updated compose stacks.
 # @FREQUENCY: Every 15 minutes
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 
