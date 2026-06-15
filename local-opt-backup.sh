@@ -57,6 +57,8 @@ fi
 SCRIPT_OWNER=$(stat -c '%U' "${BASH_SOURCE[0]}")
 # 2. Get that owner's home directory
 USER_HOME=$(getent passwd "$SCRIPT_OWNER" | cut -d: -f6)
+# 3. Force SystemD processes to inherit the correct home directory
+export HOME="$USER_HOME"
 
 LOCKFILE="/tmp/local-opt-backup.lock"
 DATE=$(date +%F)
@@ -95,7 +97,6 @@ fi
 AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public key from $AGE_KEYFILE"; exit 1; }
 
 mkdir -p "$BACKUP_DIR"
-
 
 # HEARTBEAT FUNCTION
 keep_kuma_alive() {
