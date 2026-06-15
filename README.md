@@ -159,8 +159,10 @@ Move to `/opt/stacks` and spin up your infrastructure.
 ```bash
 # Start Dockge to manage stacks via UI
 cd /opt/stacks/dockge && docker compose up -d
-
-# Or bring up everything at once
+```
+Or
+```bash
+# Bring up everything at once
 find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \;
 ```
 
