@@ -100,7 +100,8 @@ For maximum security, we verify the script's cryptographic hash before executing
 ```bash
 curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o "$HOME/bootstrap.sh" || \
 curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o "$HOME/bootstrap.sh"
-
+```
+```bash
 echo "<hash> $HOME/bootstrap.sh" | sha256sum --check - && bash "$HOME/bootstrap.sh"
 ```
 > [!NOTE]
