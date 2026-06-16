@@ -1,4 +1,4 @@
-# StackDeck 🐳
+# docker-dash 🐳
 
 A lightweight, automated dashboard generator for your self-hosted Docker stacks. It crawls your GitHub repository for compose files, queries Nginx Proxy Manager (NPM) for active domain mappings, and produces a single, beautiful self-contained HTML dashboard.
 
