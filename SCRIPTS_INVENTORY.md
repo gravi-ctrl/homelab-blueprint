@@ -19,16 +19,16 @@
 | `script_indexer.py` | Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings | Daily 5am (triggered by `backup-scripts-git.sh`) | — | — |
 
 
-### 📁 Stackdeck
-| Script File | Purpose | Frequency | Crontab | Env Dependencies |
-| :--- | :--- | :--- | :--- | :--- |
-| `StackDeck/docker_dash.py` | Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard | On Demand | — | — |
-
-
 ### 📁 Cert-Manager
 | Script File | Purpose | Frequency | Crontab | Env Dependencies |
 | :--- | :--- | :--- | :--- | :--- |
 | `cert-manager/cert-manager.sh` | Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole. | On Demand - At 03:00, on day 1 of the month | 👤 User | — |
+
+
+### 📁 Docker-Dash
+| Script File | Purpose | Frequency | Crontab | Env Dependencies |
+| :--- | :--- | :--- | :--- | :--- |
+| `docker-dash/docker_dash.py` | Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard | On Demand | — | — |
 
 
 ### 📁 Run_Once
