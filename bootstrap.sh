@@ -123,7 +123,11 @@ echo ">>> Cleaning up..."
 WARNING_MSG=""
 [[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script , select the "Fresh Start", and try again)'
 
-rm -f "${BASH_SOURCE[0]}"
+# Only delete the bootstrap script if it was executed from the root of $HOME
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+if [[ "$SCRIPT_DIR" == "$HOME" ]]; then
+    rm -f "${BASH_SOURCE[0]}"
+fi
 
 cat <<EOF
 
