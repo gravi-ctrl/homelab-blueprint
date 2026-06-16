@@ -23,7 +23,7 @@ DOCKER_TEMP="/tmp/docker_index.html"
 # 3. Generate Homelab Dashboard
 echo "🖥️ Generating Homelab Dashboard..."
 cd "$SCRIPTS_DIR"
-python3 homelab-dash.py
+python3 homelab_dash.py
 
 if [ -f "index.html" ]; then
     mv index.html "$HOMELAB_TEMP"
