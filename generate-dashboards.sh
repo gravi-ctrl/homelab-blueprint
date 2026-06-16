@@ -45,19 +45,19 @@ fi
 deploy_page_local() {
     local repo_dir="$1"
     local temp_html="$2"
-
+    
     if [ ! -d "$repo_dir" ]; then
         echo "⚠️ Warning: Directory $repo_dir does not exist. Skipping."
         return 0
     fi
 
     cd "$repo_dir"
-
-    # Save the original branch so we can return to it safely
+    
+    # Save the active branch so we can return to it safely
     local original_branch
     original_branch="$(git branch --show-current)"
-
-    echo "📁 Deploying dashboard to $repo_dir (branch: pages)..."
+    
+    echo "📁 Processing deployment for $repo_dir..."
 
     # Clean up any leftover index.html on the dev branch to prevent blocking checkout
     [ -f "index.html" ] && rm "index.html"
@@ -68,9 +68,19 @@ deploy_page_local() {
     # Move the new dashboard in
     mv "$temp_html" index.html
 
-    # Stage, commit locally, and ignore if no changes were made
+    # Stage the file so we can analyze the differences
     git add index.html
-    git commit -m "Auto-update dashboard [skip ci]" || echo "   (No changes to commit in $repo_dir)"
+
+    # Check if there are any staged changes, ignoring the timestamp line
+    if git diff --cached --quiet -I "Generated "; then
+        echo "   (Only timestamp changed in $repo_dir - skipping commit)"
+        # Discard the timestamp change so the local repository stays completely clean
+        git reset HEAD index.html >/dev/null 2>&1
+        git checkout -- index.html >/dev/null 2>&1
+    else
+        # Commit the real changes (scripts, crons, or envs actually changed!)
+        git commit -m "Auto-update dashboard [skip ci]"
+    fi
 
     # Switch back to the original development branch
     git checkout "$original_branch"
