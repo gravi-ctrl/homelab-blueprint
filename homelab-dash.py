@@ -220,7 +220,7 @@ def parse_crontabs():
                                 try: desc = get_description(raw_sched, cron_opts)
                                 except: desc = raw_sched
 
-                                # Restore clever date-conditional parsing from original translator
+                                # 1. Custom date-conditional parsing (e.g., 2nd & 4th Fridays)
                                 date_match = re.match(
                                     r'^\[\s*"\$\(date \+\\%[ua]\)"\s*=\s*"?(\w+)"?\s*\]\s*&&\s*(.*)',
                                     cmd, re.IGNORECASE
@@ -238,8 +238,13 @@ def parse_crontabs():
                                     else:
                                         desc += f" <br>**(⚠️ Condition: Only on {day_name}s)**"
 
+                                # 2. General Bash Conditionals
                                 elif cmd.startswith("if [") or cmd.startswith("[ ") or cmd.startswith("test "):
                                     desc += " <br>**(⚠️ Conditional: Bash Logic Check)**"
+                                    
+                                # 3. Pipelines & Logical OR chains
+                                elif " | grep " in cmd or " || " in cmd:
+                                    desc += " <br>**(⚠️ Conditional: Pipeline Check)**"
                         
                         env_vars = list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd)))
                         crons_data.append({
