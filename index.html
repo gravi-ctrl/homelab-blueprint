@@ -95,7 +95,7 @@ h1{font-size:20px;font-weight:500}
   <div class="hdr">
     <h1>🖥️ Homelab Automation Dashboard</h1>
   </div>
-  <div class="gen-time">Generated 2026-06-16 23:49 UTC</div>
+  <div class="gen-time">Generated 2026-06-16 23:54 UTC</div>
   <div class="stats" id="stats"></div>
   
   <div class="nav-tabs">
@@ -157,9 +157,20 @@ let activeChildDir = null;
 
 function e(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function bdg(cls, txt){ return `<span class="bdg ${cls}">${e(txt)}</span>`; }
+
+// 👇 UPDATED: Dynamic status badge labels inside toggleGroup
 function toggleGroup(id) {
-    document.getElementById(id+'-head').classList.toggle('is-open');
-    document.getElementById(id+'-body').classList.toggle('is-open');
+    const head = document.getElementById(id+'-head');
+    const body = document.getElementById(id+'-body');
+    head.classList.toggle('is-open');
+    body.classList.toggle('is-open');
+    
+    if (id === 'guide') {
+        const status = document.getElementById('guide-status');
+        if (status) {
+            status.textContent = head.classList.contains('is-open') ? 'Collapse' : 'Expand';
+        }
+    }
 }
 
 function renderStats() {
@@ -186,13 +197,14 @@ function renderScripts() {
       return a.localeCompare(b);
   });
 
-  // Guide UI
+  // 👇 UPDATED: Guide is collapsed by default (no 'is-open' classes, default state 'Expand')
   let html = `
   <div class="group-container" id="guide-container" style="border-color: var(--blue-bd);">
-    <div class="group-head is-open" id="guide-head" onclick="toggleGroup('guide')" style="background: var(--blue-bg); color: var(--blue-tx); border-bottom-color: var(--blue-bd);">
+    <div class="group-head" id="guide-head" onclick="toggleGroup('guide')" style="background: var(--blue-bg); color: var(--blue-tx);">
       <div>📝 How to Document New Scripts</div>
+      <span class="group-count" id="guide-status" style="background: var(--blue-bd); color: var(--blue-tx); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Expand</span>
     </div>
-    <div class="group-body is-open" id="guide-body" style="display:block; background: var(--bg);">
+    <div class="group-body" id="guide-body" style="background: var(--bg); grid-template-columns: 1fr;">
       <div style="color:var(--tx2); margin-bottom:10px;">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div>
       <div class="mono-cmd" style="padding:10px; font-size:13px; line-height:1.4; border: .5px solid var(--br);">#!/bin/bash
 # @DESCRIPTION: One-line summary of what the script does.
