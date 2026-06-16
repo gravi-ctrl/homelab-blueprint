@@ -117,7 +117,7 @@ def match_npm(stacks, npm_index, npm_self_url=None):
                 continue
             details = []
             urls = []
-            for key in {svc["container_name"].lower(), svc["name"].lower()}:
+            for key in sorted(list({svc["container_name"].lower(), svc["name"].lower()})):
                 for h in npm_index.get(key, []):
                     d = npm_host_details(h)
                     if d["url"] and d["url"] not in urls:
@@ -239,7 +239,7 @@ def parse_compose(path, text):
         # Collect every ${VAR} reference anywhere in this service's raw config
         raw_svc_text = json.dumps(cfg)
         referenced_vars = set(re.findall(r'\$\{([^}]+)\}', raw_svc_text))
-        all_env_keys = list(set(env_d.keys()) | referenced_vars)
+        all_env_keys = sorted(list(set(env_d.keys()) | referenced_vars))
 
         services.append({
             "name": name,
@@ -722,7 +722,7 @@ def main():
         .replace("__SLUG__",     slug)
         .replace("__BRANCH__",   branch)
         .replace("__DATE__",     now)
-        .replace("__DATA__",     json.dumps(stacks, ensure_ascii=False)))
+        .replace("__DATA__",     json.dumps(stacks, ensure_ascii=False, sort_keys=True))
     out_path.write_text(html, encoding="utf-8")
 
     total_svcs  = sum(len(s["services"]) for s in stacks)
