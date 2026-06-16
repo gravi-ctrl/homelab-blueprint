@@ -722,7 +722,7 @@ def main():
         .replace("__SLUG__",     slug)
         .replace("__BRANCH__",   branch)
         .replace("__DATE__",     now)
-        .replace("__DATA__",     json.dumps(stacks, ensure_ascii=False, sort_keys=True))
+        .replace("__DATA__",     json.dumps(stacks, ensure_ascii=False, sort_keys=True)))
     out_path.write_text(html, encoding="utf-8")
 
     total_svcs  = sum(len(s["services"]) for s in stacks)
