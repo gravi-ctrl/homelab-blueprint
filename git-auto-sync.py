@@ -153,7 +153,7 @@ def main():
     while count < max_retries:
         print(f"🚀 Pushing updates to all remotes (Attempt {count + 1}/{max_retries})...")
 
-        push_result = run_command(["git", "push"], capture_output=True)
+        push_result = run_command(["git", "push", "--all"], capture_output=True)
 
         if push_result.returncode == 0:
             if push_result.stdout:
@@ -185,7 +185,7 @@ def main():
 
         # 6d. Check if the failure was just a missing upstream
         if "upstream" in err_low or "set-upstream" in err_low:
-            upstream_result = run_command(["git", "push", "-u", "origin", "HEAD"], capture_output=True)
+            upstream_result = run_command(["git", "push", "--all", "-u", "origin"], capture_output=True)
             if upstream_result.returncode == 0:
                 print("✅ Upstream set and pushed successfully.")
                 success = True
