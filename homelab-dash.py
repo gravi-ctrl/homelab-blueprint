@@ -28,6 +28,10 @@ ENV_EXAMPLE_FILE = os.path.join(SCRIPT_DIR, ".env.example")
 BACKUP_USER = getpass.getuser()
 SCRIPT_EXTS = {".sh", ".py"}
 
+# Names that are valid @USED_BY consumers but are NOT script files.
+# Excluded from variable mismatch calculations to prevent false positives.
+NON_SCRIPT_CONSUMERS = {"crontab"}
+
 # Frequency matching
 FREQUENCY_TIERS = [
     ("⚡ Every few minutes", lambda e: bool(re.match(r'\*/\d+\s', e)) and int(re.match(r'\*/(\d+)', e).group(1)) < 60),
@@ -113,7 +117,6 @@ def parse_scripts(env_used_by):
 
             rel_str = str(p.relative_to(SCRIPT_DIR)).replace('\\', '/')
             cat = p.parent.name if p.parent.name else "Core Scripts"
-            # Force "Core Scripts" naming if it's the root directory
             if cat == Path(SCRIPT_DIR).name: cat = "Core Scripts"
             
             warnings = []
@@ -155,8 +158,12 @@ def build_envs_data(env_used_by, scripts_data):
     for var, data in sorted(env_dict.items()):
         eu = sorted(list(data["env_used"]))
         su = sorted(list(data["script_used"]))
-        # Determine if there is a mismatch
-        mismatch = bool(set(eu) ^ set(su))
+        
+        # Clean both sets of non-script consumers before identifying a mismatch
+        eu_clean = {s for s in eu if s not in NON_SCRIPT_CONSUMERS}
+        su_clean = {s for s in su if s not in NON_SCRIPT_CONSUMERS}
+        mismatch = bool(eu_clean ^ su_clean)
+        
         out.append({
             "name": var,
             "env_used": eu,
@@ -211,7 +218,6 @@ def parse_crontabs():
                     
     process_file("user_crontab.txt", f"👤 User Cron ({BACKUP_USER})", False)
     process_file("root_crontab.txt", "⚡ Root Cron", True)
-    # Sort primarily by owner, then by tier frequency
     return sorted(crons_data, key=lambda x: (1 if x["is_root"] else 0, x["tier_order"]))
 
 # ── HTML Template ─────────────────────────────────────────────────
@@ -353,15 +359,13 @@ function renderStats() {
 }
 
 function renderScripts() {
-  // Group by category
   const grouped = {};
   D.scripts.forEach((s, idx) => {
-    s._idx = idx; // preserve original index for filtering
+    s._idx = idx; 
     if (!grouped[s.category]) grouped[s.category] = [];
     grouped[s.category].push(s);
   });
 
-  // Sort categories (Core Scripts first)
   const cats = Object.keys(grouped).sort((a,b) => {
       if(a === "Core Scripts") return -1;
       if(b === "Core Scripts") return 1;
@@ -442,7 +446,6 @@ function renderCrons() {
         <div class="badges">${badges.join('')}</div>
       </div>`;
       
-      // Closing grid if next tier is different or it's the last item
       if(grouped[owner].indexOf(c) === grouped[owner].length - 1 || grouped[owner][grouped[owner].indexOf(c)+1].tier !== currentTier){
           html += `</div>`;
       }
@@ -453,7 +456,6 @@ function renderCrons() {
 }
 
 function renderEnvs() {
-  // Group by Health
   const grouped = { "⚠️ Action Required (Mismatches)": [], "✅ Healthy Variables": [] };
   D.envs.forEach((env, idx) => {
     env._idx = idx;
@@ -539,11 +541,10 @@ function applyFilter() {
       if(match) count++;
     });
     
-    // Hide empty tier headers in crons
     document.querySelectorAll('#view-crons .ui-tier-grid').forEach(grid => {
       const hasVisible = Array.from(grid.querySelectorAll('.item-card')).some(c => c.style.display !== 'none');
       grid.style.display = hasVisible ? 'grid' : 'none';
-      grid.previousElementSibling.style.display = hasVisible ? 'block' : 'none'; // The tier-header
+      grid.previousElementSibling.style.display = hasVisible ? 'block' : 'none'; 
     });
   }
   else if (activeTab === 'envs') {
@@ -558,7 +559,6 @@ function applyFilter() {
     });
   }
 
-  // Hide empty groups universally
   document.querySelectorAll(`#view-${activeTab} .ui-group`).forEach(group => {
     const hasVisible = Array.from(group.querySelectorAll('.item-card')).some(c => c.style.display !== 'none');
     group.style.display = hasVisible ? 'block' : 'none';
