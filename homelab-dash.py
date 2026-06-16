@@ -180,6 +180,18 @@ def build_envs_data(env_used_by, scripts_data):
 
 def parse_crontabs():
     crons_data = []
+    
+    # Custom translators for date conditions
+    week_map = {
+        '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', '4': 'Thursday', 
+        '5': 'Friday', '6': 'Saturday', '7': 'Sunday',
+        'mon': 'Monday', 'tue': 'Tuesday', 'wed': 'Wednesday',
+        'thu': 'Thursday', 'fri': 'Friday', 'sat': 'Saturday', 'sun': 'Sunday'
+    }
+    ordinal_map = {
+        "1-7": "1st", "8-14": "2nd", "15-21": "3rd", "22-28": "4th", "29-31": "5th"
+    }
+
     def process_file(filename, owner_label, is_root):
         path = os.path.join(CRON_SOURCE_DIR, filename)
         if not os.path.exists(path): return
@@ -202,10 +214,32 @@ def parse_crontabs():
                         else:
                             parts = line.split(maxsplit=5)
                             if len(parts) >= 6:
+                                minute, hour, dom, month, dow = parts[:5]
                                 raw_sched = " ".join(parts[:5])
                                 cmd = parts[5]
                                 try: desc = get_description(raw_sched, cron_opts)
                                 except: desc = raw_sched
+
+                                # Restore clever date-conditional parsing from original translator
+                                date_match = re.match(
+                                    r'^\[\s*"\$\(date \+\\%[ua]\)"\s*=\s*"?(\w+)"?\s*\]\s*&&\s*(.*)',
+                                    cmd, re.IGNORECASE
+                                )
+
+                                if date_match:
+                                    day_val = date_match.group(1).lower()
+                                    day_name = week_map.get(day_val, "Day")
+                                    dom_parts = dom.split(',')
+                                    found_ordinals = [ordinal_map[p] for p in dom_parts if p in ordinal_map]
+                                    if found_ordinals:
+                                        ord_str = " and ".join(found_ordinals)
+                                        time_str = f"{hour.zfill(2)}:{minute.zfill(2)}"
+                                        desc = f"At {time_str}, on the **{ord_str} {day_name}** of the month"
+                                    else:
+                                        desc += f" <br>**(⚠️ Condition: Only on {day_name}s)**"
+
+                                elif cmd.startswith("if [") or cmd.startswith("[ ") or cmd.startswith("test "):
+                                    desc += " <br>**(⚠️ Conditional: Bash Logic Check)**"
                         
                         env_vars = list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd)))
                         crons_data.append({
