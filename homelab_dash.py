@@ -454,7 +454,23 @@ function renderScripts() {
       return a.localeCompare(b);
   });
 
-  let html = '';
+  // Guide UI
+  let html = `
+  <div class="group-container" id="guide-container" style="border-color: var(--blue-bd);">
+    <div class="group-head is-open" id="guide-head" onclick="toggleGroup('guide')" style="background: var(--blue-bg); color: var(--blue-tx); border-bottom-color: var(--blue-bd);">
+      <div>📝 How to Document New Scripts</div>
+    </div>
+    <div class="group-body is-open" id="guide-body" style="display:block; background: var(--bg);">
+      <div style="color:var(--tx2); margin-bottom:10px;">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div>
+      <div class="mono-cmd" style="padding:10px; font-size:13px; line-height:1.4; border: .5px solid var(--br);">#!/bin/bash
+# @DESCRIPTION: One-line summary of what the script does.
+# @FREQUENCY:   How often it runs (e.g., Daily 5am, On Demand, etc.)
+# @CRON:        User, Root       # (Optional) Which crontab it runs in
+# @USES_ENV:    VAR1, VAR2       # (Optional) Config variables it depends on</div>
+    </div>
+  </div>
+  `;
+
   cats.forEach((cat, c_idx) => {
     const scripts = grouped[cat];
     const gid = `s-cat-${c_idx}`;
@@ -758,9 +774,17 @@ function applyFilter() {
     group.style.display = hasVisible ? 'block' : 'none';
   });
 
+  // Dynamically hide the How-to Guide if any filters or search are active
+  const guide = document.getElementById('guide-container');
+  if (guide) {
+    const hasFilters = q || F.warn || F.root || F.user || activeParentDir;
+    guide.style.display = (activeTab === 'scripts' && !hasFilters) ? 'block' : 'none';
+  }
+
   document.getElementById('no-match').style.display = count ? 'none' : 'block';
 }
 
+renderStats();
 renderScripts();
 renderCrons();
 renderEnvs();
@@ -776,9 +800,12 @@ def main():
     envs = build_envs_data(env_vars_parsed, scripts)
     crons = parse_crontabs()
     
-    print(f"  ✓ Found {len(scripts)} Scripts")
+    warn_scripts = sum(1 for s in scripts if s["warnings"])
+    mismatch_envs = sum(1 for e in envs if e["mismatch"])
+    
+    print(f"  ✓ Found {len(scripts)} Scripts ({warn_scripts} flagged with warnings)")
     print(f"  ✓ Found {len(crons)} Cron Jobs")
-    print(f"  ✓ Found {len(envs)} Tracked Variables")
+    print(f"  ✓ Found {len(envs)} Tracked Variables ({mismatch_envs} env mismatches detected)")
     
     out_path = Path("index.html")
     
