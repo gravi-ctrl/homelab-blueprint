@@ -33,16 +33,10 @@ else
     echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
 fi
 
-# --- GENERATE HUMAN READABLE SCHEDULE ---
-if [ -f "/opt/scripts/cron_translator.py" ]; then
-    echo "Generating cron schedule..."
-    "/opt/scripts/cron_translator.py"
-fi
-
-# --- GENERATE SCRIPT INVENTORY ---
-if [ -f "/opt/scripts/script_indexer.py" ]; then
-    echo "Indexing Scripts..."
-    "/opt/scripts/script_indexer.py"
+# --- GENERATE DASHBOARDS ---
+if [ -f "/opt/scripts/generate-dashboards.sh" ]; then
+    echo "📊 Generating Dashboards..."
+    "/opt/scripts/generate-dashboards.sh"
 fi
 
 # B. Installed Packages
