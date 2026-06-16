@@ -354,7 +354,7 @@ h1{font-size:20px;font-weight:500}
     <div id="sub-crons" class="sub-filter-group">
       <span class="sub-filter-label">Runtime:</span>
       <button class="fbtn" id="f-docker" onclick="tog('docker')">🐳 Container Tasks</button>
-      <button class="fbtn" id="f-quick" onclick="tog('quick')">⏱️ Quick Jobs (&lt; Hourly)</button>
+      <button class="fbtn" id="f-quick" onclick="tog('quick')">⏱️ Frequent Jobs</button>
     </div>
     
     <!-- Variables Sub-Filters -->
@@ -546,7 +546,6 @@ function renderDirectoryFilters() {
 
   const allPaths = [...new Set(D.scripts.map(s => s.dir_path))];
   
-  // Extract parents (even if a script only exists in its subfolder)
   const topLevelsSet = new Set();
   allPaths.forEach(p => {
       if (p === "Core Scripts") topLevelsSet.add(p);
@@ -676,7 +675,9 @@ function applyFilter() {
     document.querySelectorAll('#view-crons .item-card').forEach(el => {
       const c = D.crons[el.dataset.idx];
       const txt = JSON.stringify(c).toLowerCase();
-      const hasDocker = c.command.toLowerCase().includes('docker');
+      
+      // Strict regex matching to ensure docker is actually executing a container task
+      const hasDocker = /\bdocker\s+(exec|run|compose)\b/i.test(c.command);
       const isQuick = c.tier_order <= 1; 
       
       const match = (!q || txt.includes(q)) &&
