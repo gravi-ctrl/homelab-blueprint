@@ -41,7 +41,6 @@ else
     exit 1
 fi
 
-# 5. Helper function to deploy a page to the local 'pages' branch of any git repository
 deploy_page_local() {
     local repo_dir="$1"
     local temp_html="$2"
@@ -51,39 +50,42 @@ deploy_page_local() {
         return 0
     fi
 
-    cd "$repo_dir"
-    
-    # Save the active branch so we can return to it safely
-    local original_branch
-    original_branch="$(git branch --show-current)"
-    
     echo "📁 Processing deployment for $repo_dir..."
+    
+    # 1. Define temporary paths
+    local temp_worktree="/tmp/worktree_$(basename "$repo_dir")"
+    
+    # Clean up any leftover temp worktrees from previous failed runs
+    rm -rf "$temp_worktree"
+    git -C "$repo_dir" worktree prune 2>/dev/null || true
 
-    # Clean up any leftover index.html on the dev branch to prevent blocking checkout
-    [ -f "index.html" ] && rm "index.html"
+    # 2. Check out the 'pages' branch to the temp directory
+    # (Creating it if it doesn't exist yet)
+    if ! git -C "$repo_dir" show-ref --quiet refs/heads/pages; then
+        echo "   (Initializing pages branch)"
+        git -C "$repo_dir" branch pages
+    fi
+    
+    # 👇 FIX: Removed -B so we check out the branch normally without force-resetting it
+    git -C "$repo_dir" worktree add "$temp_worktree" pages
 
-    # Switch to pages branch (or create it if it doesn't exist)
-    git checkout pages || git checkout -b pages
+    # 3. Copy our generated HTML to the temporary worktree directory
+    cp "$temp_html" "$temp_worktree/index.html"
 
-    # Move the new dashboard in
-    mv "$temp_html" index.html
-
-    # Stage the file so we can analyze the differences
+    # 4. Step into the temp folder to stage, diff, and commit
+    cd "$temp_worktree"
     git add index.html
 
-    # Check if there are any staged changes, ignoring the timestamp line
     if git diff --cached --quiet -I "Generated "; then
         echo "   (Only timestamp changed in $repo_dir - skipping commit)"
-        # Discard the timestamp change so the local repository stays completely clean
-        git reset HEAD index.html >/dev/null 2>&1
-        git checkout -- index.html >/dev/null 2>&1
     else
-        # Commit the real changes (scripts, crons, or envs actually changed!)
         git commit -m "Auto-update dashboard [skip ci]"
     fi
 
-    # Switch back to the original development branch
-    git checkout "$original_branch"
+    # 5. Clean up the temporary worktree completely
+    cd "$repo_dir"
+    rm -rf "$temp_worktree"
+    git worktree prune
 }
 
 # 6. Execute the deployments
