@@ -11,6 +11,7 @@
 | `cron-guard.py` | Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure. | Varies | 👤 User, ⚡ Root | `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` |
 | `cron_translator.py` | Creates a human-readable .MD file of the crontabs | Daily 5am (triggered by `backup-scripts-git.sh`) | — | — |
 | `disk-monitor.sh` | Check if root (/) or /data exceeds 90% | Every hour | 👤 User | — |
+| `generate-dashboards.sh` | Runs both dashboard generators and safely commits the output to their respective pages branches. | Daily 4:40am | 👤 User | `STACKS_DIR` |
 | `git-auto-sync.py` | Master logic to push/pull Git repos | Varies | 👤 User | — |
 | `gitops-deploy.sh` | Monitors /opt/stacks for remote Codeberg changes done by Renovate and auto-deploys updated compose stacks. | Every 15 minutes | 👤 User | `STACKS_DIR` `TELEGRAM_CHAT_ID` `TELEGRAM_DANTE_BOT_TOKEN` |
 | `health-snapshot.sh` | Prints an on-demand health snapshot of the server | On Demand | — | `BACKUP_DIR` |
@@ -69,7 +70,7 @@
 | `PATH` | `crontab` |
 | `SERVER_HC_URL` | `crontab` |
 | `SERVER_IP` | `setup.sh` |
-| `STACKS_DIR` | `backup-scripts-git.sh` `crontab` `gitops-deploy.sh` `local-opt-backup.sh` |
+| `STACKS_DIR` | `backup-scripts-git.sh` `crontab` `generate-dashboards.sh` `gitops-deploy.sh` `local-opt-backup.sh` |
 | `TELEGRAM_CHAT_ID` | `container-watcher.sh` `cron-guard.py` `gitops-deploy.sh` |
 | `TELEGRAM_DANTE_BOT_TOKEN` | `container-watcher.sh` `cron-guard.py` `gitops-deploy.sh` |
 | `TIMEZONE` | `setup.sh` |

@@ -32,6 +32,9 @@ BASH_ENV=/opt/scripts/.env
 # Apply file renaming rules to Paperless-ngx documents
 25 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
+# Generate the `~/scripts` and `/opt/stacks` dashboards
+40 4 * * * cron-guard --mode fail "Dashboard Generator" "/opt/scripts/generate-dashboards.sh"
+
 # Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git
 0 5 * * * cron-guard --mode fail "Scripts & System Configs Backup" "/opt/scripts/backup-scripts-git.sh"
 

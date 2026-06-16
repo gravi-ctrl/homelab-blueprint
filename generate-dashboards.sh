@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Runs both dashboard generators and safely commits the output to their respective pages branches.
-# @FREQUENCY:   Daily 4:30am
+# @FREQUENCY:   Daily 4:40am
 # @CRON:        User
 # @USES_ENV:    STACKS_DIR
 

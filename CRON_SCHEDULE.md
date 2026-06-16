@@ -7,7 +7,7 @@
 | ⚡ Every few minutes | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor*<br>- *Pulls and deploys stack updates done by Renovate*<br>- *Sync Personal and Work Obsidian vaults to Git* |
 |  | ⚡ Root | - *Emergency shutdown if battery is discharging and below 20%* |
 | 🕐 Hourly | 👤 User (gravi-ctrl) | - *Disk Space Alerts* |
-| 🌙 Daily | 👤 User (gravi-ctrl) | - *Rotate backups (retain recent) and purge download watch folder*<br>- *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>- *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>- *Apply file renaming rules to Paperless-ngx documents*<br>- *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>- *Scan docker-compose files and open dependency update PRs on Codeberg* |
+| 🌙 Daily | 👤 User (gravi-ctrl) | - *Rotate backups (retain recent) and purge download watch folder*<br>- *Update Pi-hole Gravity (adlists) and apply mmotti regex rules*<br>- *Export Nextcloud Calendars (.ics) and Contacts (.vcf)*<br>- *Apply file renaming rules to Paperless-ngx documents*<br>- *Generate the `~/scripts` and `/opt/stacks` dashboards*<br>- *Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git*<br>- *Scan docker-compose files and open dependency update PRs on Codeberg* |
 | 📅 Weekly | 👤 User (gravi-ctrl) | - *Runs a Borgmatic backup* |
 |  | ⚡ Root | - *Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)* |
 | 🗓️ Monthly | 👤 User (gravi-ctrl) | - *cert-manager: regenerate & upload SSL certs to NPM* |
@@ -27,6 +27,7 @@
 | **Update Pi-hole Gravity (adlists) and apply mmotti regex rules** | At 03:55 | `cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubuserco...` |
 | **Export Nextcloud Calendars (.ics) and Contacts (.vcf)** | At 04:10 | `cron-guard --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/w...` |
 | **Apply file renaming rules to Paperless-ngx documents** | At 04:25 | `cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"` |
+| **Generate the `~/scripts` and `/opt/stacks` dashboards** | At 04:40 | `cron-guard --mode fail "Dashboard Generator" "/opt/scripts/generate-dashboards.sh"` |
 | **Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git** | At 05:00 | `cron-guard --mode fail "Scripts & System Configs Backup" "/opt/scripts/backup-scripts-git.sh"` |
 | **Scan docker-compose files and open dependency update PRs on Codeberg** | At 09:00 | `cron-guard --mode fail "Renovate" "docker run --rm --env-file $STACKS_DIR/renovate/.env -v $STACKS_DIR/renovate/confi...` |
 | **Runs a Borgmatic backup** | At 02:00, only on Sunday | `cron-guard --mode all "Borg Backup" "borgmatic"` |
@@ -52,5 +53,5 @@
 | `DATA_DIR` | 👤 User (gravi-ctrl) | - *Sync Personal and Work Obsidian vaults to Git*<br>- *Rotate backups (retain recent) and purge download watch folder*<br>⚠️ _(also used by: `setup.sh` `nextcloud-dynamic-watch.sh`)_ |
 | `NEXTDNS_URL` | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor* |
 | `SERVER_HC_URL` | 👤 User (gravi-ctrl) | - *Update NextDNS IP and Healthchecks.io server/internet monitor* |
-| `STACKS_DIR` | 👤 User (gravi-ctrl) | - *Scan docker-compose files and open dependency update PRs on Codeberg*<br>⚠️ _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh` `gitops-deploy.sh`)_ |
+| `STACKS_DIR` | 👤 User (gravi-ctrl) | - *Scan docker-compose files and open dependency update PRs on Codeberg*<br>⚠️ _(also used by: `backup-scripts-git.sh` `local-opt-backup.sh` `gitops-deploy.sh` `generate-dashboards.sh`)_ |
 
