@@ -1,5 +1,6 @@
 # Ignore everything on this branch
 *
+*.env
 
 # But allow the below
 !index.html
