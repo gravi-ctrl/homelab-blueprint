@@ -8,5 +8,5 @@
 **/*.log
 **/*.tmp
 **/*.bak
+**/index.html
 .ghost_watcher_state
-/docker-dash/index.html
