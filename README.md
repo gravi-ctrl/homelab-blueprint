@@ -17,14 +17,6 @@ This repository functions as the automation engine for my Debian home server. It
 
 ---
 
-## 📊 System Maps
-Auto-generated every morning at 05:00:
-
-- **[📜 Script Inventory](./SCRIPTS_INVENTORY.md)** — every script, its purpose, run frequency, and what it needs to run
-- **[📅 Automation Schedule](./CRON_SCHEDULE.md)** — full cron schedule, at-a-glance overview, and configuration reference
-
----
-
 ## ⚙️ How it Works
 
 The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a custom Telegram wrapper, so failures are never silent. If a job crashes and dumps a massive log, the wrapper sends a summary to your phone and saves the full output locally. 
