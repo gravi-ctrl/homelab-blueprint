@@ -73,6 +73,9 @@ A full backup archive contains everything needed to restore the exact state:
 | `~/.local/share/mkcert` | Local CA for SSL |
 
 ---
+<p align="center"><b>[ RUNBOOK ]</b></p>
+
+---
 
 ### Phase 1 — Bootstrap
 
