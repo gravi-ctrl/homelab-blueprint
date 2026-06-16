@@ -29,7 +29,6 @@ BACKUP_USER = getpass.getuser()
 SCRIPT_EXTS = {".sh", ".py"}
 
 # Names that are valid @USED_BY consumers but are NOT script files.
-# Excluded from variable mismatch calculations to prevent false positives.
 NON_SCRIPT_CONSUMERS = {"crontab"}
 
 # Frequency matching
@@ -116,6 +115,13 @@ def parse_scripts(env_used_by):
             except: pass
 
             rel_str = str(p.relative_to(SCRIPT_DIR)).replace('\\', '/')
+            
+            # Map directory structure cleanly
+            rel_dir = p.parent.relative_to(SCRIPT_DIR)
+            dir_str = str(rel_dir).replace('\\', '/')
+            if dir_str == '.':
+                dir_str = "Core Scripts"
+
             cat = p.parent.name if p.parent.name else "Core Scripts"
             if cat == Path(SCRIPT_DIR).name: cat = "Core Scripts"
             
@@ -134,6 +140,7 @@ def parse_scripts(env_used_by):
             scripts_data.append({
                 "name": file,
                 "path": rel_str,
+                "dir_path": dir_str,
                 "category": cat.replace('_', ' ').title(),
                 "desc": desc,
                 "freq": freq,
@@ -159,7 +166,6 @@ def build_envs_data(env_used_by, scripts_data):
         eu = sorted(list(data["env_used"]))
         su = sorted(list(data["script_used"]))
         
-        # Clean both sets of non-script consumers before identifying a mismatch
         eu_clean = {s for s in eu if s not in NON_SCRIPT_CONSUMERS}
         su_clean = {s for s in su if s not in NON_SCRIPT_CONSUMERS}
         mismatch = bool(eu_clean ^ su_clean)
@@ -263,12 +269,16 @@ h1{font-size:20px;font-weight:500}
 .nav-tabs{display:flex;gap:10px;margin-bottom:1rem;border-bottom:.5px solid var(--br);padding-bottom:10px;overflow-x:auto}
 .tab{background:none;border:none;color:var(--tx2);font-size:15px;font-weight:500;cursor:pointer;padding:5px 10px;border-radius:var(--r);white-space:nowrap}
 .tab.active{background:var(--bg);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* Filters Layout */
 .filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.filter-bar.sub-filters{margin-top:-8px; margin-bottom:1.5rem; padding-left:4px;}
 .filter-bar input{flex:1;min-width:160px;padding:7px 11px;font-size:13px;border:.5px solid var(--br2);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none}
 .filter-bar input:focus{border-color:var(--blue-tx)}
 .fbtn{padding:5px 13px;font-size:12px;border:.5px solid var(--br2);border-radius:100px;background:var(--bg);color:var(--tx2);cursor:pointer;white-space:nowrap;transition:all .15s}
 .fbtn.on{background:var(--blue-bg);color:var(--blue-tx);border-color:var(--blue-bd);font-weight:500}
-.grid{display:grid;gap:8px}
+.sub-filter-group{display:none; gap:6px; flex-wrap:wrap; align-items:center;}
+.sub-filter-label{color:var(--tx3); font-size:11px; text-transform:uppercase; letter-spacing:0.04em; margin-right:4px; font-weight:600;}
 
 /* Structuring Groups */
 .group-container{margin-bottom:24px; border:.5px solid var(--br); border-radius:var(--r2); background:var(--bg); overflow:hidden;}
@@ -318,16 +328,41 @@ h1{font-size:20px;font-weight:500}
   <div class="stats" id="stats"></div>
   
   <div class="nav-tabs">
-    <button class="tab active" onclick="switchTab('scripts')">📂 Scripts Inventory</button>
-    <button class="tab" onclick="switchTab('crons')">📅 Cron Schedule</button>
-    <button class="tab" onclick="switchTab('envs')">🔑 Variables</button>
+    <button class="tab active" onclick="switchTab('scripts', this)">📂 Scripts Inventory</button>
+    <button class="tab" onclick="switchTab('crons', this)">📅 Cron Schedule</button>
+    <button class="tab" onclick="switchTab('envs', this)">🔑 Variables</button>
   </div>
 
+  <!-- Global Filters (Top Row) -->
   <div class="filter-bar">
     <input type="text" id="search" placeholder="Search names, paths, variables..." oninput="applyFilter()">
     <button class="fbtn" id="f-warn" onclick="tog('warn')">⚠️ Warnings</button>
     <button class="fbtn" id="f-user" onclick="tog('user')">👤 User</button>
     <button class="fbtn" id="f-root" onclick="tog('root')">⚡ Root</button>
+  </div>
+
+  <!-- Contextual Sub-Filters (Dynamic Bottom Row) -->
+  <div class="filter-bar sub-filters">
+    
+    <!-- Scripts Dynamic Directory Tree Filters -->
+    <div id="sub-scripts" class="sub-filter-group" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+      <div id="scripts-parent-dirs" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;"></div>
+      <div id="scripts-child-dirs" style="display: none; gap: 6px; flex-wrap: wrap; align-items: center; padding-left: 14px; border-left: 2.5px solid var(--br);"></div>
+    </div>
+    
+    <!-- Crons Sub-Filters -->
+    <div id="sub-crons" class="sub-filter-group">
+      <span class="sub-filter-label">Runtime:</span>
+      <button class="fbtn" id="f-docker" onclick="tog('docker')">🐳 Container Tasks</button>
+      <button class="fbtn" id="f-quick" onclick="tog('quick')">⏱️ Quick Jobs (&lt; Hourly)</button>
+    </div>
+    
+    <!-- Variables Sub-Filters -->
+    <div id="sub-envs" class="sub-filter-group">
+      <span class="sub-filter-label">Audit:</span>
+      <button class="fbtn" id="f-secrets" onclick="tog('secrets')">🔒 Secrets/Tokens</button>
+      <button class="fbtn" id="f-orphans" onclick="tog('orphans')">🍃 Unused (.env only)</button>
+    </div>
   </div>
 
   <div id="view-scripts" class="view active"></div>
@@ -339,7 +374,15 @@ h1{font-size:20px;font-weight:500}
 <script>
 const D = __DATA__;
 let activeTab = 'scripts';
-const F = { warn: false, user: false, root: false };
+const F = { 
+  warn: false, user: false, root: false, 
+  docker: false, quick: false,
+  secrets: false, orphans: false
+};
+
+// Folder Tree Selection State
+let activeParentDir = null;
+let activeChildDir = null;
 
 function e(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function bdg(cls, txt){ return `<span class="bdg ${cls}">${e(txt)}</span>`; }
@@ -495,12 +538,97 @@ function renderEnvs() {
   document.getElementById('view-envs').innerHTML = html;
 }
 
-function switchTab(t) {
+// 📁 Dynamic Directory Filtering Logic
+function renderDirectoryFilters() {
+  const parentContainer = document.getElementById('scripts-parent-dirs');
+  const childContainer = document.getElementById('scripts-child-dirs');
+  if (!parentContainer) return;
+
+  const allPaths = [...new Set(D.scripts.map(s => s.dir_path))];
+  
+  // Extract parents (even if a script only exists in its subfolder)
+  const topLevelsSet = new Set();
+  allPaths.forEach(p => {
+      if (p === "Core Scripts") topLevelsSet.add(p);
+      else topLevelsSet.add(p.split('/')[0]);
+  });
+  const topLevels = [...topLevelsSet].sort();
+
+  // 1. Render Parents Row
+  let parentHtml = '<span class="sub-filter-label">Folders:</span>';
+  parentHtml += `<button class="fbtn ${activeParentDir === null ? 'on' : ''}" onclick="selectParentDir(null)">📁 All</button>`;
+  
+  topLevels.forEach(p => {
+      const label = p === "Core Scripts" ? p : p.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
+      const activeClass = activeParentDir === p ? 'on' : '';
+      parentHtml += `<button class="fbtn ${activeClass}" onclick="selectParentDir('${p}')">📁 ${e(label)}</button>`;
+  });
+  parentContainer.innerHTML = parentHtml;
+
+  // 2. Render Children Row (Nested structure support)
+  if (activeParentDir && activeParentDir !== "Core Scripts") {
+      const children = allPaths.filter(p => p.startsWith(activeParentDir + '/')).sort();
+      if (children.length > 0) {
+          childContainer.style.display = 'flex';
+          let childHtml = '<span class="sub-filter-label" style="font-size:10px;">Subfolders:</span>';
+          childHtml += `<button class="fbtn ${activeChildDir === null ? 'on' : ''}" onclick="selectChildDir(null)">↳ All ${e(activeParentDir.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase())}</button>`;
+          
+          children.forEach(c => {
+              const subName = c.substring(activeParentDir.length + 1);
+              const label = subName.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
+              const activeClass = activeChildDir === c ? 'on' : '';
+              childHtml += `<button class="fbtn ${activeClass}" onclick="selectChildDir('${c}')">↳ ${e(label)}</button>`;
+          });
+          childContainer.innerHTML = childHtml;
+      } else {
+          childContainer.style.display = 'none';
+      }
+  } else {
+      childContainer.style.display = 'none';
+  }
+}
+
+function selectParentDir(dir) {
+  activeParentDir = dir;
+  activeChildDir = null; // Clear active child context
+  renderDirectoryFilters();
+  applyFilter();
+}
+
+function selectChildDir(dir) {
+  activeChildDir = dir;
+  renderDirectoryFilters();
+  applyFilter();
+}
+
+function switchTab(t, btn) {
   activeTab = t;
   document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  event.target.classList.add('active');
+  
+  if (btn) {
+      btn.classList.add('active');
+  } else {
+      const defaultTab = Array.from(document.querySelectorAll('.tab')).find(el => el.getAttribute('onclick').includes(t));
+      if (defaultTab) defaultTab.classList.add('active');
+  }
   document.getElementById(`view-${t}`).classList.add('active');
+  
+  // Toggle sub-filters row
+  document.querySelectorAll('.sub-filter-group').forEach(el => el.style.display = 'none');
+  const activeSub = document.getElementById(`sub-${t}`);
+  if(activeSub) activeSub.style.display = 'flex';
+  
+  // Clean states to avoid overlapping view calculations
+  if (t !== 'scripts') {
+      activeParentDir = null;
+      activeChildDir = null;
+  } else {
+      renderDirectoryFilters();
+  }
+  if (t !== 'crons') { F.docker = false; F.quick = false; document.getElementById('f-docker').classList.remove('on'); document.getElementById('f-quick').classList.remove('on'); }
+  if (t !== 'envs') { F.secrets = false; F.orphans = false; document.getElementById('f-secrets').classList.remove('on'); document.getElementById('f-orphans').classList.remove('on'); }
+
   applyFilter();
 }
 
@@ -521,10 +649,25 @@ function applyFilter() {
       const isRoot = s.cron_ctx && s.cron_ctx.toLowerCase().includes('root');
       const isUser = s.cron_ctx && s.cron_ctx.toLowerCase().includes('user');
       
+      // Dynamic Folder/Tree evaluations
+      let dirMatch = true;
+      if (activeParentDir) {
+          if (activeParentDir === "Core Scripts") {
+              dirMatch = (s.dir_path === "Core Scripts");
+          } else {
+              if (activeChildDir) {
+                  dirMatch = (s.dir_path === activeChildDir);
+              } else {
+                  dirMatch = (s.dir_path === activeParentDir || s.dir_path.startsWith(activeParentDir + '/'));
+              }
+          }
+      }
+
       const match = (!q || txt.includes(q)) &&
                     (!F.warn || s.warnings.length > 0) &&
                     (!F.root || isRoot) &&
-                    (!F.user || isUser);
+                    (!F.user || isUser) &&
+                    dirMatch;
       el.style.display = match ? '' : 'none';
       if(match) count++;
     });
@@ -533,10 +676,15 @@ function applyFilter() {
     document.querySelectorAll('#view-crons .item-card').forEach(el => {
       const c = D.crons[el.dataset.idx];
       const txt = JSON.stringify(c).toLowerCase();
+      const hasDocker = c.command.toLowerCase().includes('docker');
+      const isQuick = c.tier_order <= 1; 
+      
       const match = (!q || txt.includes(q)) &&
                     (!F.warn) && 
                     (!F.root || c.is_root) &&
-                    (!F.user || !c.is_root);
+                    (!F.user || !c.is_root) &&
+                    (!F.docker || hasDocker) &&
+                    (!F.quick || isQuick);
       el.style.display = match ? '' : 'none';
       if(match) count++;
     });
@@ -551,14 +699,20 @@ function applyFilter() {
     document.querySelectorAll('#view-envs .item-card').forEach(el => {
       const env = D.envs[el.dataset.idx];
       const txt = JSON.stringify(env).toLowerCase();
+      const isSecret = /token|key|pass|secret|auth|id/i.test(env.name);
+      const isOrphan = env.script_used.length === 0;
+      
       const match = (!q || txt.includes(q)) &&
                     (!F.warn || env.mismatch) &&
-                    (!F.root) && (!F.user); 
+                    (!F.root) && (!F.user) &&
+                    (!F.secrets || isSecret) &&
+                    (!F.orphans || isOrphan);
       el.style.display = match ? '' : 'none';
       if(match) count++;
     });
   }
 
+  // Globally hide empty groups
   document.querySelectorAll(`#view-${activeTab} .ui-group`).forEach(group => {
     const hasVisible = Array.from(group.querySelectorAll('.item-card')).some(c => c.style.display !== 'none');
     group.style.display = hasVisible ? 'block' : 'none';
@@ -570,7 +724,7 @@ function applyFilter() {
 renderScripts();
 renderCrons();
 renderEnvs();
-applyFilter();
+switchTab('scripts'); 
 </script>
 </body>
 </html>"""
