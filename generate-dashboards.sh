@@ -10,7 +10,9 @@ set -e
 SCRIPTS_DIR="$(dirname "$(realpath "$0")")"
 
 [[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
+set -a
 source "/opt/scripts/.env"
+set +a
 
 echo "🔄 Starting Dashboard Generation Pipeline..."
 
@@ -33,7 +35,7 @@ fi
 # 4. Generate Docker Dashboard
 echo "🐳 Generating Docker Dashboard..."
 if [ -f "$SCRIPTS_DIR/docker-dash/docker_dash.py" ]; then
-    python3 "$SCRIPTS_DIR/docker-dash/docker_dash.py" --out "$DOCKER_TEMP"
+    python3 "$SCRIPTS_DIR/docker-dash/docker_dash.py" --env "$SCRIPTS_DIR/docker-dash/.env" --out "$DOCKER_TEMP"
 else
     echo "❌ Error: docker_dash.py not found at $SCRIPTS_DIR/docker-dash/docker_dash.py"
     exit 1
