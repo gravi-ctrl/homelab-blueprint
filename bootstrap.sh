@@ -49,7 +49,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
     sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
 
     echo ">>> Decrypting $BACKUP..."
-    sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner -xf - -C /
+    sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]+,${HOME#/}," -xf - -C /
 
     echo ">>> Fixing extracted file ownership..."
     if [ -f "/tmp/backup-uid.txt" ]; then
