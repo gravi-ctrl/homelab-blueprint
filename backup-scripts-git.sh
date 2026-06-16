@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`
 # @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
