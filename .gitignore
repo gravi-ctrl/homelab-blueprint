@@ -1,11 +1,12 @@
 # sensitive files
 .env
 **/.env
+*.pem
 /cert-manager/certs/
 
 # ephemeral, state & built files
-/docker-dash/index.html
 **/*.log
 **/*.tmp
 **/*.bak
 .ghost_watcher_state
+/docker-dash/index.html
