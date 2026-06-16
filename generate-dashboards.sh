@@ -1,8 +1,8 @@
 #!/bin/bash
 # @DESCRIPTION: Runs both dashboard generators and safely commits the output to their respective pages branches.
-# @FREQUENCY:   Daily 5am (triggered by `backup-scripts-git.sh`)
-# @CRON:        User
-# @USES_ENV:    STACKS_DIR
+# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
+# @CRON: User
+# @USES_ENV: STACKS_DIR
 
 set -e
 
@@ -28,7 +28,7 @@ python3 homelab_dash.py
 if [ -f "index.html" ]; then
     mv index.html "$HOMELAB_TEMP"
 else
-    echo "❌ Error: homelab_dashboard.html was not found!"
+    echo "❌ Error: index.html was not found!"
     exit 1
 fi
 
@@ -66,7 +66,7 @@ deploy_page_local() {
         git -C "$repo_dir" branch pages
     fi
     
-    # 👇 FIX: Removed -B so we check out the branch normally without force-resetting it
+    # Check out the branch normally without force-resetting it
     git -C "$repo_dir" worktree add "$temp_worktree" pages
 
     # 3. Copy our generated HTML to the temporary worktree directory
