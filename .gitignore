@@ -1,12 +1,6 @@
-# sensitive files
-.env
-**/.env
-*.pem
-/cert-manager/certs/
+# Ignore everything on this branch
+*
 
-# ephemeral, state & built files
-**/*.log
-**/*.tmp
-**/*.bak
-.ghost_watcher_state
-/docker-dash/index.html
+# But allow the below
+!index.html
+!.gitignore
