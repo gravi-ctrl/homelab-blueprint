@@ -11,6 +11,10 @@ This repository functions as the automation engine for my Debian home server. It
 
 **Location on Server:** `~/scripts`
 
+🖥️ **Live Interactive Dashboard:** 
+* **Primary:** [gravi-ctrl.codeberg.page/homelab-blueprint](https://gravi-ctrl.codeberg.page/homelab-blueprint/)
+* **Mirror:** [gravi-ctrl.github.io/homelab-blueprint](https://gravi-ctrl.github.io/homelab-blueprint/)
+
 ---
 
 ## 📊 System Maps
