@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Homelab Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f6f3;--bg3:#efede8;--bg4:#e4e2dc;
+  --tx:#181816;--tx2:#5c5c58;--tx3:#9a9a96;
+  --br:rgba(0,0,0,.09);--br2:rgba(0,0,0,.18);
+  --r:8px;--r2:12px;
+  --blue-bg:#e6f1fb;--blue-tx:#0c447c;--blue-bd:#aacbee;
+  --green-bg:#e1f5ee;--green-tx:#085041;--green-bd:#7dcdb5;
+  --amber-bg:#faeeda;--amber-tx:#633806;--amber-bd:#e8b96a;
+  --purple-bg:#eeedfe;--purple-tx:#3c3489;--purple-bd:#b3a9ec;
+  --gray-bg:#f1efe8;--gray-tx:#444441;
+  --red-bg:#fcebeb;--red-tx:#a32d2d;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#232320;--bg3:#2a2a27;--bg4:#323230;
+  --tx:#f0efeb;--tx2:#a0a09c;--tx3:#66665f;
+  --br:rgba(255,255,255,.09);--br2:rgba(255,255,255,.18);
+  --blue-bg:#0c447c;--blue-tx:#b5d4f4;--blue-bd:#2060a0;
+  --green-bg:#085041;--green-tx:#9fe1cb;--green-bd:#0f6e56;
+  --amber-bg:#4a2800;--amber-tx:#fac775;--amber-bd:#854f0b;
+  --purple-bg:#2e2870;--purple-tx:#cecbf6;--purple-bd:#534ab7;
+  --gray-bg:#3a3a38;--gray-tx:#d3d1c7;
+  --red-bg:#501313;--red-tx:#f7c1c1;
+}}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:var(--tx);background:var(--bg3);line-height:1.5}
+.page{max-width:960px;margin:0 auto;padding:2rem 1rem 5rem}
+.hdr{display:flex;align-items:baseline;gap:.75rem;margin-bottom:.2rem;flex-wrap:wrap}
+h1{font-size:20px;font-weight:500}
+.gen-time{font-size:12px;color:var(--tx3);margin-bottom:1.5rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1.25rem}
+.stat{background:var(--bg);border:.5px solid var(--br);border-radius:var(--r);padding:.8rem 1rem}
+.stat-n{font-size:26px;font-weight:500;line-height:1.1}
+.stat-l{font-size:12px;color:var(--tx2);margin-top:2px}
+.nav-tabs{display:flex;gap:10px;margin-bottom:1rem;border-bottom:.5px solid var(--br);padding-bottom:10px;overflow-x:auto}
+.tab{background:none;border:none;color:var(--tx2);font-size:15px;font-weight:500;cursor:pointer;padding:5px 10px;border-radius:var(--r);white-space:nowrap}
+.tab.active{background:var(--bg);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* Filters Layout */
+.filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.filter-bar.sub-filters{margin-top:-8px; margin-bottom:1.5rem; padding-left:4px;}
+.filter-bar input{flex:1;min-width:160px;padding:7px 11px;font-size:13px;border:.5px solid var(--br2);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none}
+.filter-bar input:focus{border-color:var(--blue-tx)}
+.fbtn{padding:5px 13px;font-size:12px;border:.5px solid var(--br2);border-radius:100px;background:var(--bg);color:var(--tx2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.fbtn.on{background:var(--blue-bg);color:var(--blue-tx);border-color:var(--blue-bd);font-weight:500}
+.sub-filter-group{display:none; gap:6px; flex-wrap:wrap; align-items:center;}
+.sub-filter-label{color:var(--tx3); font-size:11px; text-transform:uppercase; letter-spacing:0.04em; margin-right:4px; font-weight:600;}
+
+/* Structuring Groups */
+.group-container{margin-bottom:24px; border:.5px solid var(--br); border-radius:var(--r2); background:var(--bg); overflow:hidden;}
+.group-head{padding:.8rem 1rem; display:flex; justify-content:space-between; align-items:center; background:var(--bg2); cursor:pointer; user-select:none; font-weight:600; font-size:15px; border-bottom:.5px solid transparent;}
+.group-head:hover{background:var(--bg4);}
+.group-head.is-open{border-bottom-color:var(--br);}
+.group-body{padding:1rem; background:var(--bg); display:none;}
+.group-body.is-open{display:grid;}
+.group-count{font-size:12px; font-weight:400; color:var(--tx2); background:var(--br); padding:2px 8px; border-radius:100px;}
+.tier-header{font-size:14px; font-weight:600; margin:14px 0 6px; color:var(--tx2); padding-bottom:4px; text-transform:uppercase; letter-spacing:0.03em;}
+.tier-header:first-child{margin-top:0;}
+
+/* Cards */
+.card{background:var(--bg);border:.5px solid var(--br);border-radius:var(--r);padding:1rem;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 2px rgba(0,0,0,0.02)}
+.card.interactive{padding:0;cursor:pointer}
+.card.interactive .card-head{padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center}
+.card.interactive .card-head:hover{background:var(--bg2);border-radius:var(--r)}
+.card-body{padding:.8rem 1rem;border-top:.5px solid var(--br);display:none;background:var(--bg2);border-radius:0 0 var(--r) var(--r)}
+.card-body.open{display:block}
+.card-title{font-weight:600;font-size:15px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;word-break:break-all}
+.card-sub{font-family:ui-monospace,monospace;font-size:11px;color:var(--tx3)}
+.card-desc{font-size:13px;color:var(--tx2);background:var(--bg2);padding:8px 10px;border-radius:var(--r);border:.5px solid var(--br)}
+.badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:5px}
+.bdg{font-size:11px;padding:2px 8px;border-radius:100px;display:inline-flex;align-items:center;line-height:1.5;white-space:nowrap}
+.b-blue{background:var(--blue-bg);color:var(--blue-tx)}
+.b-green{background:var(--green-bg);color:var(--green-tx)}
+.b-amber{background:var(--amber-bg);color:var(--amber-tx)}
+.b-red{background:var(--red-bg);color:var(--red-tx)}
+.b-gray{background:var(--gray-bg);color:var(--gray-tx)}
+.b-purple{background:var(--purple-bg);color:var(--purple-tx)}
+.mono-cmd{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg4);padding:4px 6px;border-radius:4px;color:var(--tx);overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.warning-list{margin:0;padding-left:15px;color:var(--red-tx);font-size:11.5px;margin-top:2px}
+.detail{display:flex;gap:.6rem;font-size:13px;align-items:flex-start;margin-bottom:6px}
+.dlabel{color:var(--tx3);min-width:140px;flex-shrink:0;font-size:11px;text-transform:uppercase;letter-spacing:.04em;line-height:1.8}
+.dval{color:var(--tx);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.view{display:none}
+.view.active{display:block}
+.no-match{color:var(--tx2);font-size:13px;padding:2rem 0;text-align:center;display:none}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hdr">
+    <h1>🖥️ Homelab Automation Dashboard</h1>
+  </div>
+  <div class="gen-time">Generated 2026-06-16 20:05 UTC</div>
+  <div class="stats" id="stats"></div>
+  
+  <div class="nav-tabs">
+    <button class="tab active" onclick="switchTab('scripts', this)">📂 Scripts Inventory</button>
+    <button class="tab" onclick="switchTab('crons', this)">📅 Cron Schedule</button>
+    <button class="tab" onclick="switchTab('envs', this)">🔑 Variables</button>
+  </div>
+
+  <!-- Global Filters (Top Row) -->
+  <div class="filter-bar">
+    <input type="text" id="search" placeholder="Search names, paths, variables..." oninput="applyFilter()">
+    <button class="fbtn" id="f-warn" onclick="tog('warn')">⚠️ Warnings</button>
+    <button class="fbtn" id="f-user" onclick="tog('user')">👤 User</button>
+    <button class="fbtn" id="f-root" onclick="tog('root')">⚡ Root</button>
+  </div>
+
+  <!-- Contextual Sub-Filters (Dynamic Bottom Row) -->
+  <div class="filter-bar sub-filters">
+    
+    <!-- Scripts Dynamic Directory Tree Filters -->
+    <div id="sub-scripts" class="sub-filter-group" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+      <div id="scripts-parent-dirs" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;"></div>
+      <div id="scripts-child-dirs" style="display: none; gap: 6px; flex-wrap: wrap; align-items: center; padding-left: 14px; border-left: 2.5px solid var(--br);"></div>
+    </div>
+    
+    <!-- Crons Sub-Filters -->
+    <div id="sub-crons" class="sub-filter-group">
+      <span class="sub-filter-label">Runtime:</span>
+      <button class="fbtn" id="f-docker" onclick="tog('docker')">🐳 Container Tasks</button>
+      <button class="fbtn" id="f-quick" onclick="tog('quick')">⏱️ Frequent Jobs</button>
+    </div>
+    
+    <!-- Variables Sub-Filters -->
+    <div id="sub-envs" class="sub-filter-group">
+      <span class="sub-filter-label">Audit:</span>
+      <button class="fbtn" id="f-secrets" onclick="tog('secrets')">🔒 Secrets/Tokens</button>
+      <button class="fbtn" id="f-orphans" onclick="tog('orphans')">🍃 Unused (.env only)</button>
+    </div>
+  </div>
+
+  <div id="view-scripts" class="view active"></div>
+  <div id="view-crons" class="view"></div>
+  <div id="view-envs" class="view"></div>
+  <div class="no-match" id="no-match">No results match your filter.</div>
+</div>
+
+<script>
+const D = {"scripts": [{"name": "health-snapshot.sh", "path": "health-snapshot.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Prints an on-demand health snapshot of the server", "freq": "On Demand", "cron_ctx": "", "env": ["BACKUP_DIR"], "warnings": []}, {"name": "gitops-deploy.sh", "path": "gitops-deploy.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Monitors /opt/stacks for remote Codeberg changes done by Renovate and auto-deploys updated compose stacks.", "freq": "Every 15 minutes", "cron_ctx": "user", "env": ["STACKS_DIR", "TELEGRAM_DANTE_BOT_TOKEN", "TELEGRAM_CHAT_ID"], "warnings": []}, {"name": "cleanup_script.py", "path": "cleanup_script.py", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode.", "freq": "Daily 1am and 1pm", "cron_ctx": "user", "env": ["FILES_TO_KEEP"], "warnings": []}, {"name": "cron-guard.py", "path": "cron-guard.py", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure.", "freq": "Varies", "cron_ctx": "user, root", "env": ["TELEGRAM_DANTE_BOT_TOKEN", "TELEGRAM_CHAT_ID"], "warnings": []}, {"name": "homelab-dash.py", "path": "homelab-dash.py", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.", "freq": "On Demand", "cron_ctx": "", "env": [], "warnings": []}, {"name": "script_indexer.py", "path": "script_indexer.py", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Creates a human-readable .MD file of every script and its function, env dependencies, and mismatch warnings", "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)", "cron_ctx": "", "env": [], "warnings": []}, {"name": "nextcloud-dynamic-watch.sh", "path": "nextcloud-dynamic-watch.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Watches `/data/assets` + Internal Data, scans Nextcloud via Docker", "freq": "Service (Always)", "cron_ctx": "", "env": ["NEXTCLOUD_USER", "NEXTCLOUD_DATA_DIR", "NEXTCLOUD_CONTAINER", "NEXTCLOUD_MOUNT_NAME", "DATA_DIR"], "warnings": []}, {"name": "bootstrap.sh", "path": "bootstrap.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories.", "freq": "Run Once (Disaster Recovery)", "cron_ctx": "", "env": [], "warnings": []}, {"name": "disk-monitor.sh", "path": "disk-monitor.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Check if root (/) or /data exceeds 90%", "freq": "Every hour", "cron_ctx": "user", "env": [], "warnings": []}, {"name": "backup-scripts-git.sh", "path": "backup-scripts-git.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Snapshots cron/packages/dotfiles/hosts/custom repos and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`", "freq": "Daily 5am", "cron_ctx": "user", "env": ["STACKS_DIR", "CTRL_DIR", "TOOLS"], "warnings": []}, {"name": "cron_translator.py", "path": "cron_translator.py", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Creates a human-readable .MD file of the crontabs", "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)", "cron_ctx": "", "env": [], "warnings": []}, {"name": "battery-monitor.sh", "path": "battery-monitor.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "If battery is discharging and under 20%, shutdown the server", "freq": "Every 5 minutes", "cron_ctx": "root", "env": [], "warnings": []}, {"name": "local-opt-backup.sh", "path": "local-opt-backup.sh", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive", "freq": "Weekly 5:30am on Thursday", "cron_ctx": "root", "env": ["BACKUP_DIR", "STACKS_DIR", "AGE_KEYFILE", "KUMA_HC_URL", "CTRL_DIR"], "warnings": []}, {"name": "git-auto-sync.py", "path": "git-auto-sync.py", "dir_path": "Core Scripts", "category": "Core Scripts", "desc": "Master logic to push/pull Git repos", "freq": "Varies", "cron_ctx": "user", "env": [], "warnings": []}, {"name": "vergil.py", "path": "tg-vergil/vergil.py", "dir_path": "tg-vergil", "category": "Tg-Vergil", "desc": "Runs scripts and commands directly on server with logs (programmed in the .env file)", "freq": "On Demand - Telegram", "cron_ctx": "", "env": [], "warnings": []}, {"name": "docker_dash.py", "path": "docker-dash/docker_dash.py", "dir_path": "docker-dash", "category": "Docker-Dash", "desc": "Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard", "freq": "On Demand", "cron_ctx": "", "env": [], "warnings": []}, {"name": "cert-manager.sh", "path": "cert-manager/cert-manager.sh", "dir_path": "cert-manager", "category": "Cert-Manager", "desc": "Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole.", "freq": "On Demand - At 03:00, on day 1 of the month", "cron_ctx": "user", "env": [], "warnings": []}, {"name": "container-watcher.sh", "path": "run_once/container-watcher.sh", "dir_path": "run_once", "category": "Run Once", "desc": "Auto-configures containers once they are manually started", "freq": "Run Once", "cron_ctx": "", "env": ["TELEGRAM_DANTE_BOT_TOKEN", "TELEGRAM_CHAT_ID", "N8N_WEBHOOK_UUID", "WATCHER_TASKS"], "warnings": []}, {"name": "setup.sh", "path": "run_once/setup.sh", "dir_path": "run_once", "category": "Run Once", "desc": "Phase 2 System Provisioning: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.", "freq": "Run Once (Disaster Recovery)", "cron_ctx": "", "env": ["SERVER_IP", "DATA_DIR", "NEXTCLOUD_DATA_DIR", "TIMEZONE"], "warnings": []}, {"name": "nextcloud_post-restore_fix.sh", "path": "run_once/nextcloud_post-restore_fix.sh", "dir_path": "run_once", "category": "Run Once", "desc": "Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime.", "freq": "Run Once", "cron_ctx": "", "env": ["NEXTCLOUD_USER", "NEXTCLOUD_CONTAINER"], "warnings": []}, {"name": "configure-firewall.sh", "path": "run_once/configure-firewall.sh", "dir_path": "run_once", "category": "Run Once", "desc": "Bootstrap: Resets UFW and applies correct rules (Private Server Mode)", "freq": "Run Once", "cron_ctx": "", "env": [], "warnings": []}], "crons": [{"label": "Update NextDNS IP and Healthchecks.io server/internet monitor", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "*/5 * * * *", "human_desc": "Every 5 minutes", "command": "curl -Z -fsS --retry 3 \"$SERVER_HC_URL\" \"$NEXTDNS_URL\"", "tier": "⚡ Every few minutes", "tier_order": 0, "env": ["SERVER_HC_URL", "NEXTDNS_URL"]}, {"label": "Pulls and deploys stack updates done by Renovate", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "*/15 * * * *", "human_desc": "Every 15 minutes", "command": "cron-guard --mode fail \"GitOps Deployer\" \"/opt/scripts/gitops-deploy.sh\"", "tier": "⚡ Every few minutes", "tier_order": 0, "env": []}, {"label": "Sync Personal and Work Obsidian vaults to Git", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "*/30 * * * *", "human_desc": "Every 30 minutes", "command": "cron-guard --mode fail \"Obsidian Notes Sync\" \"/opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/scripts/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'\"", "tier": "⚡ Every few minutes", "tier_order": 0, "env": ["DATA_DIR"]}, {"label": "Disk Space Alerts", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "0 * * * *", "human_desc": "Every hour", "command": "cron-guard --mode fail \"Disk Monitor\" \"/opt/scripts/disk-monitor.sh\"", "tier": "🕐 Hourly", "tier_order": 1, "env": []}, {"label": "Rotate backups (retain recent) and purge download watch folder", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "0 0,12 * * *", "human_desc": "At 00:00 and 12:00", "command": "cron-guard --mode fail \"Cleanup Job\" \"/opt/scripts/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL\"", "tier": "🌙 Daily", "tier_order": 2, "env": ["DATA_DIR"]}, {"label": "Update Pi-hole Gravity (adlists) and apply mmotti regex rules", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "55 3 * * *", "human_desc": "At 03:55", "command": "cron-guard --mode fail \"Pi-hole Gravity & Regex\" \"docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'\"", "tier": "🌙 Daily", "tier_order": 2, "env": []}, {"label": "Export Nextcloud Calendars (.ics) and Contacts (.vcf)", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "10 4 * * *", "human_desc": "At 04:10", "command": "cron-guard --mode fail \"Nextcloud Cal/Card Backup\" \"docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s\"", "tier": "🌙 Daily", "tier_order": 2, "env": []}, {"label": "Apply file renaming rules to Paperless-ngx documents", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "25 4 * * *", "human_desc": "At 04:25", "command": "cron-guard --mode fail \"Paperless Auto Renamer\" \"docker exec -i paperless-ngx python3 manage.py document_renamer\"", "tier": "🌙 Daily", "tier_order": 2, "env": []}, {"label": "Snapshot system configs/dotfiles and sync `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "0 5 * * *", "human_desc": "At 05:00", "command": "cron-guard --mode fail \"Scripts & System Configs Backup\" \"/opt/scripts/backup-scripts-git.sh\"", "tier": "🌙 Daily", "tier_order": 2, "env": []}, {"label": "Scan docker-compose files and open dependency update PRs on Codeberg", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "0 9 * * *", "human_desc": "At 09:00", "command": "cron-guard --mode fail \"Renovate\" \"docker run --rm --env-file $STACKS_DIR/renovate/.env -v $STACKS_DIR/renovate/config.js:/usr/src/app/config.js renovate/renovate\"", "tier": "🌙 Daily", "tier_order": 2, "env": ["STACKS_DIR"]}, {"label": "Runs a Borgmatic backup", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "0 2 * * 0", "human_desc": "At 02:00, only on Sunday", "command": "cron-guard --mode all \"Borg Backup\" \"borgmatic\"", "tier": "📅 Weekly", "tier_order": 3, "env": []}, {"label": "cert-manager: regenerate & upload SSL certs to NPM", "owner": "👤 User Cron (gravi-ctrl)", "is_root": false, "raw_schedule": "0 3 1 * *", "human_desc": "At 03:00, on day 1 of the month", "command": "cron-guard --mode fail \"cert-mgr: Renew SSL certs\" \"/opt/scripts/cert-manager/cert-manager.sh renew\"", "tier": "🗓️ Monthly", "tier_order": 4, "env": []}, {"label": "Emergency shutdown if battery is discharging and below 20%", "owner": "⚡ Root Cron", "is_root": true, "raw_schedule": "*/5 * * * *", "human_desc": "Every 5 minutes", "command": "/opt/scripts/battery-monitor.sh > /dev/null 2>&1", "tier": "⚡ Every few minutes", "tier_order": 0, "env": []}, {"label": "Cold backup of Docker Stacks & SSH keys (Brief Service Downtime)", "owner": "⚡ Root Cron", "is_root": true, "raw_schedule": "30 5 * * 4", "human_desc": "At 05:30, only on Thursday", "command": "cron-guard --mode all \"Docker Stacks Backup\" \"/opt/scripts/local-opt-backup.sh\"", "tier": "📅 Weekly", "tier_order": 3, "env": []}, {"label": "ctrl_s_master Project", "owner": "⚡ Root Cron", "is_root": true, "raw_schedule": "0 2 8-14,22-28 * *", "human_desc": "At 02:00, on day 8 through 14 and 22 through 28 of the month", "command": "[ \"$(date +\\%u)\" = 5 ] && cron-guard --mode fail \"ctrl_s_master\" \"$CTRL_DIR/run.sh\"", "tier": "🔀 Other", "tier_order": 99, "env": ["CTRL_DIR"]}], "envs": [{"name": "AGE_KEYFILE", "env_used": ["local-opt-backup.sh"], "script_used": ["local-opt-backup.sh"], "mismatch": false}, {"name": "BACKUP_DIR", "env_used": ["health-snapshot.sh", "local-opt-backup.sh"], "script_used": ["health-snapshot.sh", "local-opt-backup.sh"], "mismatch": false}, {"name": "CTRL_DIR", "env_used": ["backup-scripts-git.sh", "crontab", "local-opt-backup.sh"], "script_used": ["backup-scripts-git.sh", "local-opt-backup.sh"], "mismatch": false}, {"name": "DATA_DIR", "env_used": ["crontab", "nextcloud-dynamic-watch.sh", "setup.sh"], "script_used": ["nextcloud-dynamic-watch.sh", "setup.sh"], "mismatch": false}, {"name": "FILES_TO_KEEP", "env_used": ["cleanup_script.py"], "script_used": ["cleanup_script.py"], "mismatch": false}, {"name": "KUMA_HC_URL", "env_used": ["local-opt-backup.sh"], "script_used": ["local-opt-backup.sh"], "mismatch": false}, {"name": "N8N_WEBHOOK_UUID", "env_used": ["container-watcher.sh"], "script_used": ["container-watcher.sh"], "mismatch": false}, {"name": "NEXTCLOUD_CONTAINER", "env_used": ["nextcloud-dynamic-watch.sh", "nextcloud_post-restore_fix.sh"], "script_used": ["nextcloud-dynamic-watch.sh", "nextcloud_post-restore_fix.sh"], "mismatch": false}, {"name": "NEXTCLOUD_DATA_DIR", "env_used": ["nextcloud-dynamic-watch.sh", "setup.sh"], "script_used": ["nextcloud-dynamic-watch.sh", "setup.sh"], "mismatch": false}, {"name": "NEXTCLOUD_MOUNT_NAME", "env_used": ["nextcloud-dynamic-watch.sh"], "script_used": ["nextcloud-dynamic-watch.sh"], "mismatch": false}, {"name": "NEXTCLOUD_USER", "env_used": ["nextcloud-dynamic-watch.sh", "nextcloud_post-restore_fix.sh"], "script_used": ["nextcloud-dynamic-watch.sh", "nextcloud_post-restore_fix.sh"], "mismatch": false}, {"name": "NEXTDNS_URL", "env_used": ["crontab"], "script_used": [], "mismatch": false}, {"name": "PATH", "env_used": ["crontab"], "script_used": [], "mismatch": false}, {"name": "SERVER_HC_URL", "env_used": ["crontab"], "script_used": [], "mismatch": false}, {"name": "SERVER_IP", "env_used": ["setup.sh"], "script_used": ["setup.sh"], "mismatch": false}, {"name": "STACKS_DIR", "env_used": ["backup-scripts-git.sh", "crontab", "gitops-deploy.sh", "local-opt-backup.sh"], "script_used": ["backup-scripts-git.sh", "gitops-deploy.sh", "local-opt-backup.sh"], "mismatch": false}, {"name": "TELEGRAM_CHAT_ID", "env_used": ["container-watcher.sh", "cron-guard.py", "gitops-deploy.sh"], "script_used": ["container-watcher.sh", "cron-guard.py", "gitops-deploy.sh"], "mismatch": false}, {"name": "TELEGRAM_DANTE_BOT_TOKEN", "env_used": ["container-watcher.sh", "cron-guard.py", "gitops-deploy.sh"], "script_used": ["container-watcher.sh", "cron-guard.py", "gitops-deploy.sh"], "mismatch": false}, {"name": "TIMEZONE", "env_used": ["setup.sh"], "script_used": ["setup.sh"], "mismatch": false}, {"name": "TOOLS", "env_used": ["backup-scripts-git.sh"], "script_used": ["backup-scripts-git.sh"], "mismatch": false}, {"name": "WATCHER_TASKS", "env_used": ["container-watcher.sh"], "script_used": ["container-watcher.sh"], "mismatch": false}]};
+let activeTab = 'scripts';
+const F = { 
+  warn: false, user: false, root: false, 
+  docker: false, quick: false,
+  secrets: false, orphans: false
+};
+
+// Folder Tree Selection State
+let activeParentDir = null;
+let activeChildDir = null;
+
+function e(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function bdg(cls, txt){ return `<span class="bdg ${cls}">${e(txt)}</span>`; }
+function toggleGroup(id) {
+    document.getElementById(id+'-head').classList.toggle('is-open');
+    document.getElementById(id+'-body').classList.toggle('is-open');
+}
+
+function renderStats() {
+  let warns = D.scripts.filter(s => s.warnings.length > 0).length + D.envs.filter(e => e.mismatch).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-n">${D.scripts.length}</div><div class="stat-l">Total Scripts</div></div>
+    <div class="stat"><div class="stat-n">${D.crons.length}</div><div class="stat-l">Active Cron Jobs</div></div>
+    <div class="stat"><div class="stat-n">${D.envs.length}</div><div class="stat-l">Tracked Variables</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--red-tx)">${warns}</div><div class="stat-l">Total Warnings</div></div>
+  `;
+}
+
+function renderScripts() {
+  const grouped = {};
+  D.scripts.forEach((s, idx) => {
+    s._idx = idx; 
+    if (!grouped[s.category]) grouped[s.category] = [];
+    grouped[s.category].push(s);
+  });
+
+  const cats = Object.keys(grouped).sort((a,b) => {
+      if(a === "Core Scripts") return -1;
+      if(b === "Core Scripts") return 1;
+      return a.localeCompare(b);
+  });
+
+  let html = '';
+  cats.forEach((cat, c_idx) => {
+    const scripts = grouped[cat];
+    const gid = `s-cat-${c_idx}`;
+    let warnsInCat = scripts.filter(s => s.warnings.length > 0).length;
+    let warnBadge = warnsInCat > 0 ? bdg('b-red', `⚠️ ${warnsInCat}`) : '';
+
+    html += `<div class="group-container ui-group" data-group="${gid}">
+      <div class="group-head is-open" id="${gid}-head" onclick="toggleGroup('${gid}')">
+        <div>📁 ${e(cat)}</div>
+        <div style="display:flex;gap:10px;align-items:center;">${warnBadge}<span class="group-count">${scripts.length}</span></div>
+      </div>
+      <div class="group-body grid is-open" id="${gid}-body">`;
+
+    scripts.forEach(s => {
+      let badges = [];
+      if(s.freq) badges.push(bdg('b-green', s.freq));
+      if(s.cron_ctx) {
+          if(s.cron_ctx.toLowerCase().includes('root')) badges.push(bdg('b-red', '⚡ Root'));
+          if(s.cron_ctx.toLowerCase().includes('user')) badges.push(bdg('b-blue', '👤 User'));
+      }
+      s.env.forEach(ev => badges.push(bdg('b-amber', ev)));
+      
+      let warnHtml = s.warnings.length ? `<div class="card-desc" style="background:var(--red-bg);border-color:var(--red-tx)"><ul class="warning-list">${s.warnings.map(w=>`<li>${e(w)}</li>`).join('')}</ul></div>` : '';
+
+      html += `<div class="card item-card" data-idx="${s._idx}">
+        <div class="card-title"><span>${e(s.name)}</span></div>
+        <div class="card-sub">${e(s.path)}</div>
+        ${s.desc ? `<div class="card-desc">${e(s.desc)}</div>` : ''}
+        ${warnHtml}
+        <div class="badges">${badges.join('')}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('view-scripts').innerHTML = html;
+}
+
+function renderCrons() {
+  const grouped = { "👤 User Cron": [], "⚡ Root Cron": [] };
+  D.crons.forEach((c, idx) => {
+    c._idx = idx;
+    const key = c.is_root ? "⚡ Root Cron" : "👤 User Cron";
+    grouped[key].push(c);
+  });
+
+  let html = '';
+  Object.keys(grouped).forEach((owner, c_idx) => {
+    if (grouped[owner].length === 0) return;
+    const gid = `c-cat-${c_idx}`;
+    html += `<div class="group-container ui-group" data-group="${gid}">
+      <div class="group-head is-open" id="${gid}-head" onclick="toggleGroup('${gid}')">
+        <div>${e(owner)}</div>
+        <span class="group-count">${grouped[owner].length} jobs</span>
+      </div>
+      <div class="group-body is-open" id="${gid}-body">`;
+
+    let currentTier = null;
+    grouped[owner].forEach(c => {
+      if (c.tier !== currentTier) {
+        currentTier = c.tier;
+        html += `<div class="tier-header ui-tier" data-tier="${c.tier}">${e(c.tier)}</div><div class="grid ui-tier-grid" style="margin-bottom:12px;">`;
+      }
+      
+      let badges = [];
+      c.env.forEach(ev => badges.push(bdg('b-amber', ev)));
+      
+      html += `<div class="card item-card" data-idx="${c._idx}">
+        <div class="card-title"><span>${e(c.label)}</span><span class="card-sub" style="color:var(--tx2)">${e(c.human_desc)}</span></div>
+        <div class="card-sub">${e(c.raw_schedule)}</div>
+        <div class="mono-cmd">${e(c.command)}</div>
+        <div class="badges">${badges.join('')}</div>
+      </div>`;
+      
+      if(grouped[owner].indexOf(c) === grouped[owner].length - 1 || grouped[owner][grouped[owner].indexOf(c)+1].tier !== currentTier){
+          html += `</div>`;
+      }
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('view-crons').innerHTML = html;
+}
+
+function renderEnvs() {
+  const grouped = { "⚠️ Action Required (Mismatches)": [], "✅ Healthy Variables": [] };
+  D.envs.forEach((env, idx) => {
+    env._idx = idx;
+    if(env.mismatch) grouped["⚠️ Action Required (Mismatches)"].push(env);
+    else grouped["✅ Healthy Variables"].push(env);
+  });
+
+  let html = '';
+  Object.keys(grouped).forEach((cat, c_idx) => {
+    if (grouped[cat].length === 0) return;
+    const gid = `e-cat-${c_idx}`;
+    html += `<div class="group-container ui-group" data-group="${gid}">
+      <div class="group-head is-open" id="${gid}-head" onclick="toggleGroup('${gid}')">
+        <div>${e(cat)}</div>
+        <span class="group-count">${grouped[cat].length}</span>
+      </div>
+      <div class="group-body grid is-open" id="${gid}-body">`;
+
+    grouped[cat].forEach(env => {
+      let headerBadges = env.mismatch ? bdg('b-red', '⚠️ Mismatch') : '';
+      let b1 = env.env_used.map(s => bdg('b-blue', s)).join(' ');
+      let b2 = env.script_used.map(s => bdg('b-green', s)).join(' ');
+      
+      html += `<div class="card interactive item-card" data-idx="${env._idx}">
+        <div class="card-head" onclick="document.getElementById('eb${env._idx}').classList.toggle('open')">
+          <div style="font-weight:600;font-family:ui-monospace,monospace">${e(env.name)}</div>
+          <div>${headerBadges}</div>
+        </div>
+        <div class="card-body" id="eb${env._idx}">
+          <div class="detail"><span class="dlabel">Declared in .env.example</span><span class="dval">${b1 || '<span style="color:var(--tx3)">—</span>'}</span></div>
+          <div class="detail"><span class="dlabel">Found in script @USES_ENV</span><span class="dval">${b2 || '<span style="color:var(--tx3)">—</span>'}</span></div>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('view-envs').innerHTML = html;
+}
+
+// 📁 Dynamic Directory Filtering Logic
+function renderDirectoryFilters() {
+  const parentContainer = document.getElementById('scripts-parent-dirs');
+  const childContainer = document.getElementById('scripts-child-dirs');
+  if (!parentContainer) return;
+
+  const allPaths = [...new Set(D.scripts.map(s => s.dir_path))];
+  
+  const topLevelsSet = new Set();
+  allPaths.forEach(p => {
+      if (p === "Core Scripts") topLevelsSet.add(p);
+      else topLevelsSet.add(p.split('/')[0]);
+  });
+  const topLevels = [...topLevelsSet].sort();
+
+  // 1. Render Parents Row
+  let parentHtml = '<span class="sub-filter-label">Folders:</span>';
+  parentHtml += `<button class="fbtn ${activeParentDir === null ? 'on' : ''}" onclick="selectParentDir(null)">📁 All</button>`;
+  
+  topLevels.forEach(p => {
+      const label = p === "Core Scripts" ? p : p.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
+      const activeClass = activeParentDir === p ? 'on' : '';
+      parentHtml += `<button class="fbtn ${activeClass}" onclick="selectParentDir('${p}')">📁 ${e(label)}</button>`;
+  });
+  parentContainer.innerHTML = parentHtml;
+
+  // 2. Render Children Row (Nested structure support)
+  if (activeParentDir && activeParentDir !== "Core Scripts") {
+      const children = allPaths.filter(p => p.startsWith(activeParentDir + '/')).sort();
+      if (children.length > 0) {
+          childContainer.style.display = 'flex';
+          let childHtml = '<span class="sub-filter-label" style="font-size:10px;">Subfolders:</span>';
+          childHtml += `<button class="fbtn ${activeChildDir === null ? 'on' : ''}" onclick="selectChildDir(null)">↳ All ${e(activeParentDir.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase())}</button>`;
+          
+          children.forEach(c => {
+              const subName = c.substring(activeParentDir.length + 1);
+              const label = subName.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
+              const activeClass = activeChildDir === c ? 'on' : '';
+              childHtml += `<button class="fbtn ${activeClass}" onclick="selectChildDir('${c}')">↳ ${e(label)}</button>`;
+          });
+          childContainer.innerHTML = childHtml;
+      } else {
+          childContainer.style.display = 'none';
+      }
+  } else {
+      childContainer.style.display = 'none';
+  }
+}
+
+function selectParentDir(dir) {
+  activeParentDir = dir;
+  activeChildDir = null; // Clear active child context
+  renderDirectoryFilters();
+  applyFilter();
+}
+
+function selectChildDir(dir) {
+  activeChildDir = dir;
+  renderDirectoryFilters();
+  applyFilter();
+}
+
+function switchTab(t, btn) {
+  activeTab = t;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  
+  if (btn) {
+      btn.classList.add('active');
+  } else {
+      const defaultTab = Array.from(document.querySelectorAll('.tab')).find(el => el.getAttribute('onclick').includes(t));
+      if (defaultTab) defaultTab.classList.add('active');
+  }
+  document.getElementById(`view-${t}`).classList.add('active');
+  
+  // Toggle sub-filters row
+  document.querySelectorAll('.sub-filter-group').forEach(el => el.style.display = 'none');
+  const activeSub = document.getElementById(`sub-${t}`);
+  if(activeSub) activeSub.style.display = 'flex';
+  
+  // Clean states to avoid overlapping view calculations
+  if (t !== 'scripts') {
+      activeParentDir = null;
+      activeChildDir = null;
+  } else {
+      renderDirectoryFilters();
+  }
+  if (t !== 'crons') { F.docker = false; F.quick = false; document.getElementById('f-docker').classList.remove('on'); document.getElementById('f-quick').classList.remove('on'); }
+  if (t !== 'envs') { F.secrets = false; F.orphans = false; document.getElementById('f-secrets').classList.remove('on'); document.getElementById('f-orphans').classList.remove('on'); }
+
+  applyFilter();
+}
+
+function tog(k) {
+  F[k] = !F[k];
+  document.getElementById('f-'+k).classList.toggle('on', F[k]);
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let count = 0;
+  
+  if (activeTab === 'scripts') {
+    document.querySelectorAll('#view-scripts .item-card').forEach(el => {
+      const s = D.scripts[el.dataset.idx];
+      const txt = JSON.stringify(s).toLowerCase();
+      const isRoot = s.cron_ctx && s.cron_ctx.toLowerCase().includes('root');
+      const isUser = s.cron_ctx && s.cron_ctx.toLowerCase().includes('user');
+      
+      // Dynamic Folder/Tree evaluations
+      let dirMatch = true;
+      if (activeParentDir) {
+          if (activeParentDir === "Core Scripts") {
+              dirMatch = (s.dir_path === "Core Scripts");
+          } else {
+              if (activeChildDir) {
+                  dirMatch = (s.dir_path === activeChildDir);
+              } else {
+                  dirMatch = (s.dir_path === activeParentDir || s.dir_path.startsWith(activeParentDir + '/'));
+              }
+          }
+      }
+
+      const match = (!q || txt.includes(q)) &&
+                    (!F.warn || s.warnings.length > 0) &&
+                    (!F.root || isRoot) &&
+                    (!F.user || isUser) &&
+                    dirMatch;
+      el.style.display = match ? '' : 'none';
+      if(match) count++;
+    });
+  } 
+  else if (activeTab === 'crons') {
+    document.querySelectorAll('#view-crons .item-card').forEach(el => {
+      const c = D.crons[el.dataset.idx];
+      const txt = JSON.stringify(c).toLowerCase();
+      
+      // Strict regex matching to ensure docker is actually executing a container task
+      const hasDocker = /\bdocker\s+(exec|run|compose)\b/i.test(c.command);
+      const isQuick = c.tier_order <= 1; 
+      
+      const match = (!q || txt.includes(q)) &&
+                    (!F.warn) && 
+                    (!F.root || c.is_root) &&
+                    (!F.user || !c.is_root) &&
+                    (!F.docker || hasDocker) &&
+                    (!F.quick || isQuick);
+      el.style.display = match ? '' : 'none';
+      if(match) count++;
+    });
+    
+    document.querySelectorAll('#view-crons .ui-tier-grid').forEach(grid => {
+      const hasVisible = Array.from(grid.querySelectorAll('.item-card')).some(c => c.style.display !== 'none');
+      grid.style.display = hasVisible ? 'grid' : 'none';
+      grid.previousElementSibling.style.display = hasVisible ? 'block' : 'none'; 
+    });
+  }
+  else if (activeTab === 'envs') {
+    document.querySelectorAll('#view-envs .item-card').forEach(el => {
+      const env = D.envs[el.dataset.idx];
+      const txt = JSON.stringify(env).toLowerCase();
+      const isSecret = /token|key|pass|secret|auth|id/i.test(env.name);
+      const isOrphan = env.script_used.length === 0;
+      
+      const match = (!q || txt.includes(q)) &&
+                    (!F.warn || env.mismatch) &&
+                    (!F.root) && (!F.user) &&
+                    (!F.secrets || isSecret) &&
+                    (!F.orphans || isOrphan);
+      el.style.display = match ? '' : 'none';
+      if(match) count++;
+    });
+  }
+
+  // Globally hide empty groups
+  document.querySelectorAll(`#view-${activeTab} .ui-group`).forEach(group => {
+    const hasVisible = Array.from(group.querySelectorAll('.item-card')).some(c => c.style.display !== 'none');
+    group.style.display = hasVisible ? 'block' : 'none';
+  });
+
+  document.getElementById('no-match').style.display = count ? 'none' : 'block';
+}
+
+renderScripts();
+renderCrons();
+renderEnvs();
+switchTab('scripts'); 
+</script>
+</body>
+</html>
