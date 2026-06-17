@@ -21,6 +21,13 @@ import socket
 import random  # Added for randomized network jitter
 from datetime import datetime
 
+# ── Force UTF-8 console output
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     """
     Helper to run shell commands. 
@@ -81,6 +88,15 @@ def sync_branch(branch_name, max_retries=3):
             break
 
         err_low = pull_proc.stderr.lower() if pull_proc.stderr else ""
+
+        # Branch has never been pushed before, so there's nothing to pull yet.
+        # This is normal for a freshly-created local branch, not an error —
+        # treat it as a successful (empty) pull and let the push step below
+        # create the upstream.
+        if "couldn't find remote ref" in err_low or "no tracking information" in err_low:
+            print(f"ℹ️  No remote branch 'origin/{branch_name}' yet — nothing to pull. Will create it on push.")
+            pulled = True
+            break
 
         # Conflict Check
         status_proc = run_command(["git", "status"], capture_output=True)
