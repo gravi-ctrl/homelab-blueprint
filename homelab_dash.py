@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # @DESCRIPTION: Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.
-# @FREQUENCY: On Demand
+# @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
 
 import os
 import re
