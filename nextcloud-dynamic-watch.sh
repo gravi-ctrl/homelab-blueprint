@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Watches `/data/assets` + Internal Data, scans Nextcloud via Docker
-# @FREQUENCY: Service (Always)
+# @FREQUENCY: Service (Always) (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_DATA_DIR, NEXTCLOUD_CONTAINER, NEXTCLOUD_MOUNT_NAME, DATA_DIR
 
 [[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
