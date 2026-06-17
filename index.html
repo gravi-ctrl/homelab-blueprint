@@ -70,10 +70,12 @@ h1{font-size:20px;font-weight:500}
 .narrative-card[open] summary::after { transform: rotate(180deg); }
 .narrative-card[open] summary { border-bottom: 1px solid var(--br); }
 .narrative-body { padding: 16px 18px; }
-.task-row { position: relative; padding-left: 18px; margin-bottom: 16px; font-size: 14px; color: var(--tx); line-height: 1.5; }
+.task-row { position: relative; padding-left: 18px; margin-bottom: 16px; font-size: 14px; color: var(--tx); line-height: 1.7; }
 .task-row:last-child { margin-bottom: 0; }
 .task-row::before { content: "•"; position: absolute; left: 0; top: 0; color: var(--tx3); font-size: 18px; }
-.time-badge { font-weight: 600; color: var(--blue-tx); background: var(--blue-bg); padding: 3px 8px; border-radius: 6px; font-size: 12px; display: inline-block; margin-right: 6px; letter-spacing: 0.02em; white-space: nowrap; }
+
+.mono-script { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--bg3); padding: 2px 6px; border-radius: 4px; color: var(--tx); font-weight: 600; border: .5px solid var(--br2); }
+.time-badge { font-weight: 500; color: var(--blue-tx); background: var(--blue-bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; display: inline-block; margin-left: 4px; letter-spacing: 0.01em; white-space: nowrap; vertical-align: middle; }
 .action-text { color: var(--tx); }
 .action-separator { color: var(--tx3); font-weight: 400; margin: 0 4px; }
 
@@ -110,7 +112,7 @@ h1{font-size:20px;font-weight:500}
   <div class="hdr">
     <h1>🖥️ Homelab Automation Dashboard</h1>
   </div>
-  <div class="gen-time">Generated 2026-06-17 23:36 UTC</div>
+  <div class="gen-time">Generated 2026-06-17 23:42 UTC</div>
   <div class="stats" id="stats"></div>
   
   <div class="nav-tabs">
@@ -241,9 +243,11 @@ function renderOverview() {
       let warnIcon = s.warnings.length ? `<span style="font-size:12px; cursor:help;" title="${e(s.warnings.join(', '))}">⚠️</span>` : '';
       narrativeHtml += `
           <div class="task-row">
-            <span class="time-badge">${e(s.freq)}</span> ${warnIcon}
+            ${warnIcon}
+            <code class="mono-script">${e(s.name)}</code>
             <span class="action-separator">──</span> 
             <span class="action-text">${e(s.desc)}</span>
+            <span class="time-badge">${e(s.freq)}</span>
           </div>
       `;
     });
