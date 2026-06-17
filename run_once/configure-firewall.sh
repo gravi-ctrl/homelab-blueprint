@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Bootstrap: Resets UFW and applies correct rules (Private Server Mode)
-# @FREQUENCY: Run Once
+# @FREQUENCY: Run Once (triggered by `setup.sh`)
 # ==============================================================================
 # 🛡️ UFW FIREWALL RESTORATION SCRIPT
 # Strategy: Block Internet, Trust LAN, Trust VPN, Trust Docker.
