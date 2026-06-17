@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime.
-# @FREQUENCY: Run Once
+# @FREQUENCY: Run Once (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_CONTAINER
 
 [[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
