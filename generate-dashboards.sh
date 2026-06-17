@@ -44,17 +44,17 @@ fi
 deploy_page_local() {
     local repo_dir="$1"
     local temp_html="$2"
-    
+
     if [ ! -d "$repo_dir" ]; then
         echo "⚠️ Warning: Directory $repo_dir does not exist. Skipping."
         return 0
     fi
 
     echo "📁 Processing deployment for $repo_dir..."
-    
+
     # 1. Define temporary paths
     local temp_worktree="/tmp/worktree_$(basename "$repo_dir")"
-    
+
     # Clean up any leftover temp worktrees from previous failed runs
     rm -rf "$temp_worktree"
     git -C "$repo_dir" worktree prune 2>/dev/null || true
@@ -65,9 +65,12 @@ deploy_page_local() {
         echo "   (Initializing pages branch)"
         git -C "$repo_dir" branch pages
     fi
-    
+
     # Check out the branch normally without force-resetting it
     git -C "$repo_dir" worktree add "$temp_worktree" pages
+
+    # Fetch any dashboard updates made by other machines!
+    git -C "$temp_worktree" pull --rebase origin pages >/dev/null 2>&1 || true
 
     # 3. Copy our generated HTML to the temporary worktree directory
     cp "$temp_html" "$temp_worktree/index.html"
