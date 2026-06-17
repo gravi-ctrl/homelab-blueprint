@@ -80,6 +80,11 @@ ${funnel_msg}
 2. Click 'Generate auth key'
 3. Tick: Reusable + Tags → select a tag
 4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env"
+
+ℹ️ funnel = public internet, serve = tailnet-only:
+docker exec tailscaled tailscale funnel --bg --https=443 \"http://127.0.0.1:PORT\"
+docker exec tailscaled tailscale serve --bg --https=443 \"http://127.0.0.1:PORT\"
+(non-443 ports need :PORT suffix in the .ts.net URL)"
 }
 
 # 🔹 TASK: NGINX PROXY MANAGER (NPM)
