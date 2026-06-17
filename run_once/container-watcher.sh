@@ -71,9 +71,6 @@ task_tailscale() {
         funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env\n"
     fi
 
-    docker exec tailscaled tailscale funnel --bg --https=443 "http://127.0.0.1:80"
-    funnel_msg+="\n✅ Obsidian (ignis) configured"
-
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
 ━━━━━━━━━━━━━━━
 ${funnel_msg}
