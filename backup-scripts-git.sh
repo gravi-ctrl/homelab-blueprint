@@ -33,12 +33,6 @@ else
     echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
 fi
 
-# --- GENERATE DASHBOARDS ---
-if [ -f "/opt/scripts/generate-dashboards.sh" ]; then
-    echo "📊 Generating Dashboards..."
-    "/opt/scripts/generate-dashboards.sh"
-fi
-
 # B. Installed Packages
 apt-mark showmanual > "$SNAPSHOT_DIR/my_installed_apps.txt"
 
@@ -102,5 +96,16 @@ echo "🚀 Syncing Repositories..."
 
 # --- 4. Sync /opt/stacks ---
 "$MASTER_SCRIPT" "${STACKS_DIR}" "Server Stacks"
+
+# --- GENERATE DASHBOARDS ---
+if [ -f "/opt/scripts/generate-dashboards.sh" ]; then
+    echo "📊 Generating Dashboards..."
+    "/opt/scripts/generate-dashboards.sh"
+
+    # --- 5. PUSH FRESH DASHBOARD COMMITS ---
+    echo "🚀 Pushing updated dashboards..."
+    git -C "/opt/scripts" push origin pages
+    git -C "${STACKS_DIR}" push origin pages
+fi
 
 echo "✅ Backup process completed successfully."
