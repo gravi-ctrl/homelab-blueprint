@@ -89,10 +89,7 @@ def sync_branch(branch_name, max_retries=3):
 
         err_low = pull_proc.stderr.lower() if pull_proc.stderr else ""
 
-        # Branch has never been pushed before, so there's nothing to pull yet.
-        # This is normal for a freshly-created local branch, not an error —
-        # treat it as a successful (empty) pull and let the push step below
-        # create the upstream.
+        # Branch has never been pushed before. Nothing to pull yet.
         if "couldn't find remote ref" in err_low or "no tracking information" in err_low:
             print(f"ℹ️  No remote branch 'origin/{branch_name}' yet — nothing to pull. Will create it on push.")
             pulled = True
