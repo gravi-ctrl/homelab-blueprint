@@ -79,7 +79,7 @@ ${funnel_msg}
 1. Go to https://login.tailscale.com/admin/settings/keys
 2. Click 'Generate auth key'
 3. Tick: Reusable + Tags → select a tag
-4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env"
+4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env
 
 ℹ️ funnel = public internet, serve = tailnet-only:
 docker exec tailscaled tailscale funnel --bg --https=443 \"http://127.0.0.1:PORT\"
