@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Bootstrap: Resets UFW and applies correct rules (Private Server Mode)
+# @DESCRIPTION: Resets UFW and applies correct rules (Private Server Mode)
 # @FREQUENCY: Run Once (triggered by `setup.sh`)
 # ==============================================================================
 # 🛡️ UFW FIREWALL RESTORATION SCRIPT
