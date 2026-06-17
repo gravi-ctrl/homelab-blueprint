@@ -55,6 +55,42 @@ def tier_sort_key(tier_label):
         if label == tier_label: return i
     return 99
 
+def get_semantic_category(desc, name):
+    """
+    Highly robust, multi-pass keyword matcher optimized against the real scripts.
+    Guarantees every script lands in its most logical visual bucket.
+    """
+    text = (str(desc or "") + " " + str(name or "")).lower()
+    fn = str(name or "").lower()
+    
+    # 1. Filename overrides for Core System configurations
+    if any(k in fn for k in ['setup', 'bootstrap', 'configure']):
+        return '⚙️ Core System & Automation'
+        
+    # 2. Maintenance & Cleaning tasks
+    maint_keys = ['cleanup', 'purge', 'rm', 'prune', 'clean', 'delete', 'rotate', 'unused', 'trash', 'remove']
+    if any(k in text for k in maint_keys):
+        return '🧹 Maintenance'
+        
+    # 3. Backups, Repositories & Syncs
+    backup_keys = ['backup', 'archive', 'sync', 'restore', 'recover', 'git', 'repo', 'push', 'pull', 'clone', 'rsync', 'ctrl_s_master', 'tar', 'zst', 'age-encrypted']
+    # Filter 'health-snapshot' to prevent it from going into Backups & Sync
+    if "health-snapshot" not in text and any(k in text for k in backup_keys + ['snapshot']):
+        return '💾 Backups & Sync'
+        
+    # 4. Apps & Docker Containers
+    docker_keys = ['docker', 'container', 'stack', 'compose', 'watch', 'nextcloud', 'app', 'volume', 'npm', 'n8n', 'tailscale']
+    if any(k in text for k in docker_keys):
+        return '🐳 Apps & Containers'
+        
+    # 5. Network, Vitals Monitoring, Alerts & Security
+    net_keys = ['dns', 'network', 'ip', 'health', 'curl', 'kuma', 'alert', 'telegram', 'notify', 'guard', 'ping', 'port', 'host', 'ssh', 'bot', 'status', 'firewall', 'ufw', 'vpn', 'ssl', 'cert', 'ca', 'pihole', 'battery', 'monitor']
+    if any(k in text for k in net_keys):
+        return '🌐 Network & Monitoring'
+        
+    # 6. Default Fallback
+    return '⚙️ Core System & Automation'
+
 # ── Parsers ───────────────────────────────────────────────────────
 def parse_env_example(env_path):
     env_used_by = {}
@@ -142,6 +178,7 @@ def parse_scripts(env_used_by):
                 "path": rel_str,
                 "dir_path": dir_str,
                 "category": cat.replace('_', ' ').title(),
+                "semantic_cat": get_semantic_category(desc, file),
                 "desc": desc,
                 "freq": freq,
                 "cron_ctx": cron_ctx or "",
@@ -330,6 +367,21 @@ h1{font-size:20px;font-weight:500}
 .tier-header{font-size:14px; font-weight:600; margin:14px 0 6px; color:var(--tx2); padding-bottom:4px; text-transform:uppercase; letter-spacing:0.03em;}
 .tier-header:first-child{margin-top:0;}
 
+/* Collapsible Narrative Cards for Overview */
+.narrative-card { background: var(--bg); border: 1px solid var(--br); border-radius: var(--r2); margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.narrative-card summary { padding: 14px 18px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; background: var(--bg2); }
+.narrative-card summary::-webkit-details-marker { display: none; }
+.narrative-card summary::after { content: '▼'; font-size: 11px; color: var(--tx3); transition: transform 0.2s; }
+.narrative-card[open] summary::after { transform: rotate(180deg); }
+.narrative-card[open] summary { border-bottom: 1px solid var(--br); }
+.narrative-body { padding: 16px 18px; }
+.task-row { position: relative; padding-left: 18px; margin-bottom: 16px; font-size: 14px; color: var(--tx); line-height: 1.5; }
+.task-row:last-child { margin-bottom: 0; }
+.task-row::before { content: "•"; position: absolute; left: 0; top: 0; color: var(--tx3); font-size: 18px; }
+.time-badge { font-weight: 600; color: var(--blue-tx); background: var(--blue-bg); padding: 3px 8px; border-radius: 6px; font-size: 12px; display: inline-block; margin-right: 6px; letter-spacing: 0.02em; white-space: nowrap; }
+.action-text { color: var(--tx); }
+.action-separator { color: var(--tx3); font-weight: 400; margin: 0 4px; }
+
 /* Cards */
 .card{background:var(--bg);border:.5px solid var(--br);border-radius:var(--r);padding:1rem;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 2px rgba(0,0,0,0.02)}
 .card.interactive{padding:0;cursor:pointer}
@@ -428,7 +480,6 @@ let activeChildDir = null;
 function e(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function bdg(cls, txt){ return `<span class="bdg ${cls}">${e(txt)}</span>`; }
 
-// 👇 UPDATED: Dynamic status badge labels inside toggleGroup
 function toggleGroup(id) {
     const head = document.getElementById(id+'-head');
     const body = document.getElementById(id+'-body');
@@ -448,101 +499,71 @@ function renderOverview() {
   const envMismatchCount = D.envs.filter(ev => ev.mismatch).length;
   const totalIssues = scriptWarnCount + envMismatchCount;
 
-  // ── Health banner ──────────────────────────────────────────────
+  // ── Health Banner ──────────────────────────────────────────────
   let bannerHtml;
   if (totalIssues === 0) {
     bannerHtml = `
-      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r2);background:var(--green-bg);margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r2);background:var(--green-bg);margin-bottom:24px;">
         <span style="font-size:18px;">✅</span>
         <span style="font-size:15px;font-weight:500;color:var(--green-tx);">Everything looks healthy — no issues found</span>
       </div>`;
   } else {
-    const issueWord = totalIssues === 1 ? "thing" : "things";
     bannerHtml = `
-      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r2);background:var(--amber-bg);margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r2);background:var(--amber-bg);margin-bottom:24px;">
         <span style="font-size:18px;">⚠️</span>
-        <span style="font-size:15px;font-weight:500;color:var(--amber-tx);">${totalIssues} ${issueWord} could use a look — see below</span>
+        <span style="font-size:15px;font-weight:500;color:var(--amber-tx);">${totalIssues} things could use a look — check the Full Script Inventory or Warnings filters</span>
       </div>`;
   }
 
-  // ── Plain stat cards ──────────────────────────────────────────
-  const statsHtml = `
-    <div class="stats" style="margin-bottom:20px;">
-      <div class="stat"><div class="stat-n">${D.scripts.length}</div><div class="stat-l">Scripts running this server</div></div>
-      <div class="stat"><div class="stat-n">${D.crons.length}</div><div class="stat-l">Scheduled jobs</div></div>
-      <div class="stat"><div class="stat-n">${D.envs.length}</div><div class="stat-l">Config variables tracked</div></div>
-      <div class="stat"><div class="stat-n" style="${totalIssues ? 'color:var(--amber-tx)' : ''}">${totalIssues}</div><div class="stat-l">Things to review</div></div>
-    </div>`;
+  // ── Group Scripts by Automated Semantic Category ────────────────
+  const grouped = {};
+  D.scripts.forEach(s => {
+    if (!s.desc || !s.freq) return; // Skip completely undocumented internal scripts
+    if (!grouped[s.semantic_cat]) grouped[s.semantic_cat] = [];
+    grouped[s.semantic_cat].push(s);
+  });
 
-  // ── Narrated schedule (plain-English, grouped by existing tier) ─
-  // Reuses c.tier_order / c.human_desc / c.label already computed in Python — no new parsing.
-  const sortedCrons = [...D.crons].sort((a, b) => a.tier_order - b.tier_order);
-  const seenTiers = new Set();
-  const tierIcon = {
-    "⚡ Every few minutes": "⚡", "🕐 Hourly": "🕐", "🌙 Daily": "🌙",
-    "📅 Weekly": "📅", "🗓️ Monthly": "🗓️", "📆 Yearly": "📆",
-    "🔁 On Reboot": "🔁", "🔀 Other": "🔀"
-  };
-  let scheduleHtml = '';
-  if (sortedCrons.length === 0) {
-    scheduleHtml = `<div style="font-size:13px;color:var(--tx2);">No scheduled jobs found.</div>`;
-  } else {
-    sortedCrons.slice(0, 6).forEach(c => {
-      const icon = tierIcon[c.tier] || "🔀";
-      const plainTime = c.human_desc ? c.human_desc.replace(/<br>.*$/i, '').replace(/\*\*/g, '') : c.tier;
-      scheduleHtml += `
-        <div style="background:var(--bg);border:.5px solid var(--br);border-radius:var(--r);padding:12px 14px;display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;">
-          <span style="font-size:16px;flex-shrink:0;">${icon}</span>
-          <div style="font-size:14px;">
-            <span style="font-weight:500;">${e(plainTime)}</span>
-            <span style="color:var(--tx2);"> — ${e(c.label)}</span>
-          </div>
-        </div>`;
-    });
-    if (sortedCrons.length > 6) {
-      scheduleHtml += `<div style="font-size:12px;color:var(--tx3);margin-top:4px;">+ ${sortedCrons.length - 6} more — see the Cron Schedule tab</div>`;
-    }
-  }
+  // ── Dynamic Narrative Timeline Cards ─────────────────────────────
+  let narrativeHtml = `
+    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">What runs on this server?</h2>
+    <div style="font-size: 14px; color: var(--tx2); margin-bottom: 20px;">A human-readable summary of background tasks automatically categorized by their purpose.</div>
+  `;
 
-  // ── Plain-English warnings list ──────────────────────────────
-  let warningsHtml = '';
-  if (totalIssues > 0) {
-    const scriptIssues = D.scripts.filter(s => s.warnings.length > 0).slice(0, 4);
-    const envIssues = D.envs.filter(ev => ev.mismatch).slice(0, 4);
-    scriptIssues.forEach(s => {
-      warningsHtml += `
-        <div style="background:var(--amber-bg);border-radius:var(--r);padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
-          <span style="font-size:15px;">⚠️</span>
-          <div style="font-size:13px;color:var(--amber-tx);">
-            <code style="font-family:ui-monospace,monospace;">${e(s.name)}</code> — ${e(s.warnings[0])}
+  // Iterating dynamically means ONLY populated categories render. Vague/empty ones are skipped.
+  Object.keys(grouped).sort().forEach(category => {
+    const scripts = grouped[category];
+    
+    narrativeHtml += `
+      <details class="narrative-card" open>
+        <summary>
+          <div>${category}</div>
+          <span style="font-size: 12px; font-weight: 400; color: var(--tx3); margin-left: 10px; background: var(--bg); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--br);">${scripts.length} tasks</span>
+        </summary>
+        <div class="narrative-body">
+    `;
+
+    scripts.forEach(s => {
+      let warnIcon = s.warnings.length ? `<span style="font-size:12px; cursor:help;" title="${e(s.warnings.join(', '))}">⚠️</span>` : '';
+      narrativeHtml += `
+          <div class="task-row">
+            <span class="time-badge">${e(s.freq)}</span> ${warnIcon}
+            <span class="action-separator">──</span> 
+            <span class="action-text">${e(s.desc)}</span>
           </div>
-        </div>`;
+      `;
     });
-    envIssues.forEach(ev => {
-      warningsHtml += `
-        <div style="background:var(--amber-bg);border-radius:var(--r);padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
-          <span style="font-size:15px;">⚠️</span>
-          <div style="font-size:13px;color:var(--amber-tx);">
-            <code style="font-family:ui-monospace,monospace;">${e(ev.name)}</code> is declared inconsistently between scripts and .env.example
-          </div>
-        </div>`;
-    });
-    if (totalIssues > scriptIssues.length + envIssues.length) {
-      warningsHtml += `<div style="font-size:12px;color:var(--tx3);">+ ${totalIssues - scriptIssues.length - envIssues.length} more — filter by ⚠️ Warnings in the other tabs</div>`;
-    }
-  }
+
+    narrativeHtml += `
+        </div>
+      </details>
+    `;
+  });
 
   document.getElementById('view-overview').innerHTML = `
     ${bannerHtml}
-    ${statsHtml}
-    <p style="font-size:13px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">What runs, and when</p>
-    <div style="margin-bottom:20px;">${scheduleHtml}</div>
-    ${totalIssues > 0 ? `
-      <p style="font-size:13px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Worth a look</p>
-      <div style="margin-bottom:20px;">${warningsHtml}</div>
-    ` : ''}
-    <div style="text-align:center;margin-top:8px;">
-      <button class="fbtn" onclick="switchTab('scripts')" style="padding:8px 16px;font-size:13px;">See every script, cron job, and variable →</button>
+    ${narrativeHtml}
+    <div style="text-align:center;margin-top:24px;">
+      <button class="fbtn" onclick="switchTab('scripts')" style="padding:10px 20px;font-size:14px;">📂 Explore Full Script Inventory →</button>
     </div>
   `;
 }
@@ -571,7 +592,6 @@ function renderScripts() {
       return a.localeCompare(b);
   });
 
-  // 👇 UPDATED: Guide is collapsed by default (no 'is-open' classes, default state 'Expand')
   let html = `
   <div class="group-container" id="guide-container" style="border-color: var(--blue-bd);">
     <div class="group-head" id="guide-head" onclick="toggleGroup('guide')" style="background: var(--blue-bg); color: var(--blue-tx);">
