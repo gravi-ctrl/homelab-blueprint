@@ -367,13 +367,14 @@ h1{font-size:20px;font-weight:500}
   <div class="stats" id="stats"></div>
   
   <div class="nav-tabs">
-    <button class="tab active" onclick="switchTab('scripts', this)">📂 Scripts Inventory</button>
+    <button class="tab active" onclick="switchTab('overview', this)">👋 Overview</button>
+    <button class="tab" onclick="switchTab('scripts', this)">📂 Scripts Inventory</button>
     <button class="tab" onclick="switchTab('crons', this)">📅 Cron Schedule</button>
     <button class="tab" onclick="switchTab('envs', this)">🔑 Variables</button>
   </div>
 
   <!-- Global Filters (Top Row) -->
-  <div class="filter-bar">
+  <div class="filter-bar" id="global-filter-bar">
     <input type="text" id="search" placeholder="Search names, paths, variables..." oninput="applyFilter()">
     <button class="fbtn" id="f-warn" onclick="tog('warn')">⚠️ Warnings</button>
     <button class="fbtn" id="f-user" onclick="tog('user')">👤 User</button>
@@ -381,7 +382,7 @@ h1{font-size:20px;font-weight:500}
   </div>
 
   <!-- Contextual Sub-Filters (Dynamic Bottom Row) -->
-  <div class="filter-bar sub-filters">
+  <div class="filter-bar sub-filters" id="sub-filter-bar">
     
     <!-- Scripts Dynamic Directory Tree Filters -->
     <div id="sub-scripts" class="sub-filter-group" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
@@ -404,7 +405,8 @@ h1{font-size:20px;font-weight:500}
     </div>
   </div>
 
-  <div id="view-scripts" class="view active"></div>
+  <div id="view-overview" class="view active"></div>
+  <div id="view-scripts" class="view"></div>
   <div id="view-crons" class="view"></div>
   <div id="view-envs" class="view"></div>
   <div class="no-match" id="no-match">No results match your filter.</div>
@@ -439,6 +441,110 @@ function toggleGroup(id) {
             status.textContent = head.classList.contains('is-open') ? 'Collapse' : 'Expand';
         }
     }
+}
+
+function renderOverview() {
+  const scriptWarnCount = D.scripts.filter(s => s.warnings.length > 0).length;
+  const envMismatchCount = D.envs.filter(ev => ev.mismatch).length;
+  const totalIssues = scriptWarnCount + envMismatchCount;
+
+  // ── Health banner ──────────────────────────────────────────────
+  let bannerHtml;
+  if (totalIssues === 0) {
+    bannerHtml = `
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r2);background:var(--green-bg);margin-bottom:16px;">
+        <span style="font-size:18px;">✅</span>
+        <span style="font-size:15px;font-weight:500;color:var(--green-tx);">Everything looks healthy — no issues found</span>
+      </div>`;
+  } else {
+    const issueWord = totalIssues === 1 ? "thing" : "things";
+    bannerHtml = `
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r2);background:var(--amber-bg);margin-bottom:16px;">
+        <span style="font-size:18px;">⚠️</span>
+        <span style="font-size:15px;font-weight:500;color:var(--amber-tx);">${totalIssues} ${issueWord} could use a look — see below</span>
+      </div>`;
+  }
+
+  // ── Plain stat cards ──────────────────────────────────────────
+  const statsHtml = `
+    <div class="stats" style="margin-bottom:20px;">
+      <div class="stat"><div class="stat-n">${D.scripts.length}</div><div class="stat-l">Scripts running this server</div></div>
+      <div class="stat"><div class="stat-n">${D.crons.length}</div><div class="stat-l">Scheduled jobs</div></div>
+      <div class="stat"><div class="stat-n">${D.envs.length}</div><div class="stat-l">Config variables tracked</div></div>
+      <div class="stat"><div class="stat-n" style="${totalIssues ? 'color:var(--amber-tx)' : ''}">${totalIssues}</div><div class="stat-l">Things to review</div></div>
+    </div>`;
+
+  // ── Narrated schedule (plain-English, grouped by existing tier) ─
+  // Reuses c.tier_order / c.human_desc / c.label already computed in Python — no new parsing.
+  const sortedCrons = [...D.crons].sort((a, b) => a.tier_order - b.tier_order);
+  const seenTiers = new Set();
+  const tierIcon = {
+    "⚡ Every few minutes": "⚡", "🕐 Hourly": "🕐", "🌙 Daily": "🌙",
+    "📅 Weekly": "📅", "🗓️ Monthly": "🗓️", "📆 Yearly": "📆",
+    "🔁 On Reboot": "🔁", "🔀 Other": "🔀"
+  };
+  let scheduleHtml = '';
+  if (sortedCrons.length === 0) {
+    scheduleHtml = `<div style="font-size:13px;color:var(--tx2);">No scheduled jobs found.</div>`;
+  } else {
+    sortedCrons.slice(0, 6).forEach(c => {
+      const icon = tierIcon[c.tier] || "🔀";
+      const plainTime = c.human_desc ? c.human_desc.replace(/<br>.*$/i, '').replace(/\*\*/g, '') : c.tier;
+      scheduleHtml += `
+        <div style="background:var(--bg);border:.5px solid var(--br);border-radius:var(--r);padding:12px 14px;display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;">
+          <span style="font-size:16px;flex-shrink:0;">${icon}</span>
+          <div style="font-size:14px;">
+            <span style="font-weight:500;">${e(plainTime)}</span>
+            <span style="color:var(--tx2);"> — ${e(c.label)}</span>
+          </div>
+        </div>`;
+    });
+    if (sortedCrons.length > 6) {
+      scheduleHtml += `<div style="font-size:12px;color:var(--tx3);margin-top:4px;">+ ${sortedCrons.length - 6} more — see the Cron Schedule tab</div>`;
+    }
+  }
+
+  // ── Plain-English warnings list ──────────────────────────────
+  let warningsHtml = '';
+  if (totalIssues > 0) {
+    const scriptIssues = D.scripts.filter(s => s.warnings.length > 0).slice(0, 4);
+    const envIssues = D.envs.filter(ev => ev.mismatch).slice(0, 4);
+    scriptIssues.forEach(s => {
+      warningsHtml += `
+        <div style="background:var(--amber-bg);border-radius:var(--r);padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
+          <span style="font-size:15px;">⚠️</span>
+          <div style="font-size:13px;color:var(--amber-tx);">
+            <code style="font-family:ui-monospace,monospace;">${e(s.name)}</code> — ${e(s.warnings[0])}
+          </div>
+        </div>`;
+    });
+    envIssues.forEach(ev => {
+      warningsHtml += `
+        <div style="background:var(--amber-bg);border-radius:var(--r);padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
+          <span style="font-size:15px;">⚠️</span>
+          <div style="font-size:13px;color:var(--amber-tx);">
+            <code style="font-family:ui-monospace,monospace;">${e(ev.name)}</code> is declared inconsistently between scripts and .env.example
+          </div>
+        </div>`;
+    });
+    if (totalIssues > scriptIssues.length + envIssues.length) {
+      warningsHtml += `<div style="font-size:12px;color:var(--tx3);">+ ${totalIssues - scriptIssues.length - envIssues.length} more — filter by ⚠️ Warnings in the other tabs</div>`;
+    }
+  }
+
+  document.getElementById('view-overview').innerHTML = `
+    ${bannerHtml}
+    ${statsHtml}
+    <p style="font-size:13px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">What runs, and when</p>
+    <div style="margin-bottom:20px;">${scheduleHtml}</div>
+    ${totalIssues > 0 ? `
+      <p style="font-size:13px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Worth a look</p>
+      <div style="margin-bottom:20px;">${warningsHtml}</div>
+    ` : ''}
+    <div style="text-align:center;margin-top:8px;">
+      <button class="fbtn" onclick="switchTab('scripts')" style="padding:8px 16px;font-size:13px;">See every script, cron job, and variable →</button>
+    </div>
+  `;
 }
 
 function renderStats() {
@@ -679,7 +785,18 @@ function switchTab(t, btn) {
       if (defaultTab) defaultTab.classList.add('active');
   }
   document.getElementById(`view-${t}`).classList.add('active');
-  
+
+  // Overview is a calm landing page — no filter bar at all
+  const globalBar = document.getElementById('global-filter-bar');
+  const subBar = document.getElementById('sub-filter-bar');
+  if (t === 'overview') {
+      globalBar.style.display = 'none';
+      subBar.style.display = 'none';
+  } else {
+      globalBar.style.display = 'flex';
+      subBar.style.display = 'flex';
+  }
+
   // Toggle sub-filters row
   document.querySelectorAll('.sub-filter-group').forEach(el => el.style.display = 'none');
   const activeSub = document.getElementById(`sub-${t}`);
@@ -793,14 +910,15 @@ function applyFilter() {
     guide.style.display = (activeTab === 'scripts' && !hasFilters) ? 'block' : 'none';
   }
 
-  document.getElementById('no-match').style.display = count ? 'none' : 'block';
+  document.getElementById('no-match').style.display = (activeTab !== 'overview' && !count) ? 'block' : 'none';
 }
 
 renderStats();
+renderOverview();
 renderScripts();
 renderCrons();
 renderEnvs();
-switchTab('scripts'); 
+switchTab('overview'); 
 </script>
 </body>
 </html>"""
