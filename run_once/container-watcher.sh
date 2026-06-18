@@ -99,6 +99,17 @@ If you need to initialize a new CA and regenerate your local certificates:
    'docker restart npm'"
 }
 
+# 🔹 TASK: PIHOLE
+task_pihole() {
+    send_telegram "🔧 setup.sh's Post-Restore Watcher: Pi-hole
+━━━━━━━━━━━━━━━
+ℹ️ Pi-hole container is now running!
+
+⚠️ **Crucial steps to make it work:**
+1. Reserve this server's IP (e.g., 192.168.1.x) on your router to keep it static.
+2. Set this same IP (e.g., 192.168.1.x) as at least the Primary DNS in your router's settings."
+}
+
 # ════════════════════════
 # 🚀 MAIN WATCHER ENGINE
 # ════════════════════════
