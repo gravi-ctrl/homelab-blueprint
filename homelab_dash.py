@@ -371,7 +371,7 @@ def parse_crontabs():
                     
     process_file("user_crontab.txt", f"👤 User Cron ({BACKUP_USER})", False)
     process_file("root_crontab.txt", "⚡ Root Cron", True)
-    return sorted(crons_data, key=lambda x: (1 if x["is_root"] else 0, x["tier_order"]))
+    return sorted(crons_data, key=lambda x: (1 if x["is_root"] else 0, x["tier_order"], x["label"], x["command"]))
 
 # ── HTML Template ─────────────────────────────────────────────────
 HTML = r"""<!DOCTYPE html>
