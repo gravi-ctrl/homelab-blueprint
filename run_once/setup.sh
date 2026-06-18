@@ -432,7 +432,7 @@ fi
 header "9/10" "Firewall Rules"
 
 task "Run firewall setup script"
-FIREWALL_SCRIPT="/opt/scripts/run_once/configure-firewall.sh"
+FIREWALL_SCRIPT="/opt/scripts/run_once/firewall-rules.sh"
 if [ -f "$FIREWALL_SCRIPT" ]; then
     quietly bash "$FIREWALL_SCRIPT"
     pass

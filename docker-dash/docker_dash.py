@@ -280,145 +280,230 @@ HTML = r"""<!DOCTYPE html>
 <title>Docker Stacks — __SLUG__</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
-  --bg:#fff;--bg2:#f7f6f3;--bg3:#efede8;--bg4:#e4e2dc;
-  --tx:#181816;--tx2:#5c5c58;--tx3:#9a9a96;
-  --br:rgba(0,0,0,.09);--br2:rgba(0,0,0,.18);
-  --r:8px;--r2:12px;
-  --blue-bg:#e6f1fb;--blue-tx:#0c447c;--blue-bd:#aacbee;
-  --green-bg:#e1f5ee;--green-tx:#085041;--green-bd:#7dcdb5;
-  --amber-bg:#faeeda;--amber-tx:#633806;--amber-bd:#e8b96a;
-  --purple-bg:#eeedfe;--purple-tx:#3c3489;--purple-bd:#b3a9ec;
-  --gray-bg:#f1efe8;--gray-tx:#444441;
-  --coral-bg:#faece7;--coral-tx:#993c1d;
-  --red-bg:#fcebeb;--red-tx:#a32d2d;
-  --ok-bg:#eaf3de;--ok-tx:#3b6d11;
-  --orange-bg:#fff0e0;--orange-tx:#7a3800;--orange-bd:#f5b060;
+  /* ── Core palette: ink/paper with a single slate-blue accent ── */
+  --bg:       #fbfbfa;
+  --bg-sub:   #f3f3f1;
+  --surface:  #ffffff;
+  --surface-2:#f6f6f4;
+  --border:   rgba(20,20,18,.09);
+  --border-2: rgba(20,20,18,.16);
+
+  --ink:      #16161a;
+  --ink-2:    #5a5a58;
+  --ink-3:    #94938e;
+
+  --accent:     #3c5a73;
+  --accent-soft:#eef2f5;
+  --accent-bd:  #c2d2dd;
+
+  /* status */
+  --ok:       #3d6b4c;
+  --ok-soft:  #e9f1ea;
+  --warn:     #8a5a1f;
+  --warn-soft:#f7eee0;
+  --danger:   #9c3b3b;
+  --danger-soft:#f8eaea;
+  --info:     #3c5a73;
+  --info-soft:#eef2f5;
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
 }
-@media(prefers-color-scheme:dark){:root{
-  --bg:#1c1c1a;--bg2:#232320;--bg3:#2a2a27;--bg4:#323230;
-  --tx:#f0efeb;--tx2:#a0a09c;--tx3:#66665f;
-  --br:rgba(255,255,255,.09);--br2:rgba(255,255,255,.18);
-  --blue-bg:#0c447c;--blue-tx:#b5d4f4;--blue-bd:#2060a0;
-  --green-bg:#085041;--green-tx:#9fe1cb;--green-bd:#0f6e56;
-  --amber-bg:#4a2800;--amber-tx:#fac775;--amber-bd:#854f0b;
-  --purple-bg:#2e2870;--purple-tx:#cecbf6;--purple-bd:#534ab7;
-  --gray-bg:#3a3a38;--gray-tx:#d3d1c7;
-  --coral-bg:#7a2e14;--coral-tx:#f5c4b3;
-  --red-bg:#501313;--red-tx:#f7c1c1;
-  --ok-bg:#173404;--ok-tx:#c0dd97;
-  --orange-bg:#4a2200;--orange-tx:#ffb870;--orange-bd:#7a4800;
-}}
-body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;
-     color:var(--tx);background:var(--bg3);line-height:1.5}
-.page{max-width:960px;margin:0 auto;padding:2rem 1rem 5rem}
-.hdr{display:flex;align-items:baseline;gap:.75rem;margin-bottom:.2rem;flex-wrap:wrap}
-h1{font-size:20px;font-weight:500}
-.hdr-meta{font-size:13px;color:var(--tx2)}
-.hdr-meta a{color:var(--blue-tx);text-decoration:none}
-.hdr-meta a:hover{text-decoration:underline}
-.gen-time{font-size:12px;color:var(--tx3);margin-bottom:1.5rem}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1.25rem}
-.stat{background:var(--bg);border:.5px solid var(--br);border-radius:var(--r);padding:.8rem 1rem}
-.stat-n{font-size:26px;font-weight:500;line-height:1.1}
-.stat-l{font-size:12px;color:var(--tx2);margin-top:2px}
-.filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
-.filter-bar input{flex:1;min-width:160px;padding:7px 11px;font-size:13px;
-  border:.5px solid var(--br2);border-radius:var(--r);background:var(--bg);color:var(--tx);outline:none}
-.filter-bar input:focus{border-color:var(--blue-tx)}
-.fbtn{padding:5px 13px;font-size:12px;border:.5px solid var(--br2);border-radius:100px;
-  background:var(--bg);color:var(--tx2);cursor:pointer;white-space:nowrap;transition:all .15s}
-.fbtn.on{background:var(--blue-bg);color:var(--blue-tx);border-color:var(--blue-bd);font-weight:500}
-.stacks{display:grid;gap:8px}
-.card{background:var(--bg);border:.5px solid var(--br);border-radius:var(--r2);overflow:hidden}
-.card-head{padding:.72rem 1rem;display:flex;align-items:center;gap:10px;cursor:pointer;
-           user-select:none;border-bottom:.5px solid transparent}
-.card-head:hover{background:var(--bg2)}
-.card-head.is-open{border-bottom-color:var(--br)}
-.stack-name{font-weight:500;font-size:14px;flex:1;min-width:0;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.head-badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex-shrink:0}
-.chev{color:var(--tx3);transition:transform .18s;flex-shrink:0;font-size:12px}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:        #0e0f11;
+    --bg-sub:    #131416;
+    --surface:   #16171a;
+    --surface-2: #1b1c1f;
+    --border:    rgba(255,255,255,.08);
+    --border-2:  rgba(255,255,255,.14);
+
+    --ink:   #ececea;
+    --ink-2: #a3a29c;
+    --ink-3: #6b6a65;
+
+    --accent:     #8fb3cc;
+    --accent-soft:#1b2933;
+    --accent-bd:  #2e4655;
+
+    --ok:        #8fc49e;
+    --ok-soft:   #16261b;
+    --warn:      #e0b773;
+    --warn-soft: #2c2210;
+    --danger:    #e08a8a;
+    --danger-soft:#2c1717;
+    --info:      #8fb3cc;
+    --info-soft: #1b2933;
+  }
+}
+
+html{background:var(--bg)}
+body{
+  font-family:var(--sans);
+  font-size:14px;
+  color:var(--ink);
+  background:var(--bg);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+
+.page{max-width:980px;margin:0 auto;padding:3rem 1.25rem 6rem}
+
+/* ── Header ───────────────────────────────────────────── */
+.masthead{margin-bottom:2.25rem;padding-bottom:1.1rem;border-bottom:2px solid var(--accent)}
+.masthead-top{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.4rem}
+.brand{display:flex;align-items:baseline;gap:.6rem}
+.brand-mark{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.meta-line{font-size:12.5px;color:var(--ink-3);display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.meta-line a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--border-2)}
+.meta-line a:hover{color:var(--accent);border-color:var(--accent-bd)}
+.meta-sep{color:var(--border-2)}
+
+/* ── Stat strip ───────────────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;margin:1.75rem 0 1.5rem}
+.stat{background:var(--surface);padding:.95rem 1.1rem}
+.stat-n{font-size:24px;font-weight:600;letter-spacing:-.02em;color:var(--ink);font-family:var(--mono)}
+.stat-l{font-size:11px;color:var(--ink-3);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
+.stat.is-warn .stat-n{color:var(--warn)}
+
+/* ── Filter bar ───────────────────────────────────────── */
+.filter-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.filter-bar input{
+  flex:1;min-width:200px;padding:9px 13px;font-size:13px;font-family:var(--sans);
+  border:1px solid var(--border-2);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s;
+}
+.filter-bar input::placeholder{color:var(--ink-3)}
+.filter-bar input:focus{border-color:var(--accent)}
+.fbtn{
+  padding:7px 14px;font-size:12.5px;border:1px solid var(--border-2);border-radius:100px;
+  background:var(--surface);color:var(--ink-2);cursor:pointer;white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s;font-family:var(--sans);
+}
+.fbtn:hover{border-color:var(--ink-3)}
+.fbtn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-bd);font-weight:600}
+.fbtn.warn-btn.on{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+
+/* ── Cards ────────────────────────────────────────────── */
+.stacks{display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;
+  transition:border-color .15s}
+.card:hover{border-color:var(--border-2)}
+.card-head{padding:.85rem 1.15rem;display:flex;align-items:flex-start;gap:12px;cursor:pointer;
+  user-select:none;border-bottom:1px solid transparent;flex-wrap:wrap}
+.card-head:hover{background:var(--surface-2)}
+.card-head.is-open{border-bottom-color:var(--border)}
+.stack-icon{color:var(--ink-3);font-size:13px;flex-shrink:0;padding-top:1px}
+.stack-name{font-weight:600;font-size:14px;color:var(--ink);letter-spacing:-.005em;
+  flex-shrink:0;max-width:100%;padding-top:1px}
+.head-badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex:1;min-width:140px}
+.chev-wrap{margin-left:auto;flex-shrink:0}
+.chev{color:var(--ink-3);transition:transform .18s;flex-shrink:0;font-size:11px}
 .is-open .chev{transform:rotate(180deg)}
-.bdg{font-size:11px;padding:2px 8px;border-radius:100px;display:inline-flex;align-items:center;
-     gap:3px;line-height:1.5;white-space:nowrap;flex-shrink:0}
-.b-svc   {background:var(--gray-bg);  color:var(--gray-tx)}
-.b-port  {background:var(--blue-bg);  color:var(--blue-tx)}
-.b-proxy {background:var(--green-bg); color:var(--green-tx)}
-.b-int   {background:var(--amber-bg); color:var(--amber-tx)}
-.b-both  {background:var(--coral-bg); color:var(--coral-tx)}
-.b-url   {background:var(--purple-bg);color:var(--purple-tx)}
-.b-pin   {background:var(--ok-bg);    color:var(--ok-tx)}
-.b-roll  {background:var(--amber-bg); color:var(--amber-tx)}
-.b-warn  {background:var(--red-bg);   color:var(--red-tx)}
-.b-host  {background:var(--orange-bg);color:var(--orange-tx)}
-.b-priv  {background:var(--red-bg);   color:var(--red-tx)}
-.b-noname{background:var(--amber-bg); color:var(--amber-tx)}
-.r-always{background:var(--ok-bg);    color:var(--ok-tx)}
-.r-unless{background:var(--blue-bg);  color:var(--blue-tx)}
-.r-onfail{background:var(--amber-bg); color:var(--amber-tx)}
-.r-no    {background:var(--red-bg);   color:var(--red-tx)}
-.card-body{padding:.75rem 1rem;display:none}
-.card-body.open{display:block}
-.svc-list{display:grid;gap:8px}
-.svc{border:.5px solid var(--br);border-radius:var(--r);overflow:hidden}
-.svc-head{padding:.55rem .85rem;display:flex;align-items:center;gap:8px;
-          background:var(--bg2);border-bottom:.5px solid var(--br);flex-wrap:wrap}
-.svc-name{font-weight:500;font-size:13px;flex:1;min-width:120px}
+
+/* ── Badges: ghost/outline style, reserve fill for warnings ── */
+.bdg{font-size:11px;padding:3px 9px;border-radius:100px;display:inline-flex;align-items:center;
+  gap:4px;line-height:1.5;white-space:nowrap;flex-shrink:0;font-weight:500;
+  border:1px solid transparent;font-family:var(--sans)}
+.b-svc   {background:transparent;color:var(--ink-2);border-color:var(--border-2)}
+.b-port  {background:transparent;color:var(--ink-2);border-color:var(--border-2);font-family:var(--mono);font-size:10.5px}
+.b-proxy {background:var(--info-soft); color:var(--info)}
+.b-int   {background:transparent; color:var(--ink-2);border-color:var(--border-2)}
+.b-both  {background:var(--info-soft); color:var(--info)}
+.b-url   {background:transparent;color:var(--accent);border-color:var(--accent-bd);font-family:var(--mono);font-size:10.5px}
+.b-pin   {background:var(--ok-soft);    color:var(--ok)}
+.b-roll  {background:var(--warn-soft); color:var(--warn)}
+.b-warn  {background:var(--danger-soft);   color:var(--danger);font-weight:600}
+.b-host  {background:var(--warn-soft);color:var(--warn)}
+.b-priv  {background:var(--danger-soft);   color:var(--danger)}
+.b-noname{background:var(--warn-soft); color:var(--warn)}
+.r-always{background:var(--ok-soft);    color:var(--ok)}
+.r-unless{background:var(--info-soft);  color:var(--info)}
+.r-onfail{background:var(--warn-soft);  color:var(--warn)}
+.r-no    {background:var(--danger-soft);   color:var(--danger)}
+
+/* ── Card body / service detail ──────────────────────────── */
+.card-body{padding:0;max-height:0;overflow:hidden;transition:max-height .25s ease}
+.card-body.open{padding:.9rem 1.15rem;max-height:none}
+.svc-list{display:grid;gap:9px}
+.svc{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--bg-sub)}
+.svc-head{padding:.6rem .9rem;display:flex;align-items:center;gap:8px;
+  background:var(--surface-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.svc-name{font-weight:600;font-size:13px;flex:1;min-width:120px;color:var(--ink)}
 .svc-badges{display:flex;gap:4px;flex-wrap:wrap}
-.svc-body{padding:.65rem .85rem;display:grid;gap:.55rem}
-.detail{display:flex;gap:.6rem;font-size:12px;align-items:flex-start}
-.dlabel{color:var(--tx3);min-width:76px;flex-shrink:0;padding-top:1px;
-        font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;line-height:1.8}
-.dval{color:var(--tx);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.svc-body{padding:.7rem .9rem;display:grid;gap:.6rem;background:var(--surface)}
+.detail{display:flex;gap:.7rem;font-size:12px;align-items:flex-start}
+.dlabel{color:var(--ink-3);min-width:80px;flex-shrink:0;padding-top:2px;
+  font-size:10px;text-transform:uppercase;letter-spacing:.06em;line-height:1.7;font-weight:600}
+.dval{color:var(--ink);display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .dval-col{flex-direction:column;align-items:flex-start}
-.mono{font-family:ui-monospace,monospace;font-size:11px;background:var(--bg4);
-      padding:1px 5px;border-radius:4px;color:var(--tx2);word-break:break-all}
-.url-link{font-size:12px;color:var(--blue-tx);text-decoration:none;
-          display:inline-flex;align-items:center;gap:3px}
+.mono{font-family:var(--mono);font-size:11px;background:var(--bg-sub);
+  padding:2px 6px;border-radius:4px;color:var(--ink-2);word-break:break-all;border:1px solid var(--border)}
+.url-link{font-size:12px;color:var(--accent);text-decoration:none;font-weight:500;
+  display:inline-flex;align-items:center;gap:4px}
 .url-link:hover{text-decoration:underline}
-.npm-detail{font-size:11px;color:var(--tx3);display:inline-flex;align-items:center;
-            gap:3px;font-family:ui-monospace,monospace}
-.npm-detail-sep{color:var(--tx3);margin:0 2px}
-.env-wrap{margin-top:2px;width:100%;overflow-x:auto}
+.npm-detail{font-size:11px;color:var(--ink-3);display:inline-flex;align-items:center;
+  gap:3px;font-family:var(--mono)}
+.env-wrap{margin-top:2px;width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
 .env-table{width:100%;border-collapse:collapse;font-size:11.5px}
-.env-table th{text-align:left;color:var(--tx3);font-weight:400;font-size:10.5px;
-              text-transform:uppercase;letter-spacing:.04em;
-              padding:3px 8px 3px 0;border-bottom:.5px solid var(--br)}
-.env-table td{padding:4px 8px 4px 0;vertical-align:top;color:var(--tx2);font-size:11.5px}
-.env-table td.k{font-family:ui-monospace,monospace;color:var(--tx);font-size:11px;white-space:nowrap}
-.env-table td.v{font-family:ui-monospace,monospace;font-size:11px;color:var(--tx3)}
-.env-secret{font-style:italic;color:var(--tx3)}
-.shared-env{margin-top:12px;padding-top:10px;border-top:.5px solid var(--br)}
-.shared-env-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;
-                  color:var(--tx3);margin-bottom:6px}
-.svc-desc{font-size:12px;color:var(--tx2);padding:.4rem .85rem .1rem;font-style:italic;border-bottom:.5px solid var(--br)}
-.svc-notes{font-size:11.5px;color:var(--tx3);background:var(--bg3);padding:.35rem .85rem;border-top:.5px solid var(--br);border-radius:0 0 var(--r) var(--r)}
-.err-banner{background:var(--red-bg);color:var(--red-tx);border:.5px solid;
-            border-radius:var(--r);padding:.45rem .85rem;font-size:12px;margin-bottom:8px}
-.no-match{color:var(--tx2);font-size:13px;padding:2rem 0;text-align:center;display:none}
+.env-table th{text-align:left;color:var(--ink-3);font-weight:600;font-size:10px;
+  text-transform:uppercase;letter-spacing:.05em;background:var(--bg-sub);
+  padding:6px 10px;border-bottom:1px solid var(--border)}
+.env-table td{padding:6px 10px;vertical-align:top;color:var(--ink-2);font-size:11.5px;border-bottom:1px solid var(--border)}
+.env-table tr:last-child td{border-bottom:none}
+.env-table td.k{font-family:var(--mono);color:var(--ink);font-size:11px;white-space:nowrap}
+.env-table td.v{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.env-secret{font-style:italic;color:var(--ink-3)}
+.shared-env{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.shared-env-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink-3);margin-bottom:7px;font-weight:600}
+.svc-desc{font-size:12px;color:var(--ink-2);padding:.5rem .9rem .15rem;font-style:italic;border-bottom:1px solid var(--border);background:var(--surface)}
+.svc-notes{font-size:11.5px;color:var(--ink-3);background:var(--bg-sub);padding:.45rem .9rem;border-top:1px solid var(--border)}
+.err-banner{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger);
+  border-radius:var(--radius-sm);padding:.5rem .9rem;font-size:12px;margin-bottom:9px;font-weight:500}
+.no-match{color:var(--ink-2);font-size:13px;padding:3rem 0;text-align:center;display:none}
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="hdr">
-    <h1>🐳 Docker Stack Dashboard</h1>
-    <span class="hdr-meta">
+  <div class="masthead">
+    <div class="masthead-top">
+      <div class="brand">
+        <span class="brand-mark">Stacks</span>
+        <h1>Docker Dashboard</h1>
+      </div>
+    </div>
+    <div class="meta-line">
       <a href="__REPO_URL__" target="_blank">__SLUG__</a>
-      &nbsp;·&nbsp; branch: <strong>__BRANCH__</strong>
-    </span>
+      <span class="meta-sep">·</span>
+      <span>branch <strong>__BRANCH__</strong></span>
+      <span class="meta-sep">·</span>
+      <span>generated __DATE__</span>
+    </div>
   </div>
-  <div class="gen-time">Generated __DATE__</div>
+
   <div class="stats" id="stats"></div>
+
   <div class="filter-bar">
     <input type="text" id="search" placeholder="Search stacks, images, URLs, env keys…" oninput="applyFilter()">
     <button class="fbtn" id="f-ports"    onclick="tog('ports')">Open ports</button>
     <button class="fbtn" id="f-urls"     onclick="tog('urls')">Has URL</button>
     <button class="fbtn" id="f-internal" onclick="tog('internal')">Internal net</button>
     <button class="fbtn" id="f-rolling"  onclick="tog('rolling')">Rolling tag</button>
-    <button class="fbtn" id="f-security" onclick="tog('security')">⚠ Security</button>
+    <button class="fbtn warn-btn" id="f-security" onclick="tog('security')">Security</button>
     <button class="fbtn" id="f-host"     onclick="tog('host')">Host network</button>
   </div>
+
   <div class="stacks" id="stacks"></div>
   <div class="no-match" id="no-match">No stacks match your filter.</div>
 </div>
@@ -441,7 +526,7 @@ function envTable(vars){
   if(!vars||!vars.length) return '';
   const trows=vars.map(ev=>`<tr>
     <td class="k">${e(ev.key)}</td>
-    <td class="v">${ev.is_secret?'<span class="env-secret">••••••</span>':ev.default?e(ev.default):'<span style="color:var(--tx3)">—</span>'}</td>
+    <td class="v">${ev.is_secret?'<span class="env-secret">••••••</span>':ev.default?e(ev.default):'<span style="color:var(--ink-3)">—</span>'}</td>
     <td>${e(ev.comment)}</td></tr>`).join('');
   return`<div class="env-wrap"><table class="env-table">
     <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
@@ -462,10 +547,10 @@ function renderStats(){
     if(sv.is_host_network)hostNet++;
   })});
   document.getElementById('stats').innerHTML=[
-    ['Stacks',D.length],['Services',svcs],
-    ['Open ports',pts.size],['URLs found',urls],['Rolling tags',roll],
-    ['⚠ Warnings',secWarn]
-  ].map(([l,n])=>`<div class="stat"><div class="stat-n">${n}</div><div class="stat-l">${e(l)}</div></div>`).join('');
+    ['Stacks',D.length,false],['Services',svcs,false],
+    ['Open ports',pts.size,false],['URLs found',urls,false],['Rolling tags',roll,false],
+    ['Warnings',secWarn,true]
+  ].map(([l,n,isWarn])=>`<div class="stat${isWarn&&n>0?' is-warn':''}"><div class="stat-n">${n}</div><div class="stat-l">${e(l)}</div></div>`).join('');
 }
 
 function buildCard(stack,i){
@@ -511,12 +596,10 @@ function buildCard(stack,i){
     const rows=[];
     rows.push(`<div class="detail"><span class="dlabel">Image</span><span class="dval"><span class="mono">${e(sv.image)}</span></span></div>`);
 
-    // Container name row — only show if explicit (implicit names are already flagged)
     if(sv.explicit_container_name){
       rows.push(`<div class="detail"><span class="dlabel">Container</span><span class="dval"><span class="mono">${e(sv.container_name)}</span></span></div>`);
     }
 
-    // NPM URLs with container:port details
     if(sv.npm_details&&sv.npm_details.length){
       const npmRows = sv.npm_details.map(d=>{
         const portPart = d.forward_port ? `<span class="npm-detail"><span class="mono">${e(d.forward_host)}:${e(d.forward_port)}</span></span>` : '';
@@ -527,7 +610,6 @@ function buildCard(stack,i){
       rows.push(`<div class="detail"><span class="dlabel">URL</span><span class="dval">${extLink(sv.app_url_hint)}</span></div>`);
     }
 
-    // network_mode row
     if(sv.network_mode){
       rows.push(`<div class="detail"><span class="dlabel">Net mode</span><span class="dval">${bdg(sv.is_host_network?'b-host':'b-int', sv.network_mode)}</span></div>`);
     }
@@ -556,7 +638,7 @@ function buildCard(stack,i){
 
   const label=stack.path.replace(/\/(docker-compose|compose)\.ya?ml$/i,'');
   const err=stack.parse_error?`<div class="err-banner">⚠ ${e(stack.parse_error)}</div>`:'';
-  return`<div class="card-head" id="h${i}" onclick="toggle(${i})"><span>🗂</span><span class="stack-name">${e(label)}</span><div class="head-badges">${hb}</div><span class="chev">▾</span></div><div class="card-body" id="b${i}">${err}<div class="svc-list">${svcsHtml}</div>${orphanEnv}</div>`;
+  return`<div class="card-head" id="h${i}" onclick="toggle(${i})"><span class="stack-icon">▣</span><span class="stack-name">${e(label)}</span><div class="head-badges">${hb}</div><span class="chev-wrap"><span class="chev">▾</span></span></div><div class="card-body" id="b${i}">${err}<div class="svc-list">${svcsHtml}</div>${orphanEnv}</div>`;
 }
 
 function renderCards(){
@@ -585,7 +667,8 @@ function applyFilter(){
 renderStats();renderCards();
 </script>
 </body>
-</html>"""
+</html>
+"""
 
 # ── Main ──────────────────────────────────────────────────────────
 def main():
