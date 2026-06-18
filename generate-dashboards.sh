@@ -85,7 +85,7 @@ deploy_page_local() {
     cd "$temp_worktree"
     git add index.html
 
-    if git diff --cached --quiet -I "Generated "; then
+    if git diff --cached --quiet -I "[Gg]enerated "; then
         echo "   (Only timestamp changed in $repo_dir - skipping commit)"
     else
         git commit -m "Auto-update dashboard [skip ci]"
