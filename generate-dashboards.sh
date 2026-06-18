@@ -6,9 +6,6 @@
 
 set -e
 
-# 1. Resolve scripts directory dynamically (follows symlinks to find the real git repo)
-SCRIPTS_DIR="$(dirname "$(realpath "$0")")"
-
 [[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
 set -a
 source "/opt/scripts/.env"
@@ -20,9 +17,9 @@ echo "🔄 Starting Dashboard Generation Pipeline..."
 HOMELAB_TEMP="/tmp/homelab_index.html"
 DOCKER_TEMP="/tmp/docker_index.html"
 
-# 3. Generate Homelab Dashboard
+# 1. Generate Homelab Dashboard
 echo "🖥️ Generating Homelab Dashboard..."
-cd "$SCRIPTS_DIR"
+cd "/opt/scripts"
 python3 homelab_dash.py
 
 if [ -f "index.html" ]; then
@@ -32,12 +29,12 @@ else
     exit 1
 fi
 
-# 4. Generate Docker Dashboard
+# 2. Generate Docker Dashboard
 echo "🐳 Generating Docker Dashboard..."
-if [ -f "$SCRIPTS_DIR/docker-dash/docker_dash.py" ]; then
-    python3 "$SCRIPTS_DIR/docker-dash/docker_dash.py" --env "$SCRIPTS_DIR/docker-dash/.env" --out "$DOCKER_TEMP"
+if [ -f "/opt/scripts/docker-dash/docker_dash.py" ]; then
+    python3 "/opt/scripts/docker-dash/docker_dash.py" --env "/opt/scripts/docker-dash/.env" --out "$DOCKER_TEMP"
 else
-    echo "❌ Error: docker_dash.py not found at $SCRIPTS_DIR/docker-dash/docker_dash.py"
+    echo "❌ Error: docker_dash.py not found at /opt/scripts/docker-dash/docker_dash.py"
     exit 1
 fi
 
@@ -91,8 +88,8 @@ deploy_page_local() {
     git worktree prune
 }
 
-# 6. Execute the deployments
-deploy_page_local "$SCRIPTS_DIR" "$HOMELAB_TEMP"
+# 3. Execute the deployments
+deploy_page_local "/opt/scripts" "$HOMELAB_TEMP"
 deploy_page_local "$STACKS_DIR" "$DOCKER_TEMP"
 
 echo "✅ Dashboard generation complete! Local 'pages' branches have been updated."
