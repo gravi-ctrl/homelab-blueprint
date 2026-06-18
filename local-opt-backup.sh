@@ -194,6 +194,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='Crash Reports' \
     --exclude="${STACKS_DIR#/}/jellyfin/config/transcodes" \
     --exclude="${STACKS_DIR#/}/jellyfin/config/cache" \
+    --exclude="${STACKS_DIR#/}/jellyfin/config/data/metadata/People" \
     --exclude="${STACKS_DIR#/}/jellyfin/config/log" \
     --exclude="${STACKS_DIR#/}/arrs/config/*/*.db-shm" \
     --exclude="${STACKS_DIR#/}/arrs/config/*/*.db-wal" \
