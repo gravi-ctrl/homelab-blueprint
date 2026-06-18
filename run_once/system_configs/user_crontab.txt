@@ -27,7 +27,7 @@ BASH_ENV=/opt/scripts/.env
 55 3 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Export Nextcloud Calendars and Contacts
-10 4 * * * cron-guard --mode fail "Nextcloud Cal/Card Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
+10 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
 
 # Apply file renaming rules to Paperless-ngx documents
 25 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
