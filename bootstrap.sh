@@ -72,6 +72,8 @@ if [[ "$MODE" == "FRESH" ]]; then
         echo "   Please place your private key(s) in $HOME/.ssh before running a Fresh Start." >&2
         exit 1
     fi
+
+    echo ">>> Found $PRIVATE_KEYS SSH private key(s). Proceeding..."
 fi
 
 # --- PHASE 2: SYSTEM PREP ---
