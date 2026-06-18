@@ -119,8 +119,10 @@ setup_repo "$DIR_STACKS"  "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LI
 set -e
 
 # --- PHASE 4: CLEANUP & SUMMARY ---
-echo ">>> Cleaning up..."
-[[ "$MODE" == "RESTORE" && -n "${BACKUP:-}" ]] && rm -- "$BACKUP"
+if [[ "$MODE" == "RESTORE" && -n "${BACKUP:-}" ]]; then
+    echo ">>> Cleaning up backup archive..."
+    rm -- "$BACKUP"
+fi
 
 WARNING_MSG=""
 [[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script , select the "Fresh Start", and try again)'
@@ -129,6 +131,7 @@ WARNING_MSG=""
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 if [[ "$SCRIPT_DIR" == "$HOME" ]]; then
     rm -f "${BASH_SOURCE[0]}"
+    echo ">>> Removed bootstrap script from $HOME."
 fi
 
 cat <<EOF
