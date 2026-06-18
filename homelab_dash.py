@@ -220,7 +220,6 @@ def parse_crontabs():
     week_map = {'1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', '4': 'Thursday', '5': 'Friday', '6': 'Saturday', '7': 'Sunday', 'mon': 'Monday', 'tue': 'Tuesday', 'wed': 'Wednesday', 'thu': 'Thursday', 'fri': 'Friday', 'sat': 'Saturday', 'sun': 'Sunday'}
     ordinal_map = {"1-7": "1st", "8-14": "2nd", "15-21": "3rd", "22-28": "4th", "29-31": "5th"}
     
-    # Map all variants of Day of Week filters to JS-native Date.getDay() integers (0-6, 0=Sunday)
     dow_numeric_map = {
         '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 0, '0': 0,
         'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6, 'sun': 0
@@ -254,7 +253,6 @@ def parse_crontabs():
                                 try: desc = get_description(raw_sched, cron_opts)
                                 except: desc = raw_sched
 
-                                # Match any day-of-week custom conditional (e.g. date +%u, %w, %a, %A)
                                 date_match = re.match(r'^\[\s*"\$\(date \+\\%[uwaA]\)"\s*=\s*"?(\w+)"?\s*\]\s*&&\s*(.*)', cmd, re.IGNORECASE)
                                 if date_match:
                                     day_val = date_match.group(1).lower()
@@ -267,15 +265,30 @@ def parse_crontabs():
                                 elif cmd.startswith("if [") or cmd.startswith("[ ") or cmd.startswith("test "): desc += " <br>**(⚠️ Conditional: Bash Logic Check)**"
                                 elif " | grep " in cmd or " || " in cmd: desc += " <br>**(⚠️ Conditional: Pipeline Check)**"
                         
+                        # Extract exact cron-guard wrapper name for a clean, short UI Label, or fallback
+                        cg_match = re.search(r'cron-guard(?:\.py)?\s+--mode\s+(?:fail|success|all)\s+["\']([^"\']+)["\']', cmd, re.IGNORECASE)
+                        if cg_match:
+                            label = cg_match.group(1).strip()
+                            full_label = label # Keep the official cron-guard name as full label
+                        elif last_comment:
+                            clean = last_comment.strip()
+                            clean = re.sub(r'^[#\s\-*]+', '', clean) # Strip comment characters
+                            label = clean[:30].strip() + "..." if len(clean) > 32 else clean
+                            full_label = clean # Retain the entire long comment for spacious views
+                        else:
+                            label = cmd[:30].strip() + "..." if len(cmd) > 30 else cmd.strip()
+                            full_label = cmd.strip()
+
                         env_vars = sorted(list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd))))
                         crons_data.append({
-                            "label": last_comment if last_comment else cmd[:40],
+                            "label": label,
+                            "full_label": full_label, # Passes the full descriptive comment down to JS
                             "owner": owner_label, "is_root": is_root,
                             "raw_schedule": raw_sched, "human_desc": desc,
                             "command": cmd, "tier": classify_frequency(raw_sched),
                             "tier_order": tier_sort_key(classify_frequency(raw_sched)),
                             "env": env_vars, "heat_slots": expand_cron_slots(raw_sched),
-                            "day_conditional": day_conditional, # Pass static parsed day index down safely
+                            "day_conditional": day_conditional,
                         })
                     except: pass
                     last_comment = ""
@@ -467,7 +480,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .heatmap-toggle-arrow.open{transform:rotate(180deg)}
 .heatmap-body{padding:1.1rem 1rem 1rem}
 
-.cron-filters-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+.cron-filters-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .hm-freq-btn{padding:5px 12px;font-size:11.5px;border:1px solid var(--border-2);border-radius:100px;background:transparent;color:var(--ink-2);cursor:pointer;font-family:var(--sans);font-weight:500;transition:all .15s;display:inline-flex;align-items:center;opacity:0.6;white-space:nowrap}
 .hm-freq-btn:hover{opacity:0.9;}
 .hm-freq-btn.on{opacity:1;}
@@ -477,7 +490,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .hm-freq-btn.on[data-color="purple"] { color: var(--purple); border-color: var(--purple-bd); background: var(--purple-soft); }
 .hm-freq-btn.on[data-color="red"] { color: var(--danger); border-color: var(--danger-bd); background: var(--danger-soft); }
 
-.cron-view-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.cron-view-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .cron-view-tabs{display:flex;gap:5px;}
 .cron-tab-btn{padding:5px 12px;font-size:12px;border:1px solid var(--border-2);border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:6px;}
 .cron-tab-btn:hover{color:var(--ink);border-color:var(--border);}
@@ -500,20 +513,20 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .heatmap-legend .hm-cell{width:10px;height:10px;aspect-ratio:unset;display:inline-block}
 
 /* Monthly Calendar View */
-.calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .calendar-title{font-size:14.5px;font-weight:600;color:var(--ink)}
 .calendar-nav{display:flex;gap:4px}
 .calendar-nav button{background:var(--bg-sub);border:1px solid var(--border-2);border-radius:4px;padding:4px 10px;font-size:11.5px;cursor:pointer;color:var(--ink);transition:all .15s;font-weight:500;}
 .calendar-nav button:hover{background:var(--surface-2);border-color:var(--ink-3)}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);overflow:hidden}
 .cal-header-day{background:var(--surface-2);text-align:center;padding:8px 0;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
-.cal-cell{background:var(--surface);min-height:90px;padding:6px;display:flex;flex-direction:column;gap:3px}
+.cal-cell{background:var(--surface);min-height:75px;padding:4px 6px;display:flex;flex-direction:column;gap:2px}
 .cal-cell.other-month{background:var(--bg-sub);opacity:.5}
 .cal-cell.today { background: rgba(143, 179, 204, 0.05); outline: 1px solid var(--accent); outline-offset: -1px; }
 .cal-cell.today .cal-day-num { color: var(--accent); font-weight: 600; }
-.cal-day-num{font-size:11px;font-weight:500;color:var(--ink-3);margin-bottom:2px;}
-.cal-job{font-size:9.5px;padding:2px 5px;border-radius:3px;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
-.cal-more{font-size:9.5px;color:var(--ink-3);font-weight:600;padding-left:2px;margin-top:1px;}
+.cal-day-num{font-size:11px;font-weight:500;color:var(--ink-3);margin-bottom:1px;}
+.cal-job{font-size:9.5px;padding:1px 5px;border-radius:3px;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;line-height:1.2;}
+.cal-more{font-size:9px;color:var(--ink-3);font-weight:600;padding-left:2px;margin-top:0px;}
 
 /* Agenda View */
 .agenda-section{margin-bottom:24px}
@@ -538,10 +551,10 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   <div class="stats" id="stats"></div>
 
   <div class="nav-tabs">
-    <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
-    <button class="tab" onclick="switchTab('scripts', this)">Scripts</button>
-    <button class="tab" onclick="switchTab('crons', this)">Cron schedule</button>
-    <button class="tab" onclick="switchTab('envs', this)">Variables</button>
+    <button class="tab active" data-tab="overview" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab" data-tab="scripts" onclick="switchTab('scripts', this)">Scripts</button>
+    <button class="tab" data-tab="crons" onclick="switchTab('crons', this)">Cron schedule</button>
+    <button class="tab" data-tab="envs" onclick="switchTab('envs', this)">Variables</button>
   </div>
 
   <div class="filter-bar" id="global-filter-bar">
@@ -830,8 +843,8 @@ function rebuildAgendaView(ctx) {
   
   D.crons.forEach(c => {
     if (!hmActiveTiers.has(c.tier) || !c._parsed) return;
-    getDailyRunTimes(c, today).forEach(t => todayJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, job: c.label, tier: c.tier }));
-    getDailyRunTimes(c, tomorrow).forEach(t => tomJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, job: c.label, tier: c.tier }));
+    getDailyRunTimes(c, today).forEach(t => todayJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, job: c.full_label || c.label, tier: c.tier }));
+    getDailyRunTimes(c, tomorrow).forEach(t => tomJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, job: c.full_label || c.label, tier: c.tier }));
   });
   
   const sortFn = (a,b) => a.time - b.time || a.job.localeCompare(b.job);
@@ -1030,7 +1043,7 @@ function selectChildDir(dir) { activeChildDir = dir; renderDirectoryFilters(); a
 function switchTab(t, btn) {
   activeTab = t;
   document.querySelectorAll('.tab, .view').forEach(el => el.classList.remove('active'));
-  if(btn) btn.classList.add('active'); else document.querySelector(`.tab[onclick*="${t}"]`).classList.add('active');
+  if(btn) btn.classList.add('active'); else document.querySelector(`.tab[data-tab="${t}"]`).classList.add('active');
   document.getElementById(`view-${t}`).classList.add('active');
   document.getElementById('global-filter-bar').style.display = t==='overview'?'none':'flex';
   document.getElementById('sub-filter-bar').style.display = t==='overview'?'none':'flex';
