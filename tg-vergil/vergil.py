@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Runs scripts and commands directly on server with logs (programmed in the .env file)
-# @FREQUENCY: On Demand - Telegram
+# @FREQUENCY: On Demand (triggered by `setup.sh`)
 
 import os
 import sys

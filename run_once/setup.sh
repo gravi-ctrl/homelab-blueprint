@@ -473,6 +473,9 @@ else
     skip "watcher script not found"
 fi
 
+task "Activating TG-Vergil"
+quietly python3 "/opt/scripts/tg-vergil/vergil.py" --install
+pass "Service installed and started"
 
 # ══════════════════════════════════════════════════════════════
 # DONE
