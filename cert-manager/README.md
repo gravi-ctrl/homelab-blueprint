@@ -121,7 +121,7 @@ Because Pi-hole v6 API restricts configuration changes by default for security, 
 ## How It Works
 
 ```text
- User Command: ./cert-manager.sh add jellyfin 192.168.1.50 8096
+ User Command: ./cert-manager.sh add jellyfin 192.168.1.x 8096
        │
        ▼
  1. Update services.list ──► Adds "jellyfin" to the local manifest.
@@ -135,7 +135,7 @@ Because Pi-hole v6 API restricts configuration changes by default for security, 
        │                     jellyfin.homeserver ➔ 192.168.1.x (SERVER_IP)
        │
  5. Provision Route ───────► Creates/Updates Proxy Host in NPM:
-                             jellyfin.homeserver ➔ http://192.168.1.50:8096
+                             jellyfin.homeserver ➔ http://192.168.1.x:8096
                              (Auto-enables Force SSL, HSTS, and Websockets)
        │
  6. Sync Files ────────────► Copies certs to SHARE_DIR for client distribution.
