@@ -579,14 +579,28 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 
 /* ── Heatmap ──────────────────────────────────────────── */
 .heatmap-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
-  padding:1.1rem 1.2rem 1rem;margin-bottom:18px}
-.heatmap-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
-.heatmap-sub{font-size:12px;color:var(--ink-3);margin-bottom:14px}
-.heatmap-grid{display:grid;grid-template-columns:34px repeat(24,1fr);gap:3px;align-items:center}
+  overflow:hidden;margin-bottom:18px}
+.heatmap-header{display:flex;align-items:center;justify-content:space-between;
+  padding:.75rem 1rem;background:var(--surface-2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.heatmap-header-left{display:flex;align-items:center;gap:10px}
+.heatmap-title{font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.heatmap-title-icon{font-size:15px}
+.heatmap-toggle-arrow{font-size:11px;color:var(--ink-3);transition:transform .2s}
+.heatmap-toggle-arrow.open{transform:rotate(180deg)}
+.heatmap-body{padding:.9rem 1rem .85rem}
+.heatmap-sub{font-size:11.5px;color:var(--ink-3);margin-bottom:10px}
+.heatmap-freq-filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.hm-freq-btn{padding:4px 10px;font-size:11px;border:1px solid var(--border-2);border-radius:100px;
+  background:var(--surface);color:var(--ink-2);cursor:pointer;font-family:var(--sans);
+  transition:background .15s,color .15s,border-color .15s;white-space:nowrap}
+.hm-freq-btn:hover{border-color:var(--ink-3)}
+.hm-freq-btn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-bd);font-weight:600}
+.hm-freq-btn.off{opacity:.45}
+.heatmap-grid{display:grid;grid-template-columns:30px repeat(24,1fr);gap:2px;align-items:center}
 .heatmap-grid .hm-corner{font-size:9px}
-.heatmap-grid .hm-hour-label{font-size:9px;color:var(--ink-3);text-align:center;font-family:var(--mono)}
-.heatmap-grid .hm-day-label{font-size:10.5px;color:var(--ink-2);text-align:right;padding-right:6px;font-weight:500}
-.hm-cell{aspect-ratio:1;border-radius:3px;background:var(--heat-0);cursor:default;position:relative;border:1px solid var(--border)}
+.heatmap-grid .hm-hour-label{font-size:8.5px;color:var(--ink-3);text-align:center;font-family:var(--mono)}
+.heatmap-grid .hm-day-label{font-size:10px;color:var(--ink-2);text-align:right;padding-right:5px;font-weight:500}
+.hm-cell{aspect-ratio:1;border-radius:2px;background:var(--heat-0);cursor:default;position:relative;border:1px solid var(--border)}
 .hm-cell[data-level="1"]{background:var(--heat-1)}
 .hm-cell[data-level="2"]{background:var(--heat-2)}
 .hm-cell[data-level="3"]{background:var(--heat-3)}
@@ -596,8 +610,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   background:var(--ink);color:var(--bg);font-size:11px;padding:4px 8px;border-radius:5px;
   white-space:nowrap;z-index:10;font-family:var(--sans);pointer-events:none;
 }
-.heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:10.5px;color:var(--ink-3)}
-.heatmap-legend .hm-cell{width:11px;height:11px;aspect-ratio:unset;display:inline-block}
+.heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10px;color:var(--ink-3)}
+.heatmap-legend .hm-cell{width:10px;height:10px;aspect-ratio:unset;display:inline-block}
 </style>
 </head>
 <body>
@@ -676,24 +690,67 @@ function toggleGroup(id) {
   }
 }
 
-/* ── Weekly heatmap: day-of-week × hour-of-day cron density ───────── */
-function renderHeatmap(crons){
+/* ── Weekly heatmap state ─────────────────────────────────────────── */
+const HEATMAP_TIERS = [
+  "⚡ Every few minutes",
+  "🕐 Hourly",
+  "🌙 Daily",
+  "📅 Weekly",
+  "🗓️ Monthly",
+  "📆 Yearly",
+  "🔁 On Reboot",
+  "🔀 Other"
+];
+// Which tiers are currently visible in the heatmap (all on by default)
+let hmActiveTiers = new Set(HEATMAP_TIERS);
+// Whether the heatmap body is collapsed
+let hmCollapsed = { overview: false, crons: false };
+
+function toggleHeatmap(context) {
+  hmCollapsed[context] = !hmCollapsed[context];
+  const body = document.getElementById(`heatmap-body-${context}`);
+  const arrow = document.getElementById(`heatmap-arrow-${context}`);
+  if (body) body.style.display = hmCollapsed[context] ? 'none' : '';
+  if (arrow) arrow.classList.toggle('open', !hmCollapsed[context]);
+}
+
+function toggleHmTier(tier) {
+  if (hmActiveTiers.has(tier)) {
+    if (hmActiveTiers.size === 1) return; // keep at least one active
+    hmActiveTiers.delete(tier);
+  } else {
+    hmActiveTiers.add(tier);
+  }
+  // Re-render both heatmap instances that exist
+  ['overview', 'crons'].forEach(ctx => {
+    const grid = document.getElementById(`hm-grid-${ctx}`);
+    if (!grid) return;
+    rebuildHeatmapGrid(ctx);
+  });
+  // Sync button states across both heatmap instances
+  document.querySelectorAll('.hm-freq-btn').forEach(btn => {
+    const t = btn.dataset.tier;
+    btn.classList.toggle('on', hmActiveTiers.has(t));
+    btn.classList.toggle('off', !hmActiveTiers.has(t));
+  });
+}
+
+function rebuildHeatmapGrid(context) {
+  const gridEl = document.getElementById(`hm-grid-${context}`);
+  if (!gridEl) return;
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const grid = Array.from({length:7}, () => Array(24).fill(0));
   const cellJobs = Array.from({length:7}, () => Array.from({length:24}, () => []));
-  let totalSlots = 0;
 
-  crons.forEach(c => {
+  D.crons.forEach(c => {
+    if (!hmActiveTiers.has(c.tier)) return;
     (c.heat_slots || []).forEach(([d,h]) => {
       if (d>=0 && d<7 && h>=0 && h<24){
         grid[d][h]++;
         cellJobs[d][h].push(c.label);
-        totalSlots++;
       }
     });
   });
-
-  if (totalSlots === 0) return '';
 
   const max = Math.max(1, ...grid.flat());
   function levelFor(n){
@@ -705,9 +762,7 @@ function renderHeatmap(crons){
     return 1;
   }
 
-  let cellsHtml = '';
-  // header row: corner + 24 hour labels (every 3rd hour to stay legible)
-  cellsHtml += `<div class="hm-corner"></div>`;
+  let cellsHtml = `<div class="hm-corner"></div>`;
   for (let h=0; h<24; h++){
     cellsHtml += `<div class="hm-hour-label">${h % 3 === 0 ? h : ''}</div>`;
   }
@@ -721,19 +776,48 @@ function renderHeatmap(crons){
       cellsHtml += `<div class="hm-cell" data-level="${level}" data-tip="${e(tip)} ${n>0?('· '+String(h).padStart(2,'0')+':00'):''}"></div>`;
     }
   }
+  gridEl.innerHTML = cellsHtml;
+}
 
-  return `<div class="heatmap-card">
-    <div class="heatmap-title">When jobs fire</div>
-    <div class="heatmap-sub">Density of scheduled cron triggers across the week — hour of day (UTC server time) × day of week</div>
-    <div class="heatmap-grid">${cellsHtml}</div>
-    <div class="heatmap-legend">
-      <span>Fewer</span>
-      <span class="hm-cell" data-level="0"></span>
-      <span class="hm-cell" data-level="1"></span>
-      <span class="hm-cell" data-level="2"></span>
-      <span class="hm-cell" data-level="3"></span>
-      <span class="hm-cell" data-level="4"></span>
-      <span>More</span>
+/* ── Weekly heatmap: day-of-week × hour-of-day cron density ───────── */
+function renderHeatmap(crons, context){
+  // Check if any cron has heat_slots at all
+  const totalSlots = crons.reduce((acc, c) => acc + (c.heat_slots||[]).length, 0);
+  if (totalSlots === 0) return '';
+
+  // Detect which tiers actually exist in the data
+  const tiersInData = new Set(crons.map(c => c.tier));
+  const availableTiers = HEATMAP_TIERS.filter(t => tiersInData.has(t));
+
+  const freqBtns = availableTiers.map(t =>
+    `<button class="hm-freq-btn on" data-tier="${e(t)}" onclick="toggleHmTier('${e(t)}')">${e(t)}</button>`
+  ).join('');
+
+  const isCollapsed = hmCollapsed[context] || false;
+  const bodyDisplay = isCollapsed ? 'none' : '';
+  const arrowClass = isCollapsed ? '' : 'open';
+
+  return `<div class="heatmap-card" id="heatmap-card-${context}">
+    <div class="heatmap-header" onclick="toggleHeatmap('${context}')">
+      <div class="heatmap-header-left">
+        <span class="heatmap-title-icon">🗓️</span>
+        <span class="heatmap-title">Cron Heat Map</span>
+      </div>
+      <span class="heatmap-toggle-arrow ${arrowClass}" id="heatmap-arrow-${context}">▾</span>
+    </div>
+    <div class="heatmap-body" id="heatmap-body-${context}" style="display:${bodyDisplay}">
+      <div class="heatmap-sub">Density of scheduled cron triggers across the week — hour of day (UTC) × day of week</div>
+      <div class="heatmap-freq-filters">${freqBtns}</div>
+      <div class="heatmap-grid" id="hm-grid-${context}"></div>
+      <div class="heatmap-legend">
+        <span>Fewer</span>
+        <span class="hm-cell" data-level="0"></span>
+        <span class="hm-cell" data-level="1"></span>
+        <span class="hm-cell" data-level="2"></span>
+        <span class="hm-cell" data-level="3"></span>
+        <span class="hm-cell" data-level="4"></span>
+        <span>More</span>
+      </div>
     </div>
   </div>`;
 }
@@ -786,7 +870,7 @@ function renderOverview() {
     narrativeHtml += `</div></details>`;
   });
 
-  const heatmapHtml = renderHeatmap(D.crons);
+  const heatmapHtml = renderHeatmap(D.crons, 'overview');
 
   document.getElementById('view-overview').innerHTML = `
     ${bannerHtml}
@@ -796,6 +880,7 @@ function renderOverview() {
       <button class="fbtn" onclick="switchTab('scripts')" style="padding:9px 18px;font-size:13px">Explore full script inventory →</button>
     </div>
   `;
+  rebuildHeatmapGrid('overview');
 }
 
 function renderStats() {
@@ -886,7 +971,7 @@ function renderCrons() {
     grouped[key].push(c);
   });
 
-  let html = renderHeatmap(D.crons);
+  let html = `<div id="cron-heatmap-wrapper">${renderHeatmap(D.crons, 'crons')}</div>`;
 
   Object.keys(grouped).forEach((owner, c_idx) => {
     if (grouped[owner].length === 0) return;
@@ -918,6 +1003,7 @@ function renderCrons() {
     html += `</div></div>`;
   });
   document.getElementById('view-crons').innerHTML = html;
+  rebuildHeatmapGrid('crons');
 }
 
 function renderEnvs() {
@@ -1114,6 +1200,13 @@ function applyFilter() {
       grid.style.display = hasVisible ? 'grid' : 'none';
       grid.previousElementSibling.style.display = hasVisible ? 'block' : 'none';
     });
+
+    // Hide heatmap when any external filter (search, root/user/docker/quick) is active
+    const heatmapWrapper = document.getElementById('cron-heatmap-wrapper');
+    if (heatmapWrapper) {
+      const hasExternalFilter = q || F.root || F.user || F.docker || F.quick;
+      heatmapWrapper.style.display = hasExternalFilter ? 'none' : '';
+    }
   }
   else if (activeTab === 'envs') {
     document.querySelectorAll('#view-envs .item-card').forEach(el => {
