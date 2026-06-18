@@ -31,13 +31,13 @@ DOMAIN="homeserver"
 SHARE_DIR="/data/assets/syncthing/Shared"
 
 # Nginx Proxy Manager API
-NPM_URL="http://192.168.1.109:81"
+NPM_URL="http://192.168.1.x:81"
 NPM_EMAIL="api@homeserver.local"
 NPM_PASS="your-password-here"
 NPM_CERT_NAME="homeserver"
 
 # Pi-hole API (v6+)
-PIHOLE_URL="http://192.168.1.109:8081"
+PIHOLE_URL="https://pihole.domain"
 PIHOLE_PASS="your-pihole-app-password"
 SERVER_IP="192.168.1.109"
 ```
@@ -132,7 +132,7 @@ Because Pi-hole v6 API restricts configuration changes by default for security, 
  3. Sync with NPM ─────────► Uploads the new .pem and .key via NPM API.
        │
  4. Provision DNS ─────────► Creates/Updates Local DNS in Pi-hole:
-       │                     jellyfin.homeserver ➔ 192.168.1.109 (SERVER_IP)
+       │                     jellyfin.homeserver ➔ 192.168.1.x (SERVER_IP)
        │
  5. Provision Route ───────► Creates/Updates Proxy Host in NPM:
                              jellyfin.homeserver ➔ http://192.168.1.50:8096

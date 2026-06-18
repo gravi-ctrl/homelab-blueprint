@@ -46,7 +46,7 @@ Both list (`- "key=value"`) and dict (`key: value`) label formats are supported.
    OUTPUT_FILE="index.html"
 
    # Optional: Nginx Proxy Manager credentials
-   NPM_URL="http://192.168.1.109:81"
+   NPM_URL="http://192.168.1.x:81"
    NPM_EMAIL="admin@example.com"
    NPM_PASSWORD="your-secure-password"
 ```

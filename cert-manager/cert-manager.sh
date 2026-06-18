@@ -34,9 +34,9 @@ if [[ ! -f "$ENV_FILE" ]]; then
     echo '    NPM_EMAIL="admin@example.com"' >&2
     echo '    NPM_PASS="changeme"' >&2
     echo '    NPM_CERT_NAME="homeserver"' >&2
-    echo '    PIHOLE_URL="http://localhost:8081"' >&2
+    echo '    PIHOLE_URL="https://pihole.domain"' >&2
     echo '    PIHOLE_PASS="your-app-password"' >&2
-    echo '    SERVER_IP="192.168.1.109"' >&2
+    echo '    SERVER_IP="192.168.1.x"' >&2
     exit 1
 fi
 

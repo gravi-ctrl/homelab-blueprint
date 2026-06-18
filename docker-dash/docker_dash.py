@@ -87,7 +87,7 @@ class NPMClient:
 
 def build_npm_index(hosts):
     idx = {}
-    for h in hosts:
+    for h in sorted(hosts, key=lambda h: (h.get("domain_names", [""])[0], str(h.get("forward_port","")))):
         fwd = str(h.get("forward_host","")).lower().strip()
         if fwd:
             idx.setdefault(fwd, []).append(h)

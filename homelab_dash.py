@@ -124,18 +124,19 @@ def parse_scripts(env_used_by):
         for script in scripts:
             env_declares_for.setdefault(script, set()).add(var)
 
-    for root, _, files in os.walk(SCRIPT_DIR):
+    for root, dirs, files in os.walk(SCRIPT_DIR):
+        dirs.sort()
         if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv']):
             continue
-        for file in files:
+        for file in sorted(files):
             p = Path(root) / file
             if p.suffix not in SCRIPT_EXTS and not (p.suffix == "" and open(p, 'rb').read(2) == b'#!'):
                 continue
-            
+
             desc, freq, uses_env, cron_ctx = None, None, [], None
             try:
                 with open(p, 'r', encoding='utf-8', errors='ignore') as f:
-                    for _ in range(50): 
+                    for _ in range(50):
                         line_raw = f.readline()
                         if not line_raw: break 
                         line = line_raw.strip()
@@ -1180,7 +1181,7 @@ def main():
     }
     
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    html_out = HTML.replace("__DATE__", now).replace("__DATA__", json.dumps(data, ensure_ascii=False))
+    html_out = HTML.replace("__DATE__", now).replace("__DATA__", json.dumps(data, ensure_ascii=False, sort_keys=True))
     out_path.write_text(html_out, encoding="utf-8")
     
     print(f"\n✅ Dashboard generated: {out_path.resolve()}")
