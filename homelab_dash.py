@@ -265,24 +265,30 @@ def parse_crontabs():
                                 elif cmd.startswith("if [") or cmd.startswith("[ ") or cmd.startswith("test "): desc += " <br>**(⚠️ Conditional: Bash Logic Check)**"
                                 elif " | grep " in cmd or " || " in cmd: desc += " <br>**(⚠️ Conditional: Pipeline Check)**"
                         
+                        # Store the exact explanatory comment completely raw, without truncation
+                        if last_comment:
+                            clean_comment = last_comment.strip()
+                            clean_comment = re.sub(r'^[#\s\-*]+', '', clean_comment) # Strip leading # and spacing
+                        else:
+                            clean_comment = ""
+
                         # Extract exact cron-guard wrapper name for a clean, short UI Label, or fallback
                         cg_match = re.search(r'cron-guard(?:\.py)?\s+--mode\s+(?:fail|success|all)\s+["\']([^"\']+)["\']', cmd, re.IGNORECASE)
                         if cg_match:
                             label = cg_match.group(1).strip()
-                            full_label = label # Keep the official cron-guard name as full label
-                        elif last_comment:
-                            clean = last_comment.strip()
-                            clean = re.sub(r'^[#\s\-*]+', '', clean) # Strip comment characters
-                            label = clean[:30].strip() + "..." if len(clean) > 32 else clean
-                            full_label = clean # Retain the entire long comment for spacious views
+                            has_wrapper = True
+                        elif clean_comment:
+                            label = clean_comment[:30].strip() + "..." if len(clean_comment) > 32 else clean_comment
+                            has_wrapper = False
                         else:
                             label = cmd[:30].strip() + "..." if len(cmd) > 30 else cmd.strip()
-                            full_label = cmd.strip()
+                            has_wrapper = False
 
                         env_vars = sorted(list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd))))
                         crons_data.append({
                             "label": label,
-                            "full_label": full_label, # Passes the full descriptive comment down to JS
+                            "full_comment": clean_comment, # Injected to display un-truncated explanations
+                            "has_wrapper": has_wrapper, # Flags whether this task was wrapped by cron-guard
                             "owner": owner_label, "is_root": is_root,
                             "raw_schedule": raw_sched, "human_desc": desc,
                             "command": cmd, "tier": classify_frequency(raw_sched),
@@ -843,8 +849,19 @@ function rebuildAgendaView(ctx) {
   
   D.crons.forEach(c => {
     if (!hmActiveTiers.has(c.tier) || !c._parsed) return;
-    getDailyRunTimes(c, today).forEach(t => todayJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, job: c.full_label || c.label, tier: c.tier }));
-    getDailyRunTimes(c, tomorrow).forEach(t => tomJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, job: c.full_label || c.label, tier: c.tier }));
+    
+    let rawTitle = "";
+    let displayJob = "";
+    if (c.has_wrapper && c.full_comment) {
+        rawTitle = `${c.label} — ${c.full_comment}`;
+        displayJob = `<span style="font-weight:700; color:var(--ink);">${e(c.label)}</span> <span class="action-separator">—</span> <span style="color:var(--ink-2); font-weight:500;">${e(c.full_comment)}</span>`;
+    } else {
+        rawTitle = c.full_comment || c.label;
+        displayJob = e(rawTitle);
+    }
+    
+    getDailyRunTimes(c, today).forEach(t => todayJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, title: rawTitle, job: displayJob, tier: c.tier }));
+    getDailyRunTimes(c, tomorrow).forEach(t => tomJobs.push({ time: t.h*60 + t.m, h: t.h, m: t.m, title: rawTitle, job: displayJob, tier: c.tier }));
   });
   
   const sortFn = (a,b) => a.time - b.time || a.job.localeCompare(b.job);
@@ -858,7 +875,7 @@ function rebuildAgendaView(ctx) {
       const cColor = getTierColor(item.tier);
       html += `<div class="agenda-row">
         <div class="agenda-time">${String(item.h).padStart(2,'0')}:${String(item.m).padStart(2,'0')}</div>
-        <div class="agenda-title" title="${e(item.job)}">${e(item.job)}</div>
+        <div class="agenda-title" title="${e(item.title)}">${item.job}</div>
         <div class="agenda-badge"><span class="bdg b-${cColor}">${e(item.tier)}</span></div>
       </div>`;
     });
@@ -990,7 +1007,13 @@ function renderCrons() {
     let currentTier = null;
     grouped[owner].forEach((c, i) => {
       if (c.tier !== currentTier) { currentTier = c.tier; html += `<div class="tier-header ui-tier" data-tier="${c.tier}">${e(c.tier)}</div><div class="ui-tier-grid" style="display:grid;gap:9px;margin-bottom:12px">`; }
-      html += `<div class="card item-card" data-idx="${c._idx}"><div class="card-title"><span>${e(c.label)}</span><span class="card-sub" style="color:var(--ink-2)">${e(c.human_desc)}</span></div><div class="card-sub">${e(c.raw_schedule)}</div><div class="mono-cmd">${e(c.command)}</div><div class="badges">${c.env.map(ev=>bdg('b-env',ev)).join('')}</div></div>`;
+      html += `<div class="card item-card" data-idx="${c._idx}">
+        <div class="card-title"><span>${e(c.label)}</span><span class="card-sub" style="color:var(--ink-2)">${e(c.human_desc)}</span></div>
+        <div class="card-sub">${e(c.raw_schedule)}</div>
+        ${c.full_comment ? `<div class="card-desc">${e(c.full_comment)}</div>` : ''}
+        <div class="mono-cmd">${e(c.command)}</div>
+        <div class="badges">${c.env.map(ev=>bdg('b-env',ev)).join('')}</div>
+      </div>`;
       if (!grouped[owner][i+1] || grouped[owner][i+1].tier !== currentTier) html += `</div>`;
     });
     html += `</div></div>`;
