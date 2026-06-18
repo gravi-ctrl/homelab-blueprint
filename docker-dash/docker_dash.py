@@ -123,8 +123,8 @@ def match_npm(stacks, npm_index, npm_self_url=None):
                     if d["url"] and d["url"] not in urls:
                         urls.append(d["url"])
                         details.append(d)
-            svc["npm_urls"] = urls
-            svc["npm_details"] = details
+            svc["npm_urls"] = sorted(urls)
+            svc["npm_details"] = sorted(details, key=lambda x: (x["url"], x["forward_port"]))
 
 # ── .env.example parser ───────────────────────────────────────────
 def parse_env_example(text):
