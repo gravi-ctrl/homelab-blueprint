@@ -39,7 +39,7 @@ NPM_CERT_NAME="homeserver"
 # Pi-hole API (v6+)
 PIHOLE_URL="https://pihole.domain"
 PIHOLE_PASS="your-pihole-app-password"
-SERVER_IP="192.168.1.109"
+SERVER_IP="192.168.1.x"
 ```
 
 ---
@@ -62,9 +62,9 @@ SERVER_IP="192.168.1.109"
 **1. Add a service with automatic Pi-hole DNS and NPM routing:**
 This adds the domain to the SSL certificate, **creates a local DNS record in Pi-hole pointing to your server's IP**, and creates the Proxy Host entry in NPM.
 ```bash
-# Syntax: ./cert-manager.sh add <service_name> <internal_ip> <port> [scheme]
-./cert-manager.sh add jellyfin 192.168.1.50 8096
-./cert-manager.sh add paperless 192.168.1.109 8000
+# Syntax: ./cert-manager.sh add <service_name> <internal_ip_or_container_name> <port> [scheme]
+./cert-manager.sh add jellyfin jellyfin 8096
+./cert-manager.sh add paperless 192.168.1.x 8000
 ```
 
 **2. Add a service (SSL and DNS only):**
