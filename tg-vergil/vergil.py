@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @DESCRIPTION: Runs scripts and commands directly on server with logs (programmed in the .env file)
+# @DESCRIPTION: Runs scripts and commands directly on server with logs
 # @FREQUENCY: On Demand (triggered by `setup.sh`)
 
 import os
