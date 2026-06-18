@@ -170,8 +170,8 @@ def parse_scripts(env_used_by):
             only_in_script = script_vars - declared_vars
             only_in_env = declared_vars - script_vars
             
-            if only_in_script: warnings.append(f"Missing from .env.example: {', '.join(only_in_script)}")
-            if only_in_env: warnings.append(f"Missing from @USES_ENV: {', '.join(only_in_env)}")
+            if only_in_script: warnings.append(f"Missing from .env.example: {', '.join(sorted(only_in_script))}")
+            if only_in_env: warnings.append(f"Missing from @USES_ENV: {', '.join(sorted(only_in_env))}")
 
             scripts_data.append({
                 "name": file,
@@ -185,7 +185,7 @@ def parse_scripts(env_used_by):
                 "env": uses_env,
                 "warnings": warnings
             })
-    return scripts_data
+    return sorted(scripts_data, key=lambda x: (x["dir_path"], x["name"]))
 
 def build_envs_data(env_used_by, scripts_data):
     env_dict = {}
@@ -353,7 +353,7 @@ def parse_crontabs():
                                 elif " | grep " in cmd or " || " in cmd:
                                     desc += " <br>**(⚠️ Conditional: Pipeline Check)**"
                         
-                        env_vars = list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd)))
+                        env_vars = sorted(list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd))))
                         crons_data.append({
                             "label": last_comment if last_comment else cmd[:40],
                             "owner": owner_label,
