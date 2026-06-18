@@ -488,7 +488,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="meta-sep">·</span>
       <span>branch <strong>__BRANCH__</strong></span>
       <span class="meta-sep">·</span>
-      <span>generated __DATE__</span>
+      <span>Generated __DATE__</span>
     </div>
   </div>
 
