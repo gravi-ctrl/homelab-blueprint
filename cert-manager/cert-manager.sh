@@ -44,7 +44,7 @@ fi
 source "$ENV_FILE"
 
 # Validate required vars
-for var in DOMAIN SHARE_DIR NPM_URL NPM_EMAIL NPM_PASS NPM_CERT_NAME; do
+for var in DOMAIN SHARE_DIR NPM_URL NPM_EMAIL NPM_PASS NPM_CERT_NAME SERVER_IP; do
     if [[ -z "${!var:-}" ]]; then
         echo "[✗] Required variable '${var}' is not set in .env" >&2
         exit 1
@@ -272,7 +272,7 @@ pihole_logout() {
 
 pihole_add_dns() {
     local domain="$1"
-    local ip="${SERVER_IP:-192.168.1.109}"
+    local ip="${SERVER_IP}"
 
     [[ -z "${PIHOLE_PASS:-}" ]] && { warn "PIHOLE_PASS not set — skipping Pihole DNS record"; return 0; }
 
