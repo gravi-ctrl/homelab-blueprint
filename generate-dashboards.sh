@@ -52,11 +52,20 @@ deploy_page_local() {
     # 1. Define temporary paths
     local temp_worktree="/tmp/worktree_$(basename "$repo_dir")"
 
-    # Clean up any leftover temp worktrees from previous failed runs
-    rm -rf "$temp_worktree"
-    git -C "$repo_dir" worktree prune 2>/dev/null || true
+    # Cleanup
+    cleanup_worktree() {
+        cd "$repo_dir" 2>/dev/null || true
+        rm -rf "$temp_worktree"
+        git -C "$repo_dir" worktree prune 2>/dev/null || true
+    }
+    trap cleanup_worktree RETURN
 
-    # 2. Check out the 'pages' branch to the temp directory
+    # 2. Forcibly clear any stale worktree from a previous failed run.
+    git -C "$repo_dir" worktree remove "$temp_worktree" --force 2>/dev/null || true
+    git -C "$repo_dir" worktree prune 2>/dev/null || true
+    rm -rf "$temp_worktree"
+
+    # 3. Check out the 'pages' branch to the temp directory
     # (Creating it if it doesn't exist yet)
     if ! git -C "$repo_dir" show-ref --quiet refs/heads/pages; then
         echo "   (Initializing pages branch)"
@@ -69,10 +78,10 @@ deploy_page_local() {
     # Fetch any dashboard updates made by other machines!
     git -C "$temp_worktree" pull --rebase origin pages >/dev/null 2>&1 || true
 
-    # 3. Copy our generated HTML to the temporary worktree directory
+    # 4. Copy our generated HTML to the temporary worktree directory
     cp "$temp_html" "$temp_worktree/index.html"
 
-    # 4. Step into the temp folder to stage, diff, and commit
+    # 5. Step into the temp folder to stage, diff, and commit
     cd "$temp_worktree"
     git add index.html
 
@@ -81,11 +90,6 @@ deploy_page_local() {
     else
         git commit -m "Auto-update dashboard [skip ci]"
     fi
-
-    # 5. Clean up the temporary worktree completely
-    cd "$repo_dir"
-    rm -rf "$temp_worktree"
-    git worktree prune
 }
 
 # 3. Execute the deployments
