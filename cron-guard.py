@@ -21,7 +21,7 @@
 # - On Telegram failure: logs to stderr and appends to failed_alerts.log
 # - If the Telegram token/chat ID are missing or unset: skips the retry entirely and writes MISSING_TELEGRAM_CREDENTIALS.log instead
 # - Keeps a full log under logs/ only when an alert fires AND output is large (>15 lines or >3000 chars), linked in the alert
-# - Forwards SIGTERM/SIGINT to the child process for a clean shutdown on kill/reboot
+# - Forwards SIGTERM/SIGINT to the child process tree for a clean shutdown on kill/reboot or --timeout (kills the whole tree, not just the shell, so real children like apt/rsync can't outlive the kill)
 # - mute mode additionally writes status/<job>.json (last run time, exit code, duration, timed_out) — a local heartbeat for manual checks only; never sent or read by anything else
 # - Per-job log/status filenames include a short hash of the job name, so two differently-named jobs never collide on disk
 
@@ -40,6 +40,25 @@ import re
 import json
 import threading
 import hashlib
+
+def kill_process_tree(proc):
+    """Kill the whole process tree, not just the shell handle cron-guard holds.
+    shell=True means `proc` is /bin/sh (or cmd.exe on Windows) -- terminate()-ing
+    just that handle kills the shell but leaves real children (e.g. apt-get)
+    orphaned and still running to completion. This kills the whole group/tree.
+    """
+    if not proc or proc.poll() is not None:
+        return
+    try:
+        if os.name == 'nt':
+            subprocess.run(
+                ['taskkill', '/F', '/T', '/PID', str(proc.pid)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        else:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+    except (ProcessLookupError, PermissionError, OSError):
+        pass
 
 def load_dotenv(filepath):
     if not os.path.isfile(filepath): return
@@ -208,20 +227,14 @@ def main():
 
     def forward_signal(signum, frame):
         if process and process.poll() is None:
-            log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process...")
-            try:
-                process.terminate()
-            except Exception:
-                pass
+            log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process tree...")
+            kill_process_tree(process)
 
     def timeout_kill():
         if process and process.poll() is None:
             timed_out_flag["value"] = True
-            log_queue.append(f"🕐 [cron-guard] Timeout of {args.timeout}s exceeded, killing child process...")
-            try:
-                process.terminate()
-            except Exception:
-                pass
+            log_queue.append(f"🕐 [cron-guard] Timeout of {args.timeout}s exceeded, killing child process tree...")
+            kill_process_tree(process)
 
     try:
         signal.signal(signal.SIGTERM, forward_signal)
@@ -243,8 +256,7 @@ def main():
 
     timer = None
     try:
-        process = subprocess.Popen(
-            full_cmd,
+        popen_kwargs = dict(
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -254,6 +266,16 @@ def main():
             errors='replace',
             env=child_env
         )
+        if os.name == 'nt':
+            popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            # New process group only (not a new session): killpg can still target
+            # just this job's tree without hitting cron-guard itself, but unlike
+            # start_new_session=True, this does NOT detach the controlling
+            # terminal -- so `sudo` can still prompt/authenticate over /dev/tty.
+            popen_kwargs['preexec_fn'] = os.setpgrp
+
+        process = subprocess.Popen(full_cmd, **popen_kwargs)
 
         if args.timeout:
             timer = threading.Timer(args.timeout, timeout_kill)

@@ -8,5 +8,6 @@
 **/*.log
 **/*.tmp
 **/*.bak
+/status/*.json
 **/index.html
 .ghost_watcher_state
