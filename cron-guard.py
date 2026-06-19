@@ -199,7 +199,7 @@ class AlertingArgumentParser(argparse.ArgumentParser):
         creds_missing = (not token or token == "YOUR_TOKEN" or not chat_id or chat_id == "YOUR_ID")
 
         curse_msg = (
-            f"🤬 Hey dumbo! You messed up the cron-guard syntax!\n\n"
+            f"Close! You messed up the cron-guard syntax!\n\n"
             f"Error: {message}\n\n"
             f"Go fix your damn thing!"
         )
