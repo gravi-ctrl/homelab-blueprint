@@ -273,7 +273,7 @@ def parse_crontabs():
                             clean_comment = ""
 
                         # Extract exact cron-guard wrapper name for a clean, short UI Label, or fallback
-                        cg_match = re.search(r'cron-guard(?:\.py)?\s+--mode\s+(?:fail|success|all)\s+["\']([^"\']+)["\']', cmd, re.IGNORECASE)
+                        cg_match = re.search(r'cron-guard(?:\.py)?\s+--mode\s+(?:fail|success|all|mute)\s+["\']([^"\']+)["\']', cmd, re.IGNORECASE)
                         if cg_match:
                             label = cg_match.group(1).strip()
                             has_wrapper = True
