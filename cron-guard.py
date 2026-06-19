@@ -102,6 +102,10 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
     elif exit_code in (-15, 143, 130, -2): # Standard SIGTERM/SIGINT codes (Linux & Windows)
         status_header = "🛑 <b>TASK KILLED</b>"
         status_label = "Terminated by OS/User"
+    elif exit_code == 2 and job_name == "cron-guard Syntax Error":
+        # Custom header for wrapper errors
+        status_header = "⚠️ <b>CRON-GUARD MISCONFIGURED</b>"
+        status_label = "Wrapper Syntax Error"
     else:
         status_header = "🚨 <b>TASK FAILURE</b>"
         status_label = f"Failed (Code {exit_code})"
@@ -133,7 +137,7 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
         f"⏰ <b>Finished:</b> {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"━━━━━━━━━━━━━━━\n"
         f"{truncated_msg}"
-        f"📜 <b>Last Logs:</b>\n<pre>{html.escape(log_tail)}</pre>"
+        f"📜 <b>Message / Logs:</b>\n<pre>{html.escape(log_tail)}</pre>"
     )
 
     data = urllib.parse.urlencode({
@@ -182,8 +186,41 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
 
     return False
 
+
+class AlertingArgumentParser(argparse.ArgumentParser):
+    """Custom parser to intercept arguments errors and send a Telegram 'curse' alert."""
+    def error(self, message):
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        load_dotenv(os.path.join(script_dir, '.env'))
+
+        token = os.environ.get("TELEGRAM_DANTE_BOT_TOKEN", "YOUR_TOKEN")
+        chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_ID")
+
+        creds_missing = (not token or token == "YOUR_TOKEN" or not chat_id or chat_id == "YOUR_ID")
+
+        curse_msg = (
+            f"🤬 Hey dumbo! You messed up the cron-guard syntax!\n\n"
+            f"Error: {message}\n\n"
+            f"Go fix your damn thing!"
+        )
+
+        send_telegram_alert(
+            token=token,
+            chat_id=chat_id,
+            job_name="cron-guard Syntax Error",
+            exit_code=2,
+            log_tail=curse_msg,
+            duration="0:00:00",
+            total_lines=5,
+            full_log_path=None,
+            creds_missing=creds_missing
+        )
+
+        self.print_usage(sys.stderr)
+        self.exit(2, f"{self.prog}: error: {message}\n")
+
 def main():
-    parser = argparse.ArgumentParser(description="Run a command and notify via Telegram.")
+    parser = AlertingArgumentParser(description="Run a command and notify via Telegram.")
     parser.add_argument("--mode", choices=["fail", "success", "all", "mute"], default="fail", 
                         help="When to send notification (default: fail)")
     parser.add_argument("--timeout", type=int, default=None,
@@ -193,9 +230,9 @@ def main():
 
     args = parser.parse_args()
 
+    # Intercept missing command silently allowed by REMAINDER
     if not args.command:
-        parser.print_help()
-        sys.exit(1)
+        parser.error("You forgot to provide the actual command to run after the job name!")
 
     if len(args.command) == 1:
         full_cmd = args.command[0]
@@ -213,7 +250,17 @@ def main():
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_ID")
     creds_missing = (not token or token == "YOUR_TOKEN" or not chat_id or chat_id == "YOUR_ID")
 
-    start_time = time.time()
+    if creds_missing:
+        print(f"⚠️ [cron-guard] WARNING: .env is missing or incomplete! Alerts for '{args.job_name}' cannot be sent.", file=sys.stderr)
+        try:
+            pre_flight_log = os.path.join(script_dir, 'MISSING_TELEGRAM_CREDENTIALS.log')
+            with open(pre_flight_log, 'a', encoding='utf-8') as f:
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                f.write(f"{timestamp} | [CONFIG WARNING] job={args.job_name!r} started, but Telegram credentials are missing!\n")
+        except Exception:
+            pass
+
+    start_time = time.monotonic()
     log_queue = collections.deque(maxlen=15)
     total_lines = 0
 
@@ -304,7 +351,7 @@ def main():
         if log_file_handle and not log_file_handle.closed:
             log_file_handle.close()
 
-    duration_seconds = int(time.time() - start_time)
+    duration_seconds = int(time.monotonic() - start_time)
     duration_str = str(datetime.timedelta(seconds=duration_seconds))
 
     if args.mode == "mute":
