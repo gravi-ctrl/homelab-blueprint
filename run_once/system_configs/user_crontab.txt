@@ -8,8 +8,11 @@ BASH_ENV=/opt/scripts/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# NextDNS IP and Healthchecks.io Server/Internet monitor
-*/5 * * * * cron-guard --mode mute "NxtDNS and HC.io" "curl -Z -fsS --retry 3 '$SERVER_HC_URL' '$NEXTDNS_URL'"
+# Healthchecks.io Server/Internet monitor
+*/5 * * * * cron-guard --mode mute "HC.io Ping" "curl -fsS --retry 3 '$SERVER_HC_URL'"
+
+# Keeps NextDNS filtering pinned to our current public IP
+*/5 * * * * cron-guard --mode fail "NextDNS IP Update" "curl -fsS --retry 3 '$NEXTDNS_URL'"
 
 # Pulls and deploys stack updates done by Renovate
 */15 * * * * cron-guard --mode fail "GitOps Deployer" "/opt/scripts/gitops-deploy.sh"
