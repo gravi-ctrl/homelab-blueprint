@@ -11,7 +11,7 @@ BASH_ENV=/opt/scripts/.env
 # Shutdown if battery is discharging and below 20%
 */5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/scripts/battery-monitor.sh"
 
-# Cold backup of Docker Stacks & SSH keys
+# Cold backup of Docker Stacks, scripts, ctrl_s_master, mkcert & SSH keys
 30 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/scripts/local-opt-backup.sh"
 
 # ctrl_s_master Project
