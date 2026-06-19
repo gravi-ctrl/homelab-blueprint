@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# @DESCRIPTION: Executes commands on Linux/Windows with Telegram alerts (fail/success/all) and fallback logging to stderr and failed_alerts.log on delivery failure.
+# @DESCRIPTION: Executes commands on Linux/Windows with Telegram alerts (fail/success/all/mute), an optional timeout kill, and fallback logging on delivery failure.
 # @FREQUENCY: Varies
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user, root
@@ -8,9 +8,22 @@
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
 
 # USAGE:
-# python cron-guard.py --mode fail "My Backup" "bash backup.sh" (Only if it breaks)
-# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..." (Always notify)
-# python cron-guard.py --mode success "Health Check" "curl ..." (Only notify if it works)
+# python cron-guard.py --mode fail "My Backup" "bash backup.sh"               (Only notify if it breaks)
+# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..."               (Always notify)
+# python cron-guard.py --mode success "Health Check" "curl ..."               (Only notify if it works)
+# python cron-guard.py --mode mute "Quiet Job" "some_command"                 (Never notify; just for clean naming/logging)
+# python cron-guard.py --mode fail --timeout 2700 "Backup" "bash backup.sh"   (Any mode kills it; alert only fires on fail/all, per --mode)
+#
+# WHAT IT DOES (all modes):
+# - Runs the command, streaming + capturing combined stdout/stderr
+# - Sends a Telegram alert per --mode (success/failure/killed/timeout), with 3x retry on delivery
+# - --timeout N: kills the job if it's still running after N seconds, reported as its own distinct status
+# - On Telegram failure: logs to stderr and appends to failed_alerts.log
+# - If the Telegram token/chat ID are missing or unset: skips the retry entirely and writes MISSING_TELEGRAM_CREDENTIALS.log instead
+# - Keeps a full log under logs/ only when an alert fires AND output is large (>15 lines or >3000 chars), linked in the alert
+# - Forwards SIGTERM/SIGINT to the child process for a clean shutdown on kill/reboot
+# - mute mode additionally writes status/<job>.json (last run time, exit code, duration, timed_out) — a local heartbeat for manual checks only; never sent or read by anything else
+# - Per-job log/status filenames include a short hash of the job name, so two differently-named jobs never collide on disk
 
 import sys
 import os
@@ -24,6 +37,9 @@ import collections
 import argparse
 import signal
 import re
+import json
+import threading
+import hashlib
 
 def load_dotenv(filepath):
     if not os.path.isfile(filepath): return
@@ -35,10 +51,33 @@ def load_dotenv(filepath):
                 key, val = line.split('=', 1)
                 os.environ[key.strip()] = val.strip().strip('"\'')
 
-def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path):
+def write_heartbeat(script_dir, safe_job_name, job_name, exit_code, duration_seconds, timed_out):
+    # Local-only heartbeat for mute mode: never sent anywhere, never read by the
+    # dashboard. Just a small file you can `cat` to check a quiet job actually ran.
+    status_dir = os.path.join(script_dir, "status")
+    try:
+        os.makedirs(status_dir, exist_ok=True)
+        status_path = os.path.join(status_dir, f"{safe_job_name}.json")
+        payload = {
+            "job_name": job_name,
+            "last_run": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+            "exit_code": exit_code,
+            "duration_seconds": duration_seconds,
+            "timed_out": timed_out,
+        }
+        with open(status_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2)
+    except Exception as e:
+        # Best-effort only: never let a heartbeat write failure affect the job's exit code
+        print(f"[cron-guard] WARNING: Could not write heartbeat file: {e}", file=sys.stderr)
+
+def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path, timed_out=False, creds_missing=False, timeout_limit=None):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-    if exit_code == 0:
+    if timed_out:
+        status_header = "🕐 <b>TASK TIMEOUT</b>"
+        status_label = f"Exceeded {timeout_limit}s limit" if timeout_limit else "Exceeded configured timeout"
+    elif exit_code == 0:
         status_header = "✅ <b>TASK SUCCESSFUL</b>"
         status_label = "Success"
     elif exit_code in (-15, 143, 130, -2): # Standard SIGTERM/SIGINT codes (Linux & Windows)
@@ -85,14 +124,17 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
     }).encode('utf-8')
 
     last_error = None
-    for _ in range(3):
-        try:
-            req = urllib.request.Request(url, data=data, method='POST')
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                if resp.getcode() == 200: return True
-        except Exception as e:
-            last_error = str(e)
-            time.sleep(2)
+    if creds_missing:
+        last_error = "Telegram token/chat ID missing or unset (.env not found or using placeholder values) — skipped delivery attempt"
+    else:
+        for _ in range(3):
+            try:
+                req = urllib.request.Request(url, data=data, method='POST')
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    if resp.getcode() == 200: return True
+            except Exception as e:
+                last_error = str(e)
+                time.sleep(2)
 
     # --- Dual fallback logging (stderr + file) ---
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -109,21 +151,24 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
 
     try:
         script_dir = os.path.dirname(os.path.realpath(__file__))
-        fallback_log = os.path.join(script_dir, 'failed_alerts.log')
+        fallback_filename = 'MISSING_TELEGRAM_CREDENTIALS.log' if creds_missing else 'failed_alerts.log'
+        fallback_log = os.path.join(script_dir, fallback_filename)
         with open(fallback_log, 'a', encoding='utf-8') as f:
             f.write(
                 f"{timestamp} | job={job_name!r} | exit={exit_code} | duration={duration} | error={last_error}\n"
                 f"--- last logs ---\n{log_tail}\n-----------------\n"
             )
     except Exception as log_err:
-        print(f"[cron-guard] WARNING: Could not write to failed_alerts.log: {log_err}", file=sys.stderr)
+        print(f"[cron-guard] WARNING: Could not write to {fallback_filename}: {log_err}", file=sys.stderr)
 
     return False
 
 def main():
     parser = argparse.ArgumentParser(description="Run a command and notify via Telegram.")
-    parser.add_argument("--mode", choices=["fail", "success", "all"], default="fail", 
+    parser.add_argument("--mode", choices=["fail", "success", "all", "mute"], default="fail", 
                         help="When to send notification (default: fail)")
+    parser.add_argument("--timeout", type=int, default=None,
+                        help="Kill the job if it's still running after this many seconds (default: no limit)")
     parser.add_argument("job_name", help="Name of the job for the report")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="The command to execute")
 
@@ -147,6 +192,7 @@ def main():
 
     token = os.environ.get("TELEGRAM_DANTE_BOT_TOKEN", "YOUR_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "YOUR_ID")
+    creds_missing = (not token or token == "YOUR_TOKEN" or not chat_id or chat_id == "YOUR_ID")
 
     start_time = time.time()
     log_queue = collections.deque(maxlen=15)
@@ -158,10 +204,20 @@ def main():
     child_env["PYTHONUNBUFFERED"] = "1"
 
     process = None
+    timed_out_flag = {"value": False}
 
     def forward_signal(signum, frame):
         if process and process.poll() is None:
             log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process...")
+            try:
+                process.terminate()
+            except Exception:
+                pass
+
+    def timeout_kill():
+        if process and process.poll() is None:
+            timed_out_flag["value"] = True
+            log_queue.append(f"🕐 [cron-guard] Timeout of {args.timeout}s exceeded, killing child process...")
             try:
                 process.terminate()
             except Exception:
@@ -173,7 +229,8 @@ def main():
     except ValueError:
         pass
 
-    safe_job_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', args.job_name)
+    name_hash = hashlib.md5(args.job_name.encode('utf-8')).hexdigest()[:6]
+    safe_job_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', args.job_name) + "_" + name_hash
     log_dir = os.path.join(script_dir, "logs")
     full_log_path = os.path.join(log_dir, f"{safe_job_name}_latest.log")
     log_file_handle = None
@@ -184,6 +241,7 @@ def main():
     except Exception:
         full_log_path = None
 
+    timer = None
     try:
         process = subprocess.Popen(
             full_cmd,
@@ -196,6 +254,11 @@ def main():
             errors='replace',
             env=child_env
         )
+
+        if args.timeout:
+            timer = threading.Timer(args.timeout, timeout_kill)
+            timer.daemon = True
+            timer.start()
 
         for line in iter(process.stdout.readline, ''):
             clean_line = line.rstrip('\n')
@@ -213,12 +276,17 @@ def main():
         exit_code = 1
         log_queue.append(f"Wrapper Execution Error: {str(e)}")
     finally:
+        if timer:
+            timer.cancel()
         # Guaranteed closure of file stream to unlock it for Windows deletion
         if log_file_handle and not log_file_handle.closed:
             log_file_handle.close()
 
     duration_seconds = int(time.time() - start_time)
     duration_str = str(datetime.timedelta(seconds=duration_seconds))
+
+    if args.mode == "mute":
+        write_heartbeat(script_dir, safe_job_name, args.job_name, exit_code, duration_seconds, timed_out_flag["value"])
 
     should_send = False
     if args.mode == "all":
@@ -247,7 +315,10 @@ def main():
     # Send the Telegram message
     if should_send:
         final_log_path = full_log_path if keep_file else None
-        send_telegram_alert(token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, final_log_path)
+        send_telegram_alert(
+            token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, final_log_path,
+            timed_out=timed_out_flag["value"], creds_missing=creds_missing, timeout_limit=args.timeout
+        )
 
     sys.exit(exit_code)
 
