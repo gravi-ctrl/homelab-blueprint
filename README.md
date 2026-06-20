@@ -25,6 +25,7 @@ The server snapshots its own state daily: scripts, crontabs, package lists, etc,
 
 The result: the server largely runs itself, and when something does go wrong, you already know about it before you notice.
 
+> For the design reasoning behind the fixed paths, ownership rules, and cross-script dependencies, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 ---
 
 ## 🚨 Deployment & Recovery
