@@ -192,8 +192,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='GPUCache' \
     --exclude='CachedImages' \
     --exclude='Crash Reports' \
-    --exclude="${USER_HOME#/}/scripts/status" \
-    --exclude="${USER_HOME#/}/scripts/logs" \
     --exclude="${STACKS_DIR#/}/arrs/config/*/*.db-shm" \
     --exclude="${STACKS_DIR#/}/arrs/config/*/*.db-wal" \
     --exclude="${STACKS_DIR#/}/arrs/config/*/MediaCover" \
@@ -228,6 +226,8 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/logs" \
     --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/GeoDB" \
     --exclude="${STACKS_DIR#/}/scrutiny/influxdb" \
+    --exclude="${USER_HOME#/}/scripts/status" \
+    --exclude="${USER_HOME#/}/scripts/logs" \
     -C / \
     "${STACKS_DIR#/}" \
     "${CTRL_DIR#/}" \
