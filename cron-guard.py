@@ -90,7 +90,7 @@ def write_heartbeat(script_dir, safe_job_name, job_name, exit_code, duration_sec
         # Best-effort only: never let a heartbeat write failure affect the job's exit code
         print(f"[cron-guard] WARNING: Could not write heartbeat file: {e}", file=sys.stderr)
 
-def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path, timed_out=False, creds_missing=False, timeout_limit=None):
+def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path, timed_out=False, creds_missing=False, timeout_limit=None, is_syntax_error=False, skip_missing_creds_log=False):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
     if timed_out:
@@ -102,8 +102,7 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
     elif exit_code in (-15, 143, 130, -2): # Standard SIGTERM/SIGINT codes (Linux & Windows)
         status_header = "🛑 <b>TASK KILLED</b>"
         status_label = "Terminated by OS/User"
-    elif exit_code == 2 and job_name == "cron-guard Syntax Error":
-        # Custom header for wrapper errors
+    elif is_syntax_error:
         status_header = "⚠️ <b>CRON-GUARD MISCONFIGURED</b>"
         status_label = "Wrapper Syntax Error"
     else:
@@ -172,11 +171,17 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
 
     print(alert_msg, file=sys.stderr)
 
+    if creds_missing and skip_missing_creds_log:
+        return False
+
     try:
         script_dir = os.path.dirname(os.path.realpath(__file__))
         fallback_filename = 'MISSING_TELEGRAM_CREDENTIALS.log' if creds_missing else 'failed_alerts.log'
         fallback_log = os.path.join(script_dir, fallback_filename)
-        with open(fallback_log, 'a', encoding='utf-8') as f:
+        # MISSING_TELEGRAM_CREDENTIALS.log is a current-state flag (overwrite each
+        # time) -- failed_alerts.log is a real history of delivery failures (append).
+        file_mode = 'w' if creds_missing else 'a'
+        with open(fallback_log, file_mode, encoding='utf-8') as f:
             f.write(
                 f"{timestamp} | job={job_name!r} | exit={exit_code} | duration={duration} | error={last_error}\n"
                 f"--- last logs ---\n{log_tail}\n-----------------\n"
@@ -211,9 +216,10 @@ class AlertingArgumentParser(argparse.ArgumentParser):
             exit_code=2,
             log_tail=curse_msg,
             duration="0:00:00",
-            total_lines=5,
+            total_lines=0,
             full_log_path=None,
-            creds_missing=creds_missing
+            creds_missing=creds_missing,
+            is_syntax_error=True
         )
 
         self.print_usage(sys.stderr)
@@ -221,7 +227,7 @@ class AlertingArgumentParser(argparse.ArgumentParser):
 
 def main():
     parser = AlertingArgumentParser(description="Run a command and notify via Telegram.")
-    parser.add_argument("--mode", choices=["fail", "success", "all", "mute"], default="fail", 
+    parser.add_argument("--mode", choices=["fail", "success", "all", "mute"], default="fail",
                         help="When to send notification (default: fail)")
     parser.add_argument("--timeout", type=int, default=None,
                         help="Kill the job if it's still running after this many seconds (default: no limit)")
@@ -254,7 +260,7 @@ def main():
         print(f"⚠️ [cron-guard] WARNING: .env is missing or incomplete! Alerts for '{args.job_name}' cannot be sent.", file=sys.stderr)
         try:
             pre_flight_log = os.path.join(script_dir, 'MISSING_TELEGRAM_CREDENTIALS.log')
-            with open(pre_flight_log, 'a', encoding='utf-8') as f:
+            with open(pre_flight_log, 'w', encoding='utf-8') as f:
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 f.write(f"{timestamp} | [CONFIG WARNING] job={args.job_name!r} started, but Telegram credentials are missing!\n")
         except Exception:
@@ -316,10 +322,7 @@ def main():
         if os.name == 'nt':
             popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
         else:
-            # New process group only (not a new session): killpg can still target
-            # just this job's tree without hitting cron-guard itself, but unlike
-            # start_new_session=True, this does NOT detach the controlling
-            # terminal -- so `sudo` can still prompt/authenticate over /dev/tty.
+            # New process group only: killpg can still target just this job's tree without hitting cron-guard itself. This does not detach the controlling terminal -- so `sudo` can still prompt/authenticate over /dev/tty.
             popen_kwargs['preexec_fn'] = os.setpgrp
 
         process = subprocess.Popen(full_cmd, **popen_kwargs)
@@ -386,7 +389,8 @@ def main():
         final_log_path = full_log_path if keep_file else None
         send_telegram_alert(
             token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, final_log_path,
-            timed_out=timed_out_flag["value"], creds_missing=creds_missing, timeout_limit=args.timeout
+            timed_out=timed_out_flag["value"], creds_missing=creds_missing, timeout_limit=args.timeout,
+            skip_missing_creds_log=True
         )
 
     sys.exit(exit_code)
