@@ -55,7 +55,8 @@ if [[ "$MODE" == "RESTORE" ]]; then
     if [ -f "/tmp/backup-uid.txt" ]; then
         IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
         sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
-            -uid "$B_UID" ! -uid "$(id -u)" -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
+            \( -uid "$B_UID" -o -gid "$B_GID" \) ! \( -uid "$(id -u)" -a -gid "$(id -g)" \) \
+            -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
         sudo rm -f /tmp/backup-uid.txt
     fi
 fi
