@@ -28,6 +28,33 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
+# ── Cross-platform repo lock (same OS-conditional pattern as cron-guard.py's
+#    process-tree kill: branch once on sys.platform, identical call sites)
+if sys.platform == "win32":
+    import msvcrt
+    def _try_lock(fd):
+        try:
+            msvcrt.locking(fd.fileno(), msvcrt.LK_NBLCK, 1)
+            return True
+        except OSError:
+            return False
+    def _unlock(fd):
+        try:
+            fd.seek(0)
+            msvcrt.locking(fd.fileno(), msvcrt.LK_UNLCK, 1)
+        except OSError:
+            pass
+else:
+    import fcntl
+    def _try_lock(fd):
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except BlockingIOError:
+            return False
+    def _unlock(fd):
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
 def run_command(command, cwd=None, capture_output=False, suppress_errors=False):
     """
     Helper to run shell commands. 
@@ -229,54 +256,72 @@ def main():
         print(f"❌ Error: Could not cd to {target_dir}: {e}")
         sys.exit(1)
 
-    # Remember the branch we started on, to restore it at the end
-    starting_branch_proc = run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True)
-    starting_branch = starting_branch_proc.stdout.strip() if starting_branch_proc.returncode == 0 else None
-
-    # 3. Stage all changes (on whatever branch is currently checked out)
-    run_command(["git", "add", "."])
-
-    # 4. Commit ONLY if there are changes
-    head_check = run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True)
-    fresh_repo = head_check.returncode != 0
-    diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"]) if not fresh_repo else None
-
-    if fresh_repo or (diff_check and diff_check.returncode != 0):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        run_command(["git", "commit", "-m", f"{label}: {timestamp}"])
-    else:
-        print("Everything up-to-date.")
-
-    # 5. Discover all local branches
-    branches = get_local_branches()
-    if not branches:
-        print("❌ Error: No local branches found (not a git repository?).")
+    # Lock this repo so gitops-deploy.sh (or any other git-touching script)
+    # can't operate on it at the same time. Non-blocking: if busy, skip this
+    # run entirely rather than risk two processes mutating the same checkout.
+    git_dir = os.path.join(target_dir, ".git")
+    if not os.path.isdir(git_dir):
+        print(f"❌ Error: {target_dir} is not a git repository (no .git directory).")
         sys.exit(1)
 
-    print(f"\n📋 Found {len(branches)} local branch(es): {', '.join(branches)}")
+    lock_fd = open(os.path.join(git_dir, "sync.lock"), "w")
+    if not _try_lock(lock_fd):
+        print(f"⏭️  {target_dir} is locked by another process. Skipping this run.")
+        lock_fd.close()
+        sys.exit(0)
 
-    # 6. Sync each branch independently; keep going even if one fails
-    results = {}
-    for branch in branches:
-        ok, reason = sync_branch(branch)
-        results[branch] = (ok, reason)
+    try:
+        # Remember the branch we started on, to restore it at the end
+        starting_branch_proc = run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True)
+        starting_branch = starting_branch_proc.stdout.strip() if starting_branch_proc.returncode == 0 else None
 
-    # 7. Restore the original branch
-    if starting_branch:
-        run_command(["git", "checkout", starting_branch], capture_output=True, suppress_errors=True)
+        # 3. Stage all changes (on whatever branch is currently checked out)
+        run_command(["git", "add", "."])
 
-    # 8. Summary
-    print("\n--- Sync Summary ---")
-    any_failed = False
-    for branch, (ok, reason) in results.items():
-        if ok:
-            print(f"✅ {branch}: synced successfully")
+        # 4. Commit ONLY if there are changes
+        head_check = run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True)
+        fresh_repo = head_check.returncode != 0
+        diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"]) if not fresh_repo else None
+
+        if fresh_repo or (diff_check and diff_check.returncode != 0):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            run_command(["git", "commit", "-m", f"{label}: {timestamp}"])
         else:
-            any_failed = True
-            print(f"❌ {branch}: FAILED — {reason}")
+            print("Everything up-to-date.")
 
-    if any_failed:
-        sys.exit(1)
+        # 5. Discover all local branches
+        branches = get_local_branches()
+        if not branches:
+            print("❌ Error: No local branches found (not a git repository?).")
+            sys.exit(1)
+
+        print(f"\n📋 Found {len(branches)} local branch(es): {', '.join(branches)}")
+
+        # 6. Sync each branch independently; keep going even if one fails
+        results = {}
+        for branch in branches:
+            ok, reason = sync_branch(branch)
+            results[branch] = (ok, reason)
+
+        # 7. Restore the original branch
+        if starting_branch:
+            run_command(["git", "checkout", starting_branch], capture_output=True, suppress_errors=True)
+
+        # 8. Summary
+        print("\n--- Sync Summary ---")
+        any_failed = False
+        for branch, (ok, reason) in results.items():
+            if ok:
+                print(f"✅ {branch}: synced successfully")
+            else:
+                any_failed = True
+                print(f"❌ {branch}: FAILED — {reason}")
+
+        if any_failed:
+            sys.exit(1)
+    finally:
+        _unlock(lock_fd)
+        lock_fd.close()
 
 if __name__ == "__main__":
     main()

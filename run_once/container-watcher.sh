@@ -71,20 +71,36 @@ task_tailscale() {
         funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env\n"
     fi
 
-    send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
-━━━━━━━━━━━━━━━
-${funnel_msg}
+    local ts_state
+    ts_state=$(docker exec tailscaled tailscale status --json | grep -oP '"BackendState":\s*"\K[^"]+')
 
-⚠️ If Tailscale connection fails, regenerate the auth key:
-1. Go to https://login.tailscale.com/admin/settings/keys
-2. Click 'Generate auth key'
-3. Tick: Reusable + Tags → select a tag
-4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env
+    if [ "$ts_state" = "Running" ]; then
+        send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
+━━━━━━━━━━━━━━━
+✅ Tailscale connected and running
+
+${funnel_msg}
 
 ℹ️ funnel = public internet, serve = tailnet-only:
 docker exec tailscaled tailscale funnel --bg --https=443 \"http://127.0.0.1:PORT\"
 docker exec tailscaled tailscale serve --bg --https=443 \"http://127.0.0.1:PORT\"
 (non-443 ports need :PORT suffix in the .ts.net URL)"
+    else
+        send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
+━━━━━━━━━━━━━━━
+🚨 Tailscale is NOT running — state: ${ts_state}
+
+${funnel_msg}
+
+⚠️ If state is NeedsLogin, regenerate the auth key:
+1. Go to https://login.tailscale.com/admin/settings/keys
+2. Click 'Generate auth key'
+3. Tick: Reusable + Tags → select a tag
+4. Update TS_AUTHKEY in /opt/stacks/tailscale/.env
+5. ... > Edit route settings... > Tick the `192.168.1.0/24`
+6. Copy the machine's IP (e.g. 100.x.x.x) and update it in DNS > Nameservers
+⚠️ If state is NeedsMachineAuth, regenerating the key won't help — approve the device in the admin console instead."
+    fi
 }
 
 # 🔹 TASK: NGINX PROXY MANAGER (NPM)

@@ -12,6 +12,12 @@ source "/opt/ctrl/.env"
 cd "${STACKS_DIR}"
 PAUSE_FILE="/tmp/gitops_paused"
 
+# Prevent stepping on git-auto-sync.py (or any future script) touching this
+# same repo at the same time. Non-blocking: if busy, skip this run entirely —
+# the next 15-minute cycle will pick up any pending deploy.
+exec 200>"${STACKS_DIR}/.git/sync.lock"
+flock -n 200 || { echo "⏭️  Stacks repo busy (locked by another process), skipping this cycle."; exit 0; }
+
 send_telegram() {
     if [ -n "${TELEGRAM_DANTE_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
         curl -fsS "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
