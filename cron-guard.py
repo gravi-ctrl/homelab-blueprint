@@ -9,9 +9,10 @@
 
 # USAGE:
 # python cron-guard.py --mode fail "My Backup" "bash backup.sh"               (Only notify if it breaks)
-# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..."               (Always notify)
 # python cron-guard.py --mode success "Health Check" "curl ..."               (Only notify if it works)
+# python cron-guard.py --mode all "Weekly Sync" "rsync -av ..."               (Always notify)
 # python cron-guard.py --mode mute "Quiet Job" "some_command"                 (Never notify; just for clean naming/logging)
+#                                                                             (Writes a local heartbeat file at ./status/*.json per job)
 # python cron-guard.py --mode fail --timeout 2700 "Backup" "bash backup.sh"   (Any mode kills it; alert only fires on fail/all, per --mode)
 #
 # WHAT IT DOES (all modes):
