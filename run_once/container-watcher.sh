@@ -41,7 +41,7 @@ check_nextcloud() {
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -c '%U' /opt/ctrl/.)" /opt/ctrl/run_once/nextcloud_post-restore_fix.sh
+    sudo -u "$(stat -L -c '%U' /opt/ctrl)" /opt/ctrl/run_once/nextcloud_post-restore_fix.sh
     /opt/ctrl/nextcloud-dynamic-watch.sh
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
