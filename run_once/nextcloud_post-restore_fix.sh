@@ -3,8 +3,8 @@
 # @FREQUENCY: Run Once (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_CONTAINER
 
-[[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
-source "/opt/scripts/.env"
+[[ -f "/opt/ctrl/.env" ]] || { echo ".env does not exist at /opt/ctrl" >&2; exit 1; }
+source "/opt/ctrl/.env"
 
 CONTAINER="${NEXTCLOUD_CONTAINER}"
 USERNAME="${NEXTCLOUD_USER}"

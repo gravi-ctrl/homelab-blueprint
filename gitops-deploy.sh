@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-[[ -f "/opt/scripts/.env" ]] || { echo ".env does not exist at /opt/scripts" >&2; exit 1; }
-source "/opt/scripts/.env"
+[[ -f "/opt/ctrl/.env" ]] || { echo ".env does not exist at /opt/ctrl" >&2; exit 1; }
+source "/opt/ctrl/.env"
 
 cd "${STACKS_DIR}"
 PAUSE_FILE="/tmp/gitops_paused"

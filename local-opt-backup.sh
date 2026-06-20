@@ -16,10 +16,10 @@ shopt -s nullglob
 [[ $EUID -ne 0 ]] && { echo "❌ ERROR: This script must be run as root (or via sudo)." >&2; exit 1; }
 
 # --- .ENV ---
-if [ -f "/opt/scripts/.env" ]; then
-    source "/opt/scripts/.env"
+if [ -f "/opt/ctrl/.env" ]; then
+    source "/opt/ctrl/.env"
 else
-    echo "❌ .env file not found in /opt/scripts"
+    echo "❌ .env file not found in /opt/ctrl"
     exit 1
 fi
 

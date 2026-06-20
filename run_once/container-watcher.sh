@@ -4,10 +4,10 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID, WATCHER_TASKS
 
-[[ -f /opt/scripts/.env ]] || { echo ".env not found at /opt/scripts" >&2; exit 1; }
-source /opt/scripts/.env
+[[ -f /opt/ctrl/.env ]] || { echo ".env not found at /opt/ctrl" >&2; exit 1; }
+source /opt/ctrl/.env
 
-STATE_FILE="/opt/scripts/.ghost_watcher_state"
+STATE_FILE="/opt/ctrl/.ghost_watcher_state"
 touch "$STATE_FILE"
 
 # ── Framework Helpers ─────────────────────────────────────────────────────────
@@ -37,12 +37,12 @@ check_nextcloud() {
 # ⚙️  TASK PAYLOADS
 # ══════════════════════════════════════════════════════════════════════════════
 # Create task_<name>() functions here.
-# The active list of tasks is controlled by WATCHER_TASKS in /opt/scripts/.env
+# The active list of tasks is controlled by WATCHER_TASKS in /opt/ctrl/.env
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -c '%U' /opt/scripts/.)" /opt/scripts/run_once/nextcloud_post-restore_fix.sh
-    /opt/scripts/nextcloud-dynamic-watch.sh
+    sudo -u "$(stat -c '%U' /opt/ctrl/.)" /opt/ctrl/run_once/nextcloud_post-restore_fix.sh
+    /opt/ctrl/nextcloud-dynamic-watch.sh
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━

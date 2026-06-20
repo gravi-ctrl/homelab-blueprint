@@ -62,28 +62,28 @@ header "0/10" "Establishing System Paths"
 MY_SCRIPTS="$HOME/scripts"
 LOCAL_VENV="$HOME/.venv" # Used in step [5/10]
 
-task "Symlink user scripts → /opt/scripts"
-if [ ! -L /opt/scripts ]; then
-    quietly sudo ln -sf "$MY_SCRIPTS" /opt/scripts
+task "Symlink user scripts → /opt/ctrl"
+if [ ! -L /opt/ctrl ]; then
+    quietly sudo ln -sf "$MY_SCRIPTS" /opt/ctrl
     pass "created"
 else
     pass "already linked"
 fi
 
 task "Create global command → cron-guard"
-if [ -f "/opt/scripts/cron-guard.py" ]; then
-    quietly sudo chmod +x /opt/scripts/cron-guard.py
+if [ -f "/opt/ctrl/cron-guard.py" ]; then
+    quietly sudo chmod +x /opt/ctrl/cron-guard.py
     # symlinking my wrapper for crontabs and easy use
-    quietly sudo ln -sf /opt/scripts/cron-guard.py /usr/local/bin/cron-guard
+    quietly sudo ln -sf /opt/ctrl/cron-guard.py /usr/local/bin/cron-guard
     pass "linked"
 else
     skip "cron-guard.py not found"
 fi
 
 task "Load and secure environment configuration"
-[[ -f "/opt/scripts/.env" ]] || { echo -e "${RED}❌ ERROR: .env does not exist at /opt/scripts.${NC}" >&2; exit 1; }
-quietly chmod 600 "/opt/scripts/.env"
-source "/opt/scripts/.env"
+[[ -f "/opt/ctrl/.env" ]] || { echo -e "${RED}❌ ERROR: .env does not exist at /opt/ctrl.${NC}" >&2; exit 1; }
+quietly chmod 600 "/opt/ctrl/.env"
+source "/opt/ctrl/.env"
 pass "loaded & secured"
 
 # ══════════════════════════════════════════════════════════════
@@ -101,8 +101,8 @@ quietly sudo apt-get install -y software-properties-common curl git rsync ufw
 pass
 
 task "Restore APT repositories"
-REPOS_BACKUP_DIR="/opt/scripts/run_once/system_configs/apt_sources"
-REPOS_FILE="/opt/scripts/run_once/system_configs/my_repos.txt"
+REPOS_BACKUP_DIR="/opt/ctrl/run_once/system_configs/apt_sources"
+REPOS_FILE="/opt/ctrl/run_once/system_configs/my_repos.txt"
 _restored=0
 _keyrings=0
 
@@ -196,7 +196,7 @@ pass
 header "3/10" "Restore Installed Packages"
 
 task "Install packages from backup list"
-PACKAGES_FILE="/opt/scripts/run_once/system_configs/my_installed_apps.txt"
+PACKAGES_FILE="/opt/ctrl/run_once/system_configs/my_installed_apps.txt"
 if [ -f "$PACKAGES_FILE" ]; then
     quietly xargs -a "$PACKAGES_FILE" sudo apt-get install -y --ignore-missing
     pass
@@ -251,7 +251,7 @@ else
 fi
 
 task "Install pip packages into venv"
-PIP_PACKAGES_FILE="/opt/scripts/run_once/system_configs/my_pip_packages.txt"
+PIP_PACKAGES_FILE="/opt/ctrl/run_once/system_configs/my_pip_packages.txt"
 if [ -f "$PIP_PACKAGES_FILE" ] && [ -s "$PIP_PACKAGES_FILE" ]; then
     quietly xargs -a "$PIP_PACKAGES_FILE" "/opt/venv/bin/pip" install
     pass
@@ -300,7 +300,7 @@ else
 fi
 
 task "Restore dotfiles"
-DOTFILES_DIR="/opt/scripts/run_once/dotfiles"
+DOTFILES_DIR="/opt/ctrl/run_once/dotfiles"
 if [ -d "$DOTFILES_DIR" ]; then
     [ -f "$DOTFILES_DIR/zshrc" ]     && cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     [ -f "$DOTFILES_DIR/p10k.zsh" ]  && cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
@@ -384,7 +384,7 @@ pass
 # ══════════════════════════════════════════════════════════════
 header "8/10" "System Configurations"
 
-SYSTEM_CONFIGS_DIR="/opt/scripts/run_once/system_configs"
+SYSTEM_CONFIGS_DIR="/opt/ctrl/run_once/system_configs"
 
 task "Restore /etc/hosts"
 if [ -f "$SYSTEM_CONFIGS_DIR/hosts.txt" ]; then
@@ -432,7 +432,7 @@ fi
 header "9/10" "Firewall Rules"
 
 task "Run firewall setup script"
-FIREWALL_SCRIPT="/opt/scripts/run_once/firewall-rules.sh"
+FIREWALL_SCRIPT="/opt/ctrl/run_once/firewall-rules.sh"
 if [ -f "$FIREWALL_SCRIPT" ]; then
     quietly bash "$FIREWALL_SCRIPT"
     pass
@@ -446,7 +446,7 @@ fi
 header "10/10" "Background Tasks"
 task "Create Docker watcher daemon"
 
-WATCHER_SCRIPT="/opt/scripts/run_once/container-watcher.sh"
+WATCHER_SCRIPT="/opt/ctrl/run_once/container-watcher.sh"
 
 if [ -f "$WATCHER_SCRIPT" ]; then
     chmod +x "$WATCHER_SCRIPT"
@@ -458,7 +458,7 @@ After=docker.service
 
 [Service]
 Type=simple
-ExecStart=/opt/scripts/run_once/container-watcher.sh
+ExecStart=/opt/ctrl/run_once/container-watcher.sh
 Restart=on-failure
 RestartSec=30
 
@@ -474,7 +474,7 @@ else
 fi
 
 task "Activating TG-Vergil"
-quietly python3 "/opt/scripts/tg-vergil/vergil.py" --install
+quietly python3 "/opt/ctrl/tg-vergil/vergil.py" --install
 pass "Service installed and started"
 
 # ══════════════════════════════════════════════════════════════
