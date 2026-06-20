@@ -187,7 +187,7 @@ readable treatment automatically.
 
 ## 7. GitOps Conflict Handling: Alert Once, Then Go Quiet
 
-`gitops-deploy.sh` runs every 15 minutes and needs its own alert-fatigue strategy, separate
+`gitops-deploy.sh` runs every 15 minutes (Updated to be 3am — still a change that is worth it) and needs its own alert-fatigue strategy, separate
 from `cron-guard --mode mute`. On a merge conflict during `git pull --rebase --autostash`:
 
 ```bash
