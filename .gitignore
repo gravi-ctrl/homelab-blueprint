@@ -10,4 +10,5 @@
 **/*.bak
 **/index.html
 .ghost_watcher_state
+.miniflux_digest_state
 /status/*.json
