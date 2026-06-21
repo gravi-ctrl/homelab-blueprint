@@ -282,11 +282,9 @@ npm_create_proxy_host() {
     fi
 }
 
-# Updates an existing proxy host's forward target. NOTE: NPM's update endpoint
-# is a full replace, not a partial patch — if you've hand-customized this
-# host's advanced config or access list via the NPM UI, this will overwrite
-# those back to this script's defaults. Fine for hosts this script fully
-# owns; be aware before running a bulk replay over hand-tuned hosts.
+# Updates an existing proxy host's forward target.
+# Fetches existing config and plucks only the writable fields to preserve
+# custom advanced Nginx configurations and UI toggles without failing schema validation.
 npm_update_proxy_host() {
     local host_id="$1"
     local domain="$2"
@@ -295,8 +293,23 @@ npm_update_proxy_host() {
     local scheme="$5"
     local cert_id="${6:-0}"
 
+    # 1. Fetch the existing proxy host configuration
+    local existing_json code_get
+    existing_json=$(curl -s -w "\n%{http_code}" "${NPM_URL}/api/nginx/proxy-hosts/${host_id}" \
+        -H "Authorization: Bearer ${npm_token}")
+
+    code_get=$(echo "$existing_json" | tail -1)
+    existing_json=$(echo "$existing_json" | sed '$d')
+
+    if [[ "$code_get" -ge 400 ]] || ! echo "$existing_json" | jq -e . >/dev/null 2>&1; then
+        err "Failed to fetch existing proxy host details for ID ${host_id} (HTTP ${code_get})"
+        return 1
+    fi
+
+    # 2. Extract strictly the allowed fields to avoid "additional properties" 400 errors.
+    # This preserves your custom tinyauth configurations, access lists, and toggles.
     local payload
-    payload=$(jq -n \
+    payload=$(echo "$existing_json" | jq -c \
         --arg domain "$domain" \
         --arg scheme "$scheme" \
         --arg ip "$ip" \
@@ -307,15 +320,21 @@ npm_update_proxy_host() {
             forward_scheme: $scheme,
             forward_host: $ip,
             forward_port: $port,
-            certificate_id: (if $cert > 0 then $cert else 0 end),
-            ssl_forced: (if $cert > 0 then true else false end),
-            hsts_enabled: (if $cert > 0 then true else false end),
-            http2_support: (if $cert > 0 then true else false end),
-            block_exploits: true,
-            allow_websocket_upgrade: true,
-            meta: { letsencrypt_agree: false, dns_challenge: false }
+            certificate_id: (if $cert > 0 then $cert else .certificate_id end),
+            ssl_forced: .ssl_forced,
+            hsts_enabled: .hsts_enabled,
+            hsts_subdomains: .hsts_subdomains,
+            http2_support: .http2_support,
+            block_exploits: .block_exploits,
+            caching_enabled: .caching_enabled,
+            allow_websocket_upgrade: .allow_websocket_upgrade,
+            access_list_id: .access_list_id,
+            advanced_config: .advanced_config,
+            locations: .locations,
+            meta: .meta
         }')
 
+    # 3. Send the updated, clean payload via PUT
     local resp code body
     resp=$(curl -s -w "\n%{http_code}" -X PUT "${NPM_URL}/api/nginx/proxy-hosts/${host_id}" \
         -H "Authorization: Bearer ${npm_token}" \
@@ -324,7 +343,7 @@ npm_update_proxy_host() {
 
     code=$(echo "$resp" | tail -1)
     if [[ "$code" == "200" || "$code" == "201" ]]; then
-        log "Updated NPM proxy host: ${domain} ➔ ${scheme}://${ip}:${port}"
+        log "Updated NPM proxy host: ${domain} ➔ ${scheme}://${ip}:${port} (Preserved advanced settings)"
     else
         body=$(echo "$resp" | sed '$d')
         err "Failed to update proxy host (HTTP ${code}): ${body}"
