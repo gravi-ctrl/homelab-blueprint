@@ -1,23 +1,23 @@
-audiobooks
-auth
-bazarr
-dockge
-glances
-home
-jd
-jellyfin
-kuma
-n8n
-nextcloud
-news
-npm
-paperless
-pihole
-pocket
-prowlarr
-qbit
-radarr
-romm
-scrutiny
-sonarr
-syncthing
+audiobooks audiobookshelf 80
+auth tinyauth 3000
+bazarr bazarr 6767
+dockge dockge 5001
+glances glances 61208
+home homepage 3000
+jd jdownloader 5800
+jellyfin jellyfin 8096
+kuma uptime-kuma 3001
+n8n n8n 5678
+nextcloud nextcloud 80
+npm 192.168.1.109 81
+paperless paperless-ngx 8000
+pihole pihole 80
+pocket pocket-id 1411
+prowlarr prowlarr 9696
+qbit qbittorrent 8080
+radarr radarr 7878
+romm romm 8080
+scrutiny scrutiny 8080
+sonarr sonarr 8989
+syncthing syncthing 8384
+flux miniflux 8080

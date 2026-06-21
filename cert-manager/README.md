@@ -8,8 +8,8 @@ This script eliminates the manual "click-ops" of setting up new services. It man
 
 1.  **Manage Identity:** Generate one master certificate covering all your subdomains (e.g., `jellyfin.homeserver`, `nextcloud.homeserver`).
 2.  **Manage Local DNS:** Automatically add or remove DNS records in your local Pi-hole instance pointing to your server's IP.
-3.  **Manage Routing:** Automatically create or delete Proxy Host entries in NPM with optimized defaults (Force SSL, HSTS, WebSockets).
-4.  **Keep in Sync:** When you add or remove a service, the certificate is regenerated, re-uploaded, the Pi-hole DNS is updated, and the NPM routing is updated instantly.
+3.  **Manage Routing:** Automatically create or update Proxy Host entries in NPM with optimized defaults (Force SSL, HSTS, WebSockets).
+4.  **Keep in Sync:** When you add, update, or remove a service, the certificate is regenerated, re-uploaded, the Pi-hole DNS is updated, and the NPM routing is updated instantly.
 
 ## Prerequisites
 
@@ -60,31 +60,46 @@ SERVER_IP="192.168.1.x"
 ### Day-to-Day: Provisioning Services
 
 **1. Add a service with automatic Pi-hole DNS and NPM routing:**
-This adds the domain to the SSL certificate, **creates a local DNS record in Pi-hole pointing to your server's IP**, and creates the Proxy Host entry in NPM.
+This adds the domain to the SSL certificate, **creates a local DNS record in Pi-hole**, and creates the Proxy Host entry in NPM.
 ```bash
 # Syntax: ./cert-manager.sh add <service_name> <internal_ip_or_container_name> <port> [scheme]
 ./cert-manager.sh add jellyfin jellyfin 8096
 ./cert-manager.sh add paperless 192.168.1.x 8000
 ```
 
-**2. Add a service (SSL and DNS only):**
+**2. Update an existing service:**
+If a service's IP, port, or protocol changes, just run the `add` command again. The script will dynamically update NPM and your local `services.list` instead of creating duplicates.
+```bash
+./cert-manager.sh add jellyfin 192.168.1.50 8096 s  # The 's' sets the forward scheme to https
+```
+
+**3. Add a service (SSL and DNS only):**
 If you only want the domain added to the certificate and registered in Pi-hole DNS, but prefer to configure the NPM proxy host manually.
 ```bash
 ./cert-manager.sh add custom-app
 ```
 
-**3. Remove a service:**
+**4. Remove a service:**
 This **deletes the DNS record from Pi-hole**, **deletes the Proxy Host from NPM**, removes the domain from the certificate list, and regenerates the smaller cert.
 ```bash
 ./cert-manager.sh remove jellyfin
 ```
+
+### Bulk Operations
+
+You can act on the entire `services.list` file at once. This is highly useful for restoring your state to a new NPM/Pi-hole instance or tearing everything down.
+
+*   **Replay Configuration**: `./cert-manager.sh add services.list`
+    Iterates through your `services.list`, ensuring every DNS record and NPM proxy host exists and is up to date. Only regenerates the certificate once at the very end if changes were made.
+*   **Purge Everything**: `./cert-manager.sh remove services.list`
+    Backs up your `services.list` with a timestamp, completely removes all records from Pi-hole and NPM, and blanks out the local file.
 
 ### Maintenance & Audit
 
 ```bash
 ./cert-manager.sh list     # Show all subdomains currently in the list
 ./cert-manager.sh status   # Show cert expiry, SANs, and check if NPM matches the list
-./cert-manager.sh regen    # Force a certificate regeneration and upload
+./cert-manager.sh regen    # Force a certificate regeneration and upload (alias: renew)
 ```
 
 ---
@@ -124,7 +139,7 @@ Because Pi-hole v6 API restricts configuration changes by default for security, 
  User Command: ./cert-manager.sh add jellyfin 192.168.1.x 8096
        │
        ▼
- 1. Update services.list ──► Adds "jellyfin" to the local manifest.
+ 1. Update services.list ──► Upserts "jellyfin" to the local manifest.
        │
  2. Generate SSL ──────────► mkcert creates a single SAN cert for:
        │                     homeserver, jellyfin.homeserver, etc.

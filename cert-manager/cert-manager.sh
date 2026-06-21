@@ -82,11 +82,77 @@ get_services() {
     grep -v '^#' "$SERVICES_FILE" | grep -v '^[[:space:]]*$' | sort -u
 }
 
+# Extract just the subdomain (first field) from a services.list line
+line_subdomain() {
+    awk '{print $1}' <<< "$1"
+}
+
+# Find the existing line for a subdomain, if any (matches on first field only,
+# so it still works now that lines can carry ip/port/scheme as extra fields)
+find_service_line() {
+    local svc="$1"
+    grep -E "^${svc}([[:space:]]|\$)" "$SERVICES_FILE" 2>/dev/null | head -1
+}
+
+# Build the canonical services.list line for a service.
+#   Cert-only entry:  "svc"
+#   With proxy:       "svc ip port"      (http)
+#                      "svc ip port s"    (https)
+build_line() {
+    local svc="$1" ip="${2:-}" port="${3:-}" https="${4:-}"
+    if [[ -z "$ip" || -z "$port" ]]; then
+        echo "$svc"
+    elif [[ "$https" == "s" ]]; then
+        echo "$svc $ip $port s"
+    else
+        echo "$svc $ip $port"
+    fi
+}
+
+# Parse a services.list line into its components.
+# Sets globals: PARSED_IP, PARSED_PORT, PARSED_SCHEME ("http" or "https")
+parse_line() {
+    local -a fields
+    read -ra fields <<< "$1"
+    PARSED_IP="${fields[1]:-}"
+    PARSED_PORT="${fields[2]:-}"
+    if [[ "${fields[3]:-}" == "s" ]]; then
+        PARSED_SCHEME="https"
+    else
+        PARSED_SCHEME="http"
+    fi
+}
+
+# Upsert a line into services.list, replacing any existing line for the same
+# subdomain in place rather than appending a duplicate. Echoes "changed" or
+# "unchanged" so callers can decide whether a regen is actually needed.
+upsert_service_line() {
+    local svc="$1" new_line="$2"
+    local existing
+    existing=$(find_service_line "$svc")
+
+    if [[ "$existing" == "$new_line" ]]; then
+        echo "unchanged"
+        return 0
+    fi
+
+    if [[ -n "$existing" ]]; then
+        local tmp="${SERVICES_FILE}.tmp"
+        awk -v svc="$svc" -v newline="$new_line" \
+            '$1 == svc { print newline; next } { print }' \
+            "$SERVICES_FILE" > "$tmp"
+        mv "$tmp" "$SERVICES_FILE"
+    else
+        echo "$new_line" >> "$SERVICES_FILE"
+    fi
+    echo "changed"
+}
+
 # Build the full domain list: "homeserver audiobooks.homeserver bazarr.homeserver …"
 build_domains() {
     local domains=("$DOMAIN")
-    while IFS= read -r svc; do
-        domains+=("${svc}.${DOMAIN}")
+    while IFS= read -r line; do
+        domains+=("$(line_subdomain "$line").${DOMAIN}")
     done < <(get_services)
     echo "${domains[@]}"
 }
@@ -164,6 +230,15 @@ npm_get_proxy_host_id() {
         | jq -r ".[] | select(.domain_names[] == \"${domain}\") | .id" | head -1
 }
 
+# Returns "ip port scheme" for an existing proxy host, or empty if none exists.
+npm_get_proxy_host_details() {
+    local domain="$1"
+    curl -s "${NPM_URL}/api/nginx/proxy-hosts" \
+        -H "Authorization: Bearer ${npm_token}" \
+        | jq -r ".[] | select(.domain_names[] == \"${domain}\") | \"\(.forward_host) \(.forward_port) \(.forward_scheme)\"" \
+        | head -1
+}
+
 npm_create_proxy_host() {
     local domain="$1"
     local ip="$2"
@@ -204,6 +279,55 @@ npm_create_proxy_host() {
     else
         body=$(echo "$resp" | sed '$d')
         err "Failed to create proxy host (HTTP ${code}): ${body}"
+    fi
+}
+
+# Updates an existing proxy host's forward target. NOTE: NPM's update endpoint
+# is a full replace, not a partial patch — if you've hand-customized this
+# host's advanced config or access list via the NPM UI, this will overwrite
+# those back to this script's defaults. Fine for hosts this script fully
+# owns; be aware before running a bulk replay over hand-tuned hosts.
+npm_update_proxy_host() {
+    local host_id="$1"
+    local domain="$2"
+    local ip="$3"
+    local port="$4"
+    local scheme="$5"
+    local cert_id="${6:-0}"
+
+    local payload
+    payload=$(jq -n \
+        --arg domain "$domain" \
+        --arg scheme "$scheme" \
+        --arg ip "$ip" \
+        --argjson port "$port" \
+        --argjson cert "$cert_id" \
+        '{
+            domain_names: [$domain],
+            forward_scheme: $scheme,
+            forward_host: $ip,
+            forward_port: $port,
+            certificate_id: (if $cert > 0 then $cert else 0 end),
+            ssl_forced: (if $cert > 0 then true else false end),
+            hsts_enabled: (if $cert > 0 then true else false end),
+            http2_support: (if $cert > 0 then true else false end),
+            block_exploits: true,
+            allow_websocket_upgrade: true,
+            meta: { letsencrypt_agree: false, dns_challenge: false }
+        }')
+
+    local resp code body
+    resp=$(curl -s -w "\n%{http_code}" -X PUT "${NPM_URL}/api/nginx/proxy-hosts/${host_id}" \
+        -H "Authorization: Bearer ${npm_token}" \
+        -H "Content-Type: application/json" \
+        -d "$payload")
+
+    code=$(echo "$resp" | tail -1)
+    if [[ "$code" == "200" || "$code" == "201" ]]; then
+        log "Updated NPM proxy host: ${domain} ➔ ${scheme}://${ip}:${port}"
+    else
+        body=$(echo "$resp" | sed '$d')
+        err "Failed to update proxy host (HTTP ${code}): ${body}"
     fi
 }
 
@@ -428,70 +552,86 @@ cmd_export_ca() {
     echo "  → rootCA.crt   (Android)"
 }
 
-cmd_add() {
-    [[ $# -eq 0 ]] && { err "Usage: $0 add <service> [ip] [port] [scheme (http/https)]"; exit 1; }
-    ensure_services_file
+# Create or update an NPM proxy host so it matches the given target.
+# No-ops if an existing host already matches exactly.
+ensure_npm_proxy_host() {
+    local domain="$1" ip="$2" port="$3" scheme="$4"
 
-    local svc="$1"
-    local ip="${2:-}"
-    local port="${3:-}"
-    local scheme="${4:-http}"
-
-    svc=$(echo "$svc" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
-    [[ -z "$svc" ]] && { err "Invalid service name"; exit 1; }
-
-    local domain="${svc}.${DOMAIN}"
-
-    # 1. Handle Certificate
-    if grep -qx "$svc" "$SERVICES_FILE" 2>/dev/null; then
-        warn "'${domain}' is already in the certificate list."
-    else
-        echo "$svc" >> "$SERVICES_FILE"
-        log "Added '${domain}' to certificate list."
-        echo ""
-        cmd_regen
+    info "Checking NPM Proxy Host for '${domain}'..."
+    if ! npm_auth; then
+        warn "Could not authenticate with NPM. Proxy host must be created/updated manually."
+        return
     fi
 
-    # 2. Handle Pihole DNS
-    echo ""
-    info "Adding Pihole DNS record..."
-    pihole_add_dns "$domain"
+    local existing_id
+    existing_id=$(npm_get_proxy_host_id "$domain")
 
-    # 3. Handle NPM Routing (if IP and Port are provided)
-    if [[ -n "$ip" && -n "$port" ]]; then
-        echo ""
-        info "Automating NPM Proxy Host creation..."
-        if npm_auth; then
-            local existing_id
-            existing_id=$(npm_get_proxy_host_id "$domain")
+    local cert_id
+    cert_id=$(npm_find_cert)
+    [[ -z "$cert_id" || "$cert_id" == "null" ]] && cert_id=0
 
-            if [[ -n "$existing_id" && "$existing_id" != "null" ]]; then
-                warn "Proxy host for '${domain}' already exists (ID: ${existing_id})."
-            else
-                local cert_id
-                cert_id=$(npm_find_cert)
-                [[ -z "$cert_id" || "$cert_id" == "null" ]] && cert_id=0
-                npm_create_proxy_host "$domain" "$ip" "$port" "$scheme" "$cert_id"
-            fi
+    if [[ -n "$existing_id" && "$existing_id" != "null" ]]; then
+        local current cur_ip cur_port cur_scheme
+        current=$(npm_get_proxy_host_details "$domain")
+        read -r cur_ip cur_port cur_scheme <<< "$current"
+
+        if [[ "$cur_ip" == "$ip" && "$cur_port" == "$port" && "$cur_scheme" == "$scheme" ]]; then
+            log "Proxy host for '${domain}' already up to date (ID: ${existing_id})."
         else
-            warn "Could not authenticate with NPM. Proxy host must be created manually."
+            info "Proxy host for '${domain}' exists with different values — updating..."
+            npm_update_proxy_host "$existing_id" "$domain" "$ip" "$port" "$scheme" "$cert_id"
         fi
+    else
+        npm_create_proxy_host "$domain" "$ip" "$port" "$scheme" "$cert_id"
     fi
 }
 
-cmd_remove() {
-    [[ $# -eq 0 ]] && { err "Usage: $0 remove <service>"; exit 1; }
-    ensure_services_file
+# Apply (add or update) one service entry: services.list, Pihole DNS, and
+# (if ip+port given) the NPM proxy host. Does NOT call cmd_regen — the
+# caller decides when, so a bulk replay only regenerates once at the end.
+# Sets global ENTRY_CHANGED=1 if services.list actually changed, else 0.
+apply_service_entry() {
+    local svc="$1" ip="${2:-}" port="${3:-}" https="${4:-}"
+    local domain="${svc}.${DOMAIN}"
 
+    local new_line
+    new_line=$(build_line "$svc" "$ip" "$port" "$https")
+
+    local file_status
+    file_status=$(upsert_service_line "$svc" "$new_line")
+
+    if [[ "$file_status" == "changed" ]]; then
+        log "services.list: '${new_line}'"
+        ENTRY_CHANGED=1
+    else
+        info "services.list: '${svc}' already up to date."
+        ENTRY_CHANGED=0
+    fi
+
+    echo ""
+    info "Checking Pihole DNS record..."
+    pihole_add_dns "$domain"
+
+    if [[ -n "$ip" && -n "$port" ]]; then
+        local scheme="http"
+        [[ "$https" == "s" ]] && scheme="https"
+        echo ""
+        ensure_npm_proxy_host "$domain" "$ip" "$port" "$scheme"
+    fi
+}
+
+# Remove one service entry from Pihole, NPM, and services.list.
+# Does NOT call cmd_regen — caller decides when.
+# Sets global ENTRY_REMOVED=1 if the services.list line existed and was
+# removed, else 0.
+remove_service_entry() {
     local svc="$1"
     local domain="${svc}.${DOMAIN}"
 
-    # 1. Delete from Pihole
-    info "Removing Pihole DNS record..."
+    info "Removing Pihole DNS record for '${domain}'..."
     pihole_remove_dns "$domain"
     echo ""
 
-    # 2. Delete from NPM
     info "Checking for NPM proxy host..."
     if curl -sf -o /dev/null --connect-timeout 3 "${NPM_URL}/api/" 2>/dev/null; then
         if npm_auth; then
@@ -514,18 +654,134 @@ cmd_remove() {
     else
         warn "NPM unreachable, skipping proxy host deletion."
     fi
-
     echo ""
 
-    # 3. Delete from Cert List
-    if grep -qx "$svc" "$SERVICES_FILE"; then
-        grep -vx "$svc" "$SERVICES_FILE" > "${SERVICES_FILE}.tmp"
+    if grep -qE "^${svc}([[:space:]]|\$)" "$SERVICES_FILE" 2>/dev/null; then
+        grep -vE "^${svc}([[:space:]]|\$)" "$SERVICES_FILE" > "${SERVICES_FILE}.tmp"
         mv "${SERVICES_FILE}.tmp" "$SERVICES_FILE"
         log "Removed '${domain}' from local certificate list"
-        echo ""
-        cmd_regen
+        ENTRY_REMOVED=1
     else
         err "'${svc}' not found in local services list"
+        ENTRY_REMOVED=0
+    fi
+}
+
+# Replay every entry currently in services.list: add-or-update each one,
+# then regen once at the end if anything actually changed.
+bulk_add() {
+    ensure_services_file
+    local count
+    count=$(get_services | wc -l)
+    if [[ "$count" -eq 0 ]]; then
+        info "services.list is empty — nothing to replay."
+        info "Use: $0 add <svc> [ip] [port] [s] to add entries first."
+        return
+    fi
+
+    info "Replaying ${count} entr$([[ "$count" -eq 1 ]] && echo y || echo ies) from ${SERVICES_FILE}..."
+    echo ""
+
+    local any_changed=0 line svc
+
+    while IFS= read -r line; do
+        local -a fields
+        read -ra fields <<< "$line"
+        svc="${fields[0]}"
+
+        info "── ${svc} ──"
+        ENTRY_CHANGED=0
+        apply_service_entry "${fields[0]}" "${fields[1]:-}" "${fields[2]:-}" "${fields[3]:-}"
+        [[ "$ENTRY_CHANGED" -eq 1 ]] && any_changed=1
+        echo ""
+    done < <(get_services)
+
+    if [[ "$any_changed" -eq 1 ]]; then
+        cmd_regen
+    else
+        log "Nothing changed — services.list already matches deployed state everywhere."
+    fi
+}
+
+# Remove EVERY service in services.list: backs up the file first, removes
+# each entry from Pihole/NPM/the cert, then empties (not deletes) the file.
+bulk_remove() {
+    ensure_services_file
+    local count
+    count=$(get_services | wc -l)
+    if [[ "$count" -eq 0 ]]; then
+        info "services.list is already empty — nothing to remove."
+        return
+    fi
+
+    local backup="${SERVICES_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+    cp "$SERVICES_FILE" "$backup"
+    log "Backed up services.list to ${backup}"
+    echo ""
+
+    warn "Removing ALL ${count} service(s) from Pihole, NPM, and the certificate."
+    echo ""
+
+    local line svc
+    while IFS= read -r line; do
+        svc=$(line_subdomain "$line")
+        info "── ${svc} ──"
+        remove_service_entry "$svc"
+        echo ""
+    done < <(get_services)
+
+    # Guarantee a clean blank file regardless of any comments/whitespace left behind
+    : > "$SERVICES_FILE"
+    log "services.list emptied (backup preserved at ${backup})"
+    echo ""
+
+    cmd_regen
+}
+
+cmd_add() {
+    [[ $# -eq 0 ]] && { err "Usage: $0 add <service> [ip] [port] [s]"; exit 1; }
+    ensure_services_file
+
+    # Bulk mode: replaying the whole file rather than a single service.
+    if [[ "$1" == "$(basename "$SERVICES_FILE")" ]]; then
+        bulk_add
+        return
+    fi
+
+    local svc="$1"
+    local ip="${2:-}"
+    local port="${3:-}"
+    local https="${4:-}"
+
+    svc=$(echo "$svc" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
+    [[ -z "$svc" ]] && { err "Invalid service name"; exit 1; }
+
+    ENTRY_CHANGED=0
+    apply_service_entry "$svc" "$ip" "$port" "$https"
+
+    if [[ "$ENTRY_CHANGED" -eq 1 ]]; then
+        echo ""
+        cmd_regen
+    fi
+}
+
+cmd_remove() {
+    [[ $# -eq 0 ]] && { err "Usage: $0 remove <service>"; exit 1; }
+    ensure_services_file
+
+    # Bulk mode: removing everything rather than a single service.
+    if [[ "$1" == "$(basename "$SERVICES_FILE")" ]]; then
+        bulk_remove
+        return
+    fi
+
+    local svc="$1"
+    ENTRY_REMOVED=0
+    remove_service_entry "$svc"
+
+    if [[ "$ENTRY_REMOVED" -eq 1 ]]; then
+        echo ""
+        cmd_regen
     fi
 }
 
@@ -581,8 +837,15 @@ cmd_list() {
     info "Configured services (${count}):"
     echo ""
     echo "  ${DOMAIN}  (base)"
-    while IFS= read -r svc; do
-        echo "  ${svc}.${DOMAIN}"
+    while IFS= read -r line; do
+        local svc
+        svc=$(line_subdomain "$line")
+        parse_line "$line"
+        if [[ -n "$PARSED_IP" ]]; then
+            echo "  ${svc}.${DOMAIN}  →  ${PARSED_SCHEME}://${PARSED_IP}:${PARSED_PORT}"
+        else
+            echo "  ${svc}.${DOMAIN}  (cert only, no proxy)"
+        fi
     done < <(get_services)
     echo ""
 }
@@ -620,7 +883,9 @@ cmd_status() {
     echo ""
     ensure_services_file
     local missing=0
-    while IFS= read -r svc; do
+    while IFS= read -r line; do
+        local svc
+        svc=$(line_subdomain "$line")
         if ! openssl x509 -in "$cert_path" -noout -ext subjectAltName 2>/dev/null \
              | grep -q "DNS:${svc}.${DOMAIN}"; then
             warn "Service '${svc}.${DOMAIN}' is in services.list but NOT on the certificate"
@@ -668,20 +933,28 @@ usage() {
     setup-cron              Install monthly auto-renewal cron job
 
   Day-to-day:
-    add <svc> [ip port] [s] Add service to cert + Pihole DNS. If IP/Port provided, creates NPM proxy.
-                            [s] = scheme (http or https, defaults to http)
+    add <svc> [ip port] [s] Add/update a service: cert + Pihole DNS + NPM proxy.
+                            Re-running with different ip/port/[s] updates the
+                            existing entry instead of warning and skipping.
+                            [s] = use https (omit entirely for http)
+    add services.list       Replay every entry currently in services.list —
+                            upserts each one (no-ops if nothing changed)
     remove <svc>            Delete from Pihole DNS, NPM proxy host, cert list, and regenerate
+    remove services.list    Remove EVERY service. Backs up services.list first,
+                            then empties it (file itself is kept, just blank)
     regen                   Regenerate the certificate for all services
     upload                  Push current certificate to NPM via API
-    list                    Show all configured services
+    list                    Show all configured services with their targets
     status                  Show certificate details, expiry & coverage audit
 
   Examples:
     $0 init
     $0 add jellyfin jellyfin 8096
-    $0 add nextcloud nextcloud 443 https
+    $0 add nextcloud nextcloud 443 s
     $0 add just-the-cert-domain
+    $0 add services.list
     $0 remove romm
+    $0 remove services.list
     $0 status
 
 EOF
