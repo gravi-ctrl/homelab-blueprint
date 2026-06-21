@@ -187,6 +187,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='*.sock' \
     --exclude='*.core' \
     --exclude='*.ghost_watcher_state' \
+    --exclude='*.miniflux_digest_state' \
     --exclude='ipc-socket' \
     --exclude='lockfile' \
     --exclude='GPUCache' \

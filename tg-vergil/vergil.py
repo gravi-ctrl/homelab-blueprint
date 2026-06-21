@@ -7,6 +7,7 @@ import sys
 import subprocess
 import io
 import shlex
+import html
 from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update
@@ -54,12 +55,19 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
 
     try:
+        custom_env = os.environ.copy()
+
+        venv_bin = os.path.join(sys.prefix, 'bin')
+        current_path = custom_env.get('PATH', '')
+        custom_env['PATH'] = f"{venv_bin}:{current_path}" if current_path else venv_bin
+
         result = subprocess.run(
             shlex.split(shell_command),
             shell=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            env=custom_env  # <--- Pass the modified environment to the script
         )
 
         output = (result.stdout + result.stderr).strip() or "Success (No Output)"
@@ -90,8 +98,8 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message_id=status_msg.message_id
             )
         else:
-            await status_msg.edit_text(f"<pre>{output}</pre>", parse_mode=ParseMode.HTML)
-
+            escaped_output = html.escape(output)
+            await status_msg.edit_text(f"<pre>{escaped_output}</pre>", parse_mode=ParseMode.HTML)
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
