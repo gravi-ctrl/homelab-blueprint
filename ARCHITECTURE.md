@@ -187,7 +187,7 @@ readable treatment automatically.
 
 ## 7. GitOps Conflict Handling: Alert Once, Then Go Quiet
 
-`gitops-deploy.sh` runs every 15 minutes (Updated to be 3am) and needs its own alert-fatigue strategy, separate
+`gitops-deploy.sh` runs every 15 minutes and needs its own alert-fatigue strategy, separate
 from `cron-guard --mode mute`. On a merge conflict during `git pull --rebase --autostash`:
 
 ```bash
@@ -221,7 +221,7 @@ alerting resumes as normal.
 Any script that mutates a git repo's working tree (`checkout`, `pull`, `push`) must hold a
 non-blocking `flock` on that repo's own `.git/sync.lock` before doing anything, and release it
 on exit. This replaced an earlier schedule-stagger workaround between `gitops-deploy.sh`
-(every 15 min - updated to be 3am, still a change that was worth it for future implementations/changes) and the daily backup sync — both touched `$STACKS_DIR` directly with no
+(every 15 min) and the daily backup sync — both touched `$STACKS_DIR` directly with no
 coordination between them, and used to be scheduled at the literal same minute. Staggering
 the times reduced the odds; locking removes the race entirely.
 

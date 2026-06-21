@@ -14,6 +14,9 @@ BASH_ENV=/opt/ctrl/.env
 # Keeps NextDNS filtering pinned to our current public IP
 */5 * * * * cron-guard --mode fail "NextDNS IP Update" "curl -fsS --retry 3 '$NEXTDNS_URL'"
 
+# Pulls and deploys stack updates done by Renovate
+*/15 * * * * cron-guard --mode fail "GitOps Deployer" "/opt/ctrl/gitops-deploy.sh"
+
 # Sync Personal and Work Obsidian vaults to Git
 */30 * * * * cron-guard --mode fail "Obsidian Notes Sync" "/opt/ctrl/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/ctrl/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
@@ -23,17 +26,14 @@ BASH_ENV=/opt/ctrl/.env
 # Rotate backups (retain recent) and purge download watch folder
 0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/ctrl/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
 
-# Pulls and deploys stack updates done by Renovate
-0 3 * * * cron-guard --mode fail "GitOps Deployer" "/opt/ctrl/gitops-deploy.sh"
-
 # Update Pi-hole Gravity and apply mmotti regex rules
-0 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
+5 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-15 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
+20 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
 
 # Apply file renaming rules to Paperless-ngx documents
-30 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
+35 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
 
 # Snapshot system state, build UI dashboards, and sync repos to Git
 0 5 * * * cron-guard --mode fail "Scripts & System Configs Backup" "/opt/ctrl/backup-scripts-git.sh"
