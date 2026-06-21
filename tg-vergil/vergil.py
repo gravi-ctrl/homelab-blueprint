@@ -23,18 +23,18 @@ SERVICE_FILE = Path(f"/etc/systemd/system/{SERVICE_NAME}.service")
 load_dotenv(SCRIPT_DIR / '.env')
 
 # Validate essential configuration immediately (aborts both run and install if missing)
-TOKEN = os.getenv('VERGIL_BOT_TOKEN')
-RAW_ALLOWED_ID = os.getenv('ALLOWED_USER_ID')
+TOKEN = os.getenv('TELEGRAM_VERGIL_BOT_TOKEN')
+RAW_ALLOWED_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 if not TOKEN or not RAW_ALLOWED_ID:
-    print("❌ Error: Missing VERGIL_BOT_TOKEN or ALLOWED_USER_ID in .env")
+    print("❌ Error: Missing TELEGRAM_VERGIL_BOT_TOKEN or TELEGRAM_CHAT_ID in .env")
     print("   Please configure your .env file before installing or running the bot.")
     sys.exit(1)
 
 try:
     ALLOWED_ID = int(RAW_ALLOWED_ID)
 except ValueError:
-    print(f"❌ Error: ALLOWED_USER_ID '{RAW_ALLOWED_ID}' in .env is not a valid integer.")
+    print(f"❌ Error: TELEGRAM_CHAT_ID '{RAW_ALLOWED_ID}' in .env is not a valid integer.")
     sys.exit(1)
 
 COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}

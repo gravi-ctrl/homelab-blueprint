@@ -9,7 +9,7 @@ A Python bot that runs server commands via Telegram. Commands are defined entire
 3. When triggered, it runs the shell command and replies with the output
    * **Optional Muting:** If `MUTE_<COMMAND>="true"` is set in `.env`, the bot will only show a short success confirmation instead of dumping the raw logs. Useful for scripts that already handle their own notifications.
 4. If output exceeds 4000 characters, it sends a `.txt` log file instead
-5. Only `ALLOWED_USER_ID` can execute commands — all others are silently ignored
+5. Only `TELEGRAM_CHAT_ID` can execute commands — all others are silently ignored
 
 ## Installation
 
@@ -26,8 +26,8 @@ nano .env
 
 Add commands using the `CMD_` prefix:
 ```ini
-VERGIL_BOT_TOKEN=your-token
-ALLOWED_USER_ID=your-telegram-id
+TELEGRAM_VERGIL_BOT_TOKEN=your-token
+TELEGRAM_CHAT_ID=your-telegram-id
 
 CMD_backup="bash ~/scripts/backup.sh"
 CMD_ping="ping -c 3 google.com"
