@@ -62,7 +62,8 @@ SERVER_IP="192.168.1.x"
 **1. Add a service with automatic Pi-hole DNS and NPM routing:**
 This adds the domain to the SSL certificate, **creates a local DNS record in Pi-hole**, and creates the Proxy Host entry in NPM.
 ```bash
-# Syntax: ./cert-manager.sh add <service_name> <internal_ip_or_container_name> <port> [scheme]
+# Syntax: ./cert-manager.sh add <service_name> <internal_ip_or_container_name> <port> [s]
+# [s] = use https. Omit entirely for http.
 ./cert-manager.sh add jellyfin jellyfin 8096
 ./cert-manager.sh add paperless 192.168.1.x 8000
 ```
@@ -97,7 +98,7 @@ You can act on the entire `services.list` file at once. This is highly useful fo
 ### Maintenance & Audit
 
 ```bash
-./cert-manager.sh list     # Show all subdomains currently in the list
+./cert-manager.sh list     # Show all services with their current target (ip:port/scheme)
 ./cert-manager.sh status   # Show cert expiry, SANs, and check if NPM matches the list
 ./cert-manager.sh regen    # Force a certificate regeneration and upload (alias: renew)
 ```
@@ -139,7 +140,9 @@ Because Pi-hole v6 API restricts configuration changes by default for security, 
  User Command: ./cert-manager.sh add jellyfin 192.168.1.x 8096
        │
        ▼
- 1. Update services.list ──► Upserts "jellyfin" to the local manifest.
+ 1. Update services.list ──► Upserts "jellyfin jellyfin 8096" into the
+       │                     local manifest. No-ops if that exact entry
+       │                     already exists; replaces in place if it changed.
        │
  2. Generate SSL ──────────► mkcert creates a single SAN cert for:
        │                     homeserver, jellyfin.homeserver, etc.
@@ -162,7 +165,7 @@ Because Pi-hole v6 API restricts configuration changes by default for security, 
 ~/scripts/cert-manager/
 ├── cert-manager.sh       # The automation script
 ├── .env                  # Private configuration (Credentials)
-├── services.list         # Plain text list of managed subdomains
+├── services.list         # One full entry per service: "svc ip port [s]"
 └── certs/
     ├── homeserver.pem     # The current multi-domain certificate
     └── homeserver-key.pem # The private key
