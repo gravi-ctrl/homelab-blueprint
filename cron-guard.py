@@ -283,6 +283,8 @@ def main():
         if process and process.poll() is None:
             log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process tree...")
             kill_process_tree(process)
+        else:
+            sys.exit(130)
 
     def timeout_kill():
         if process and process.poll() is None:
