@@ -474,8 +474,9 @@ else
 fi
 
 task "Activating TG-Vergil"
+
 VERGIL_SRV="/etc/systemd/system/tg-vergil.service"
-if [[ ! -f "$VERGIL_SRV" ]];then
+if [[ ! -f "$VERGIL_SRV" ]]; then
     quietly python3 "/opt/ctrl/tg-vergil/vergil.py" --install
     pass "Service installed and started"
 else
