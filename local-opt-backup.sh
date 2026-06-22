@@ -134,7 +134,7 @@ trap cleanup EXIT INT TERM HUP
 
 echo "--- [1/2] Starting Docker Stacks Backup ---"
 
-keep_kuma_alive &
+keep_kuma_alive >/dev/null 2>&1 &
 HEARTBEAT_PID=$!
 
 # Snapshot running stacks before shutdown
