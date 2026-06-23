@@ -112,7 +112,7 @@ setup_repo() {
         echo "   -> Restored repository detected. Syncing new remote commits safely..."
         git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
         git -C "$1" fetch origin -q || return 1
-        git -C "$1" pull origin main --rebase --autostash || echo "   ⚠️  Conflict detected in $(basename "$1"). Left for manual merge later."
+        git -C "$1" rebase origin/main --autostash || echo "   ⚠️  Conflict detected in $(basename "$1"). Left for manual merge later."
     else
         echo "   -> Fresh start. Initializing and cloning..."
         git -C "$1" init -b main -q
