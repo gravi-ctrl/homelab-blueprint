@@ -3,6 +3,7 @@
 # @FREQUENCY: Run Once (Disaster Recovery)
 
 set -euo pipefail
+umask 0022
 
 # ==============================================================================
 # ⚙️ CONFIGURATION
