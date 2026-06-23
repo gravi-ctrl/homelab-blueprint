@@ -160,6 +160,7 @@ Move to `/opt/stacks` and spin up your infrastructure.
 
 ```bash
 # Start Dockge to manage stacks via UI
+# (Recommended for Fresh Starts: edits to stack .env files can be done directly in the web UI)
 cd /opt/stacks/dockge && docker compose up -d
 ```
 Or
