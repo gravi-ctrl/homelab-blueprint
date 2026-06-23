@@ -55,19 +55,27 @@ if [[ "$MODE" == "RESTORE" ]]; then
     echo ">>> Fixing extracted file ownership..."
     if [ -f "/tmp/backup-uid.txt" ]; then
         IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
-        sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
-            \( -uid "$B_UID" -o -gid "$B_GID" \) ! \( -uid "$(id -u)" -a -gid "$(id -g)" \) \
-            -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
+        if [[ -n "${B_UID:-}" && -n "${B_GID:-}" ]]; then
+            sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
+                \( -uid "$B_UID" -o -gid "$B_GID" \) ! \( -uid "$(id -u)" -a -gid "$(id -g)" \) \
+                -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
+        fi
         sudo rm -f /tmp/backup-uid.txt
     fi
 fi
 
 # --- PHASE 1B: FRESH ---
 if [[ "$MODE" == "FRESH" ]]; then
-    PRIVATE_KEYS=$(find "$HOME/.ssh" -maxdepth 1 -type f -name "*.pub" | while read -r pub; do
-        priv="${pub%.pub}"
-        [[ -f "$priv" ]] && echo "$priv"
-    done | wc -l)
+    PRIVATE_KEYS=0
+
+    if [[ -d "$HOME/.ssh" ]]; then
+        PRIVATE_KEYS=$(find "$HOME/.ssh" -maxdepth 1 -type f -name "*.pub" 2>/dev/null | while read -r pub; do
+            priv="${pub%.pub}"
+            if [[ -f "$priv" ]]; then
+                echo "$priv"
+            fi
+        done | wc -l)
+    fi
 
     if [[ "$PRIVATE_KEYS" -eq 0 ]]; then
         echo "❌ ERROR: No SSH private keys found in $HOME/.ssh." >&2
@@ -96,7 +104,10 @@ setup_repo() {
     echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
 
-    [[ -z "$(ls -A "$1" 2>/dev/null)" ]] && sudo chown -R "$(id -u):$(id -g)" "$1"
+    # Avoid short-circuit syntax for set -e safety
+    if [[ -z "$(ls -A "$1" 2>/dev/null)" ]]; then
+        sudo chown -R "$(id -u):$(id -g)" "$1"
+    fi
 
     if [ -d "$1/.git" ]; then
         echo "   -> Restored repository detected. Syncing new remote commits safely..."
@@ -107,7 +118,7 @@ setup_repo() {
         echo "   -> Fresh start. Initializing and cloning..."
         git -C "$1" init -b main -q
         git -C "$1" remote add origin "$2"
-        git -C "$1" fetch origin || return 1
+        git -C "$1" fetch origin || { rm -rf "$1/.git"; return 1; }
         git -C "$1" checkout -f -B main origin/main -q
     fi
 }
@@ -135,7 +146,7 @@ if [[ "$MODE" == "RESTORE" && -n "${BACKUP:-}" ]]; then
 fi
 
 WARNING_MSG=""
-[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script , select the "Fresh Start", and try again)'
+[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script, select the "Fresh Start", and try again)'
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 if [[ "$SCRIPT_DIR" == "$HOME" ]]; then
