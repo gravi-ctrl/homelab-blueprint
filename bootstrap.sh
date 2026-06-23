@@ -47,7 +47,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
     [[ -z "$BACKUP" ]] && { echo "❌ ERROR: No backup archive found in $HOME"; exit 1; }
 
     echo ">>> Installing age & zstd..."
-    sudo apt-get update -qq && sudo apt-get install -y -qq zstd age
+    sudo apt-get update -qq && sudo NEEDRESTART_SUSPEND=1 apt-get install -y -qq zstd age > /dev/null
 
     echo ">>> Decrypting $BACKUP..."
     sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]\+,${HOME#/}," -xf - -C /
