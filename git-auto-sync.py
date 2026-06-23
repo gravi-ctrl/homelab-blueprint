@@ -222,8 +222,10 @@ def main():
     # ── UNIVERSAL AUTOMATION SAFEGUARDS (Cross-Platform) ──────────────────
     # BatchMode: Stops SSH from asking questions/prompts on all systems.
     # StrictHostKeyChecking=accept-new: Quietly registers Codeberg/GitHub keys on first run, but prevents hangs.
+    # ConnectTimeout=15: Safe initial handshake
+    # ServerAliveInterval=15 & ServerAliveCountMax=3: Abort if the server stops responding for 45 seconds mid-transfer
     # GIT_TERMINAL_PROMPT=0: Prevents Git from prompting for usernames/passwords.
-    ssh_opts = "-q -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
+    ssh_opts = "-q -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3"
     os.environ["GIT_SSH_COMMAND"] = f"ssh {ssh_opts}"
     os.environ["GIT_TERMINAL_PROMPT"] = "0"
 
