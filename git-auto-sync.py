@@ -304,8 +304,12 @@ def main():
             results[branch] = (ok, reason)
 
         # 7. Restore the original branch
+        restore_failed = False
         if starting_branch:
-            run_command(["git", "checkout", starting_branch], capture_output=True, suppress_errors=True)
+            restore_proc = run_command(["git", "checkout", starting_branch], capture_output=True)
+            if restore_proc.returncode != 0:
+                print(f"\n⚠️ Warning: Could not restore starting branch '{starting_branch}' because the repository is dirty or conflicted.")
+                restore_failed = True
 
         # 8. Summary
         print("\n--- Sync Summary ---")
@@ -317,7 +321,7 @@ def main():
                 any_failed = True
                 print(f"❌ {branch}: FAILED — {reason}")
 
-        if any_failed:
+        if any_failed or restore_failed:
             sys.exit(1)
     finally:
         _unlock(lock_fd)
