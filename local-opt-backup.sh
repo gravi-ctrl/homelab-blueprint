@@ -312,14 +312,15 @@ fi
 # Healthcheck — only check stacks we actually restarted
 echo "Waiting for containers to settle..."
 INTERVAL=10
-STUCK_THRESHOLD=3
+MAX_ATTEMPTS=30 # 30 attempts * 10 seconds = 300 seconds (5 minutes)
 HEALTH_WARNINGS=""
-declare -A stuck_count
+RECENT_FAILURES="" # Memory of containers failing near the end
 
 if [ ! -f "$RUNNING_STACKS_FILE" ]; then
     echo "⚠️  No snapshot found. Skipping health check."
 else
-    while true; do
+    # Global timeout loop prevents the script from ever getting stuck forever
+    for (( attempt=1; attempt<=MAX_ATTEMPTS; attempt++ )); do
         ALL_HEALTHY=true
         CURRENT_STUCK=""
 
@@ -327,49 +328,48 @@ else
             if [ -f "$stack_dir/compose.yml" ]; then
                 PROBLEMS=$(docker compose -f "$stack_dir/compose.yml" ps -a \
                     --format '{{.Name}} {{.Status}}' 2>/dev/null \
-                    | grep -iE "exited|unhealthy|restarting" | awk '{print $1}' || true)
+                    | awk '
+                        tolower($0) ~ /unhealthy/  { print $1 " unhealthy"; next }
+                        tolower($0) ~ /exited/     { print $1 " exited"; next }
+                        tolower($0) ~ /restarting/ { print $1 " restarting"; next }
+                    ' || true)
 
                 if [ -n "$PROBLEMS" ]; then
                     ALL_HEALTHY=false
-                    while IFS= read -r container; do
-                        stuck_count[$container]=$(( ${stuck_count[$container]:-0} + 1 ))
-                        CURRENT_STUCK+="$container (${stuck_count[$container]}/${STUCK_THRESHOLD})"$'\n'
-                    done <<< "$PROBLEMS"
-                else
-                    while IFS= read -r container; do
-                        stuck_count[$container]=0
-                    done < <(docker compose -f "$stack_dir/compose.yml" ps -a \
-                        --format '{{.Name}}' 2>/dev/null)
+                    CURRENT_STUCK+="$PROBLEMS"$'\n'
                 fi
             fi
         done < "$RUNNING_STACKS_FILE"
 
-        if [ "$ALL_HEALTHY" = true ]; then
-            echo "✅ All containers healthy."
-            break
+        # --- THE FLAPPER TRAP ---
+        if [ "$attempt" -ge "$((MAX_ATTEMPTS - 3))" ] && [ "$ALL_HEALTHY" = false ]; then
+            RECENT_FAILURES+="$CURRENT_STUCK"
         fi
 
-        THRESHOLD_HIT=true
-        while IFS= read -r container; do
-            [ -n "$container" ] || continue
-            name=$(echo "$container" | awk '{print $1}')
-            if [ "${stuck_count[$name]:-0}" -lt "$STUCK_THRESHOLD" ]; then
-                THRESHOLD_HIT=false
+        if [ "$ALL_HEALTHY" = true ]; then
+            if [ -z "$RECENT_FAILURES" ]; then
+                echo "✅ All containers healthy."
                 break
             fi
-        done <<< "$CURRENT_STUCK"
-
-        if [ "$THRESHOLD_HIT" = true ]; then
-            HEALTH_WARNINGS=$(echo "$CURRENT_STUCK" | sed '/^$/d' | sed 's/^/  • /')
-            echo "⚠️  Containers still unhealthy after $STUCK_THRESHOLD consecutive checks:"
-            echo "$HEALTH_WARNINGS"
-            break
         fi
 
-        echo "⏳ Some containers not yet healthy, rechecking in ${INTERVAL}s..."
-        echo "$CURRENT_STUCK" | sed '/^$/d' | sed 's/^/  • /'
-        sleep $INTERVAL
+        if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+            echo "⏳ Some containers not yet healthy, rechecking in ${INTERVAL}s (Attempt $attempt/$MAX_ATTEMPTS)..."
+            echo "$CURRENT_STUCK" | sed '/^$/d' | awk '{print "  • " $1 " (" $2 ")"}'
+            sleep $INTERVAL
+        fi
     done
+
+    # Final report: Use our memory of recent failures if we have them, 
+    # or CURRENT_STUCK if we just flat-out timed out.
+    if [ "$ALL_HEALTHY" = false ] || [ -n "$RECENT_FAILURES" ]; then
+        # Combine current and recent failures, sort them, and remove duplicates
+        COMBINED_FAILS=$(echo -e "${CURRENT_STUCK}\n${RECENT_FAILURES}")
+        HEALTH_WARNINGS=$(echo "$COMBINED_FAILS" | sed '/^$/d' | awk '{print "  • " $1 " (" $2 ")"}' | sort -u)
+        
+        echo "⚠️  Containers still unhealthy or flapping after timeout:"
+        echo "$HEALTH_WARNINGS"
+    fi
 fi
 
 echo "🎉 Backup finished successfully."
