@@ -8,6 +8,7 @@ set -euo pipefail
 # ⚙️ CONFIGURATION
 # ==============================================================================
 GIT_HOST="codeberg.org"
+GIT_HOST_FALLBACK="github.com"
 GIT_USER="gravi-ctrl"
 REPO_SCRIPTS="homelab-blueprint"
 REPO_CTRL="ctrl-s-master"
@@ -100,8 +101,8 @@ setup_repo() {
     if [ -d "$1/.git" ]; then
         echo "   -> Restored repository detected. Syncing new remote commits safely..."
         git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
-        git -C "$1" fetch origin -q
-        git -C "$1" pull origin main --rebase --autostash -q || echo "   ⚠️  Conflict detected in $(basename "$1"). Left for manual merge later."
+        git -C "$1" fetch origin -q || return 1
+        git -C "$1" pull origin main --rebase --autostash || echo "   ⚠️  Conflict detected in $(basename "$1"). Left for manual merge later."
     else
         echo "   -> Fresh start. Initializing and cloning..."
         git -C "$1" init -b main -q
@@ -113,10 +114,18 @@ setup_repo() {
 
 echo ">>> Syncing repositories..."
 LINK_SUCCESS=true
+
 set +e
-setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || LINK_SUCCESS=false
-setup_repo "$DIR_CTRL"    "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || LINK_SUCCESS=false
-setup_repo "$DIR_STACKS"  "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
+
+setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || \
+setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_SCRIPTS}.git" || LINK_SUCCESS=false
+
+setup_repo "$DIR_CTRL" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || \
+setup_repo "$DIR_CTRL" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_CTRL}.git" || LINK_SUCCESS=false
+
+setup_repo "$DIR_STACKS" "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || \
+setup_repo "$DIR_STACKS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
+
 set -e
 
 # --- PHASE 4: CLEANUP & SUMMARY ---
@@ -128,7 +137,6 @@ fi
 WARNING_MSG=""
 [[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script , select the "Fresh Start", and try again)'
 
-# Only delete the bootstrap script if it was executed from the root of $HOME
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 if [[ "$SCRIPT_DIR" == "$HOME" ]]; then
     rm -f "${BASH_SOURCE[0]}"
