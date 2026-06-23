@@ -104,7 +104,6 @@ setup_repo() {
     echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
 
-    # Avoid short-circuit syntax for set -e safety
     if [[ -z "$(ls -A "$1" 2>/dev/null)" ]]; then
         sudo chown -R "$(id -u):$(id -g)" "$1"
     fi
