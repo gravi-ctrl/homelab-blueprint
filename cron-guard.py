@@ -48,7 +48,7 @@ def kill_process_tree(proc):
     just that handle kills the shell but leaves real children (e.g. apt-get)
     orphaned and still running to completion. This kills the whole group/tree.
     """
-    if not proc or proc.poll() is not None:
+    if not proc:
         return
     try:
         if os.name == 'nt':
@@ -280,14 +280,12 @@ def main():
     timed_out_flag = {"value": False}
 
     def forward_signal(signum, frame):
-        if process and process.poll() is None:
+        if process:
             log_queue.append(f"⚠️ [cron-guard] Received Signal {signum}, killing child process tree...")
             kill_process_tree(process)
-        else:
-            sys.exit(130)
 
     def timeout_kill():
-        if process and process.poll() is None:
+        if process:
             timed_out_flag["value"] = True
             log_queue.append(f"🕐 [cron-guard] Timeout of {args.timeout}s exceeded, killing child process tree...")
             kill_process_tree(process)
