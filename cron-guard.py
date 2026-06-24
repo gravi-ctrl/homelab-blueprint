@@ -265,6 +265,10 @@ class AlertingArgumentParser(argparse.ArgumentParser):
         self.exit(2, f"{self.prog}: error: {message}\n")
 
 def main():
+    # Force strict 755/644 permissions only on Linux
+    if os.name != 'nt':
+        os.umask(0o022)
+
     parser = AlertingArgumentParser(description="Run a command and notify via Telegram.")
     parser.add_argument("--mode", choices=["fail", "success", "all", "mute"], default="fail",
                         help="When to send notification (default: fail)")
