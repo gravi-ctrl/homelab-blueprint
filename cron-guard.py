@@ -61,6 +61,41 @@ def kill_process_tree(proc):
     except (ProcessLookupError, PermissionError, OSError):
         pass
 
+def fix_ownership(path, script_dir):
+    """If running as root on Linux, change the path's ownership to either:
+    1. The invoking user (if running via sudo)
+    2. The owner of the script directory (if running via root cron)
+    """
+    if os.name == 'nt' or not hasattr(os, 'getuid') or os.getuid() != 0:
+        return
+
+    target_uid = None
+    target_gid = None
+
+    # Check for sudo env variables
+    if 'SUDO_UID' in os.environ and 'SUDO_GID' in os.environ:
+        try:
+            target_uid = int(os.environ['SUDO_UID'])
+            target_gid = int(os.environ['SUDO_GID'])
+        except ValueError:
+            pass
+
+    # Fallback to the owner of the script directory (useful for root crontab)
+    if target_uid is None and os.path.exists(script_dir):
+        try:
+            stat_info = os.stat(script_dir)
+            target_uid = stat_info.st_uid
+            target_gid = stat_info.st_gid
+        except Exception:
+            pass
+
+    # Apply if the target owner is not root
+    if target_uid is not None and target_uid != 0:
+        try:
+            os.chown(path, target_uid, target_gid)
+        except Exception:
+            pass
+
 def load_dotenv(filepath):
     if not os.path.isfile(filepath): return
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -77,6 +112,7 @@ def write_heartbeat(script_dir, safe_job_name, job_name, exit_code, duration_sec
     status_dir = os.path.join(script_dir, "status")
     try:
         os.makedirs(status_dir, exist_ok=True)
+        fix_ownership(status_dir, script_dir)
         status_path = os.path.join(status_dir, f"{safe_job_name}.json")
         payload = {
             "job_name": job_name,
@@ -87,6 +123,7 @@ def write_heartbeat(script_dir, safe_job_name, job_name, exit_code, duration_sec
         }
         with open(status_path, 'w', encoding='utf-8') as f:
             json.dump(payload, f, indent=2)
+        fix_ownership(status_path, script_dir)
     except Exception as e:
         # Best-effort only: never let a heartbeat write failure affect the job's exit code
         print(f"[cron-guard] WARNING: Could not write heartbeat file: {e}", file=sys.stderr)
@@ -187,6 +224,7 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
                 f"{timestamp} | job={job_name!r} | exit={exit_code} | duration={duration} | error={last_error}\n"
                 f"--- last logs ---\n{log_tail}\n-----------------\n"
             )
+        fix_ownership(fallback_log, script_dir)
     except Exception as log_err:
         print(f"[cron-guard] WARNING: Could not write to {fallback_filename}: {log_err}", file=sys.stderr)
 
@@ -264,6 +302,7 @@ def main():
             with open(pre_flight_log, 'w', encoding='utf-8') as f:
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 f.write(f"{timestamp} | [CONFIG WARNING] job={args.job_name!r} started, but Telegram credentials are missing!\n")
+            fix_ownership(pre_flight_log, script_dir)
         except Exception:
             pass
 
@@ -304,7 +343,9 @@ def main():
 
     try:
         os.makedirs(log_dir, exist_ok=True)
+        fix_ownership(log_dir, script_dir)
         log_file_handle = open(full_log_path, 'w', encoding='utf-8')
+        fix_ownership(full_log_path, script_dir)
     except Exception:
         full_log_path = None
 
