@@ -8,6 +8,7 @@
 # ==============================================================================
 
 set -euo pipefail
+umask 0022
 IFS=$'\n\t'
 
 [[ -f "/opt/ctrl/.env" ]] || { echo ".env does not exist at /opt/ctrl" >&2; exit 1; }

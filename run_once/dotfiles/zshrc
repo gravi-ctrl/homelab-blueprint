@@ -162,6 +162,7 @@ export assets="/data/assets"
 export HISTFILE=~/.zsh_history
 export HISTSIZE=10000
 export SAVEHIST=10000
+umask 0022
 
 # ==============================================================================
 # 3. SMART HISTORY MANAGEMENT
