@@ -2,7 +2,6 @@ audiobooks audiobookshelf 80
 auth tinyauth 3000
 bazarr bazarr 6767
 dockge dockge 5001
-flux miniflux 8080
 glances glances 61208
 home homepage 3000
 jd jdownloader 5800
