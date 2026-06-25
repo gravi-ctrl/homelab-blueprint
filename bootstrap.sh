@@ -96,7 +96,7 @@ find "$HOME/.ssh" -type f -exec chmod 600 {} +
 chmod 644 "$HOME/.ssh"/*.pub 2>/dev/null || true
 
 echo ">>> Removing cloud-init..."
-sudo apt-get purge -y -qq cloud-init
+sudo NEEDRESTART_SUSPEND=1 apt-get purge -y -qq cloud-init
 sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
 sudo systemctl restart ssh || true
 
