@@ -12,11 +12,12 @@ touch "$STATE_FILE"
 
 # ── Framework Helpers ─────────────────────────────────────────────────────────
 is_running() { docker container inspect -f '{{.State.Status}}' "$1" 2>/dev/null | grep -q "running"; }
-is_done()    { grep -q "^$1$" "$STATE_FILE" 2>/dev/null; }
+is_done()    { grep -Fxq "$1" "$STATE_FILE" 2>/dev/null; }
 mark_done()  { echo "$1" >> "$STATE_FILE"; }
 
 send_telegram() {
-    curl -fsS "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
+    curl -fsS --retry 3 --retry-delay 5 \
+        "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
         --data-urlencode "text=$1" > /dev/null
 }
@@ -25,11 +26,7 @@ send_telegram() {
 # Define check_<task_name>() here to add custom readiness logic for a task.
 # NOTE: The function name must match the TASK name (not the container name).
 # The container name is automatically passed into the function as "$1".
-# If no check_<task_name>() exists, the engine falls back to default_check().
-
-default_check() {
-    [ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null)" = "true" ]
-}
+# If no check_<task_name>() exists, the engine falls back to is_running().
 
 check_nextcloud() {
     docker exec "$1" test -f /var/www/html/lib/versioncheck.php 2>/dev/null
@@ -74,11 +71,11 @@ task_tailscale() {
         docker exec tailscaled tailscale funnel --bg --https=443 --set-path="/webhook-test/${N8N_WEBHOOK_UUID}" "http://127.0.0.1:5678/webhook-test/${N8N_WEBHOOK_UUID}"
         funnel_msg+="✅ n8n webhooks configured"
     else
-        funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env\n"
+        funnel_msg+="❌ n8n webhooks skipped — N8N_WEBHOOK_UUID missing in .env"$'\n'
     fi
 
     local ts_state
-    ts_state=$(docker exec tailscaled tailscale status --json | grep -oP '"BackendState":\s*"\K[^"]+')
+    ts_state=$(docker exec tailscaled tailscale status --json | jq -r .BackendState 2>/dev/null)
 
     if [ "$ts_state" = "Running" ]; then
         send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
@@ -141,7 +138,7 @@ run_check() {
     if declare -f "$fn" > /dev/null; then
         "$fn" "$container"
     else
-        default_check "$container"
+        true
     fi
 }
 
