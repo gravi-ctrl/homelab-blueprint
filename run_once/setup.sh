@@ -22,6 +22,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 set -euo pipefail
+umask 0022
 
 trap '
     $IN_TASK && printf "${RED}✗${NC}\n"
