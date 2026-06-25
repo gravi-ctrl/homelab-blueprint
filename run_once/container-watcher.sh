@@ -33,6 +33,10 @@ check_nextcloud() {
     docker exec "$1" test -f /var/www/html/lib/versioncheck.php 2>/dev/null
 }
 
+check_tailscale() {
+    docker exec "$1" tailscale status --json >/dev/null 2>&1
+}
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ⚙️  TASK PAYLOADS
 # ══════════════════════════════════════════════════════════════════════════════
