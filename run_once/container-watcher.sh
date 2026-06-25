@@ -22,8 +22,10 @@ send_telegram() {
 }
 
 # ── Check Functions ───────────────────────────────────────────────────────────
-# Define check_<name>() with the container name here to add custom readiness logic for a task.
-# If no check_<name>() exists, the engine falls back to default_check().
+# Define check_<task_name>() here to add custom readiness logic for a task.
+# NOTE: The function name must match the TASK name (not the container name).
+# The container name is automatically passed into the function as "$1".
+# If no check_<task_name>() exists, the engine falls back to default_check().
 
 default_check() {
     [ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null)" = "true" ]
