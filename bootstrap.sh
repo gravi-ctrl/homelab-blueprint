@@ -48,7 +48,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
     [[ -z "$BACKUP" ]] && { echo "❌ ERROR: No backup archive found in $HOME"; exit 1; }
 
     echo ">>> Installing age & zstd..."
-    sudo apt-get update -qq && sudo NEEDRESTART_SUSPEND=1 apt-get install -y -qq zstd age > /dev/null
+    sudo apt-get update -qq && sudo NEEDRESTART_SUSPEND=1 apt-get install -y -qq zstd age >/dev/null 2>&1
 
     echo ">>> Decrypting $BACKUP..."
     sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]\+,${HOME#/}," -xf - -C /
@@ -96,7 +96,7 @@ find "$HOME/.ssh" -type f -exec chmod 600 {} +
 chmod 644 "$HOME/.ssh"/*.pub 2>/dev/null || true
 
 echo ">>> Removing cloud-init..."
-sudo NEEDRESTART_SUSPEND=1 apt-get purge -y -qq cloud-init
+sudo NEEDRESTART_SUSPEND=1 apt-get purge -y -qq cloud-init >/dev/null 2>&1
 sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
 sudo systemctl restart ssh || true
 
