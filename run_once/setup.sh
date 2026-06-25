@@ -204,6 +204,11 @@ else
     skip "list not found"
 fi
 
+task "Clean up redundant packages & apt cache"
+quietly sudo apt-get autoremove -y
+quietly sudo apt-get clean
+pass
+
 # ══════════════════════════════════════════════════════════════
 # [4/10] DIRECTORY STRUCTURE & PERMISSIONS
 # ══════════════════════════════════════════════════════════════
