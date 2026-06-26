@@ -8,7 +8,7 @@
 # ==============================================================================
 
 # ── Init ──────────────────────────────────────────────────────
-LOGFILE="/tmp/bootstrap-$(date +%Y%m%d_%H%M%S).log"
+LOGFILE="/tmp/setup-$(date +%Y%m%d_%H%M%S).log"
 CURRENT="preflight"; IN_TASK=false
 PASS_COUNT=0; SKIP_COUNT=0
 START_TIME=$SECONDS
