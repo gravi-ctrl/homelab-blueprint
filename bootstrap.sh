@@ -181,25 +181,28 @@ setup_repo() {
 LINK_SUCCESS=true
 
 task "Sync $REPO_SCRIPTS"
-if quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || \
-   quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_SCRIPTS}.git"; then
+if quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git"; then
     pass
+elif quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_SCRIPTS}.git"; then
+    pass "fallback to $GIT_HOST_FALLBACK"
 else
     LINK_SUCCESS=false; skip "failed"
 fi
 
 task "Sync $REPO_CTRL"
-if quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || \
-   quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_CTRL}.git"; then
+if quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git"; then
     pass
+elif quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_CTRL}.git"; then
+    pass "fallback to $GIT_HOST_FALLBACK"
 else
     LINK_SUCCESS=false; skip "failed"
 fi
 
 task "Sync $REPO_STACKS"
-if quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || \
-   quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_STACKS}.git"; then
+if quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git"; then
     pass
+elif quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_STACKS}.git"; then
+    pass "fallback to $GIT_HOST_FALLBACK"
 else
     LINK_SUCCESS=false; skip "failed"
 fi
