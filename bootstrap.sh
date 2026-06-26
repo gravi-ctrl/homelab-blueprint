@@ -40,124 +40,200 @@ while true; do
 done
 echo ""
 
-# --- PHASE 1A: RESTORE ---
+# ── Init Logging System ───────────────────────────────────────
+LOGFILE="/tmp/bootstrap-$(date +%Y%m%d_%H%M%S).log"
+CURRENT="preflight"; IN_TASK=false
+PASS_COUNT=0; SKIP_COUNT=0
+START_TIME=$SECONDS
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+DIM='\033[2m'
+BOLD='\033[1m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+trap '
+    $IN_TASK && printf "${RED}✗${NC}\n"
+    printf "\n${RED}  ❌ FAILED → %s (line %d)${NC}\n" "$CURRENT" "$LINENO"
+    printf "${RED}     See: %s${NC}\n" "$LOGFILE"
+    exit 1
+' ERR
+
+header()  { printf "\n${CYAN}${BOLD} [%s] %s${NC}\n" "$1" "$2"; }
+task()    { CURRENT="$1"; IN_TASK=true; printf "   %-52s " "$1"; echo -e "\n==> $1" >> "$LOGFILE"; }
+pass()    { IN_TASK=false; PASS_COUNT=$((PASS_COUNT+1)); printf "${GREEN}✓${NC}"; [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"; printf "\n"; }
+skip()    { IN_TASK=false; SKIP_COUNT=$((SKIP_COUNT+1)); printf "${YELLOW}—${NC}"; [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"; printf "\n"; }
+quietly() { "$@" >> "$LOGFILE" 2>&1; }
+
+printf "${BOLD} 🛡️  EXECUTING BOOTSTRAP${NC}\n"
+printf "    ${DIM}Log → %s${NC}\n" "$LOGFILE"
+
+# Cache sudo to prevent password prompts breaking the quiet logging
+if ! sudo -v; then
+    echo -e "${RED}❌ Sudo authentication failed.${NC}"; exit 1
+fi
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done >/dev/null 2>&1 &
+
+# ══════════════════════════════════════════════════════════════
+# PHASE 1: RESTORE OR FRESH
+# ══════════════════════════════════════════════════════════════
+# PHASE 1A: RESTORE
+# ═══════════════
 if [[ "$MODE" == "RESTORE" ]]; then
-    sudo [ -f "$AGE_KEYFILE" ] || { echo "❌ ERROR: Decryption key not found at $AGE_KEYFILE"; exit 1; }
+    header "PHASE 1A" "Restore Mode"
 
+    task "Verify decryption key and archive"
+    sudo [ -f "$AGE_KEYFILE" ] || { echo -e "\n${RED}❌ ERROR: Decryption key not found at $AGE_KEYFILE${NC}"; exit 1; }
+    
     BACKUP=$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)
-    [[ -z "$BACKUP" ]] && { echo "❌ ERROR: No backup archive found in $HOME"; exit 1; }
+    [[ -z "$BACKUP" ]] && { echo -e "\n${RED}❌ ERROR: No backup archive found in $HOME${NC}"; exit 1; }
+    pass "$(basename "$BACKUP")"
 
-    echo ">>> Installing age & zstd..."
-    sudo apt-get update -qq && sudo NEEDRESTART_SUSPEND=1 apt-get install -y -qq zstd age >/dev/null 2>&1
+    task "Install decryption tools (age, zstd)"
+    quietly sudo apt-get update
+    quietly sudo NEEDRESTART_SUSPEND=1 apt-get install -y zstd age
+    pass
 
-    echo ">>> Decrypting $BACKUP..."
-    sudo age -d -i "$AGE_KEYFILE" "$BACKUP" | sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]\+,${HOME#/}," -xf - -C /
+    task "Decrypt and extract system archive"
+    sudo age -d -i "$AGE_KEYFILE" "$BACKUP" 2>>"$LOGFILE" | \
+    sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]\+,${HOME#/}," -xf - -C / >>"$LOGFILE" 2>&1
+    pass
 
-    echo ">>> Fixing extracted file ownership..."
+    task "Fix extracted file ownership"
     if [ -f "/tmp/backup-uid.txt" ]; then
         IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
         if [[ -n "${B_UID:-}" && -n "${B_GID:-}" ]]; then
-            sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
+            quietly sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
                 \( -uid "$B_UID" -o -gid "$B_GID" \) ! \( -uid "$(id -u)" -a -gid "$(id -g)" \) \
-                -exec chown "$(id -u):$(id -g)" {} + 2>/dev/null || true
+                -exec chown "$(id -u):$(id -g)" {} + || true
         fi
-        sudo rm -f /tmp/backup-uid.txt
+        quietly sudo rm -f /tmp/backup-uid.txt
+        pass "UID/GID updated"
+    else
+        skip "no mapping file"
     fi
-fi
 
-# --- PHASE 1B: FRESH ---
-if [[ "$MODE" == "FRESH" ]]; then
+# ══════════════════════════════
+# PHASE 1B: FRESH
+# ═════════════
+elif [[ "$MODE" == "FRESH" ]]; then
+    header "PHASE 1B" "Fresh Start"
+
+    task "Validate SSH private keys"
     PRIVATE_KEYS=0
-
     if [[ -d "$HOME/.ssh" ]]; then
         PRIVATE_KEYS=$(find "$HOME/.ssh" -maxdepth 1 -type f -name "*.pub" 2>/dev/null | while read -r pub; do
             priv="${pub%.pub}"
-            if [[ -f "$priv" ]]; then
-                echo "$priv"
-            fi
+            [[ -f "$priv" ]] && echo "$priv"
         done | wc -l)
     fi
 
     if [[ "$PRIVATE_KEYS" -eq 0 ]]; then
-        echo "❌ ERROR: No SSH private keys found in $HOME/.ssh." >&2
-        echo "   Please place your private key(s) in $HOME/.ssh before running a Fresh Start." >&2
+        echo -e "\n${RED}❌ ERROR: No SSH private keys found in $HOME/.ssh.${NC}" >&2
+        echo -e "   Please place your private key(s) in $HOME/.ssh before running a Fresh Start." >&2
         exit 1
     fi
-
-    echo ">>> Found $PRIVATE_KEYS SSH private key(s). Proceeding..."
+    pass "$PRIVATE_KEYS key(s) found"
 fi
 
-# --- PHASE 2: SYSTEM PREP ---
-echo ">>> Fixing SSH permissions..."
-mkdir -p "$HOME/.ssh"
-sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
-chmod 700 "$HOME/.ssh"
-find "$HOME/.ssh" -type f -exec chmod 600 {} +
-chmod 644 "$HOME/.ssh"/*.pub 2>/dev/null || true
+# ══════════════════════════════════════════════════════════════
+# PHASE 2: SYSTEM PREP
+# ══════════════════════════════════════════════════════════════
+header "PHASE 2" "System Prep"
 
-echo ">>> Removing cloud-init..."
-sudo NEEDRESTART_SUSPEND=1 apt-get purge -y -qq cloud-init >/dev/null 2>&1
-sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
-sudo systemctl restart ssh || true
+task "Fix SSH permissions"
+quietly mkdir -p "$HOME/.ssh"
+quietly sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
+quietly chmod 700 "$HOME/.ssh"
+quietly find "$HOME/.ssh" -type f -exec chmod 600 {} +
+quietly find "$HOME/.ssh" -type f -name "*.pub" -exec chmod 644 {} +
+pass
 
-# --- PHASE 3: REPOSITORIES ---
+task "Remove cloud-init"
+quietly sudo NEEDRESTART_SUSPEND=1 apt-get purge -y cloud-init
+quietly sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
+quietly sudo systemctl restart ssh || true
+pass
+
+# ══════════════════════════════════════════════════════════════
+# PHASE 3: REPOSITORIES
+# ══════════════════════════════════════════════════════════════
+header "PHASE 3" "Repositories"
+
 setup_repo() {
-    echo "🔗 Linking $1..."
     sudo mkdir -p "$1"
-
-    if [[ -z "$(ls -A "$1" 2>/dev/null)" ]]; then
-        sudo chown -R "$(id -u):$(id -g)" "$1"
-    fi
+    [[ -z "$(ls -A "$1")" ]] && sudo chown -R "$(id -u):$(id -g)" "$1"
 
     if [ -d "$1/.git" ]; then
-        echo "   -> Restored repository detected. Syncing new remote commits safely..."
-        git -C "$1" remote set-url origin "$2" 2>/dev/null || git -C "$1" remote add origin "$2"
-        git -C "$1" fetch origin -q || return 1
-        git -C "$1" rebase origin/main --autostash || echo "   ⚠️  Conflict detected in $(basename "$1"). Left for manual merge later."
+        git -C "$1" remote set-url origin "$2" || git -C "$1" remote add origin "$2"
+        git -C "$1" fetch origin || return 1
+        git -C "$1" rebase origin/main --autostash || true
     else
-        echo "   -> Fresh start. Initializing and cloning..."
-        git -C "$1" init -b main -q
+        git -C "$1" init -b main
         git -C "$1" remote add origin "$2"
         git -C "$1" fetch origin || { rm -rf "$1/.git"; return 1; }
-        git -C "$1" checkout -f -B main origin/main -q
+        git -C "$1" checkout -f -B main origin/main
     fi
 }
 
-echo ">>> Syncing repositories..."
 LINK_SUCCESS=true
 
-set +e
+task "Sync $REPO_SCRIPTS"
+if quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || \
+   quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_SCRIPTS}.git"; then
+    pass
+else
+    LINK_SUCCESS=false; skip "failed"
+fi
 
-setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git" || \
-setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_SCRIPTS}.git" || LINK_SUCCESS=false
+task "Sync $REPO_CTRL"
+if quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || \
+   quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_CTRL}.git"; then
+    pass
+else
+    LINK_SUCCESS=false; skip "failed"
+fi
 
-setup_repo "$DIR_CTRL" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git" || \
-setup_repo "$DIR_CTRL" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_CTRL}.git" || LINK_SUCCESS=false
+task "Sync $REPO_STACKS"
+if quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || \
+   quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_STACKS}.git"; then
+    pass
+else
+    LINK_SUCCESS=false; skip "failed"
+fi
 
-setup_repo "$DIR_STACKS" "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git" || \
-setup_repo "$DIR_STACKS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_STACKS}.git" || LINK_SUCCESS=false
+# ══════════════════════════════════════════════════════════════
+# PHASE 4: CLEANUP
+# ══════════════════════════════════════════════════════════════
+header "PHASE 4" "Cleanup & Summary"
 
-set -e
-
-# --- PHASE 4: CLEANUP & SUMMARY ---
 if [[ "$MODE" == "RESTORE" && -n "${BACKUP:-}" ]]; then
-    echo ">>> Cleaning up backup archive..."
-    rm -- "$BACKUP"
+    task "Clean up backup archive"
+    quietly rm -- "$BACKUP"
+    pass
 fi
 
-WARNING_MSG=""
-[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG=$'\n                         (⚠️ Linking failed! Re-run this script, select the "Fresh Start", and try again)'
-
-SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+task "Remove bootstrap script from $HOME"
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 if [[ "$SCRIPT_DIR" == "$HOME" ]]; then
-    rm -f "${BASH_SOURCE[0]}"
-    echo ">>> Removed bootstrap script from $HOME."
+    quietly rm -f "${BASH_SOURCE[0]}"
+    pass
+else
+    skip "script not in home dir"
 fi
 
-cat <<EOF
+# ══════════════════════════════════════════════════════════════
+# DONE
+# ══════════════════════════════════════════════════════════════
+ELAPSED=$(( SECONDS - START_TIME ))
+WARNING_MSG=""
+[[ "$LINK_SUCCESS" == false ]] && WARNING_MSG="${RED}\n                         (⚠️ Linking failed! Re-run this script, select \"Fresh Start\", and try again)${NC}"
 
-✅ Bootstrap phase complete!
-Next steps:
-  1. Run the installer:  ${DIR_SCRIPTS}/run_once/setup.sh${WARNING_MSG}
-  2. Re-open your SSH session.
-EOF
+printf "\n${GREEN}${BOLD} ✅ BOOTSTRAP PHASE COMPLETE${NC} ${DIM}(%dm %ds)${NC}\n" "$((ELAPSED/60))" "$((ELAPSED%60))"
+printf "    ${GREEN}%d passed${NC} · ${YELLOW}%d skipped${NC}\n\n" "$PASS_COUNT" "$SKIP_COUNT"
+printf "    ${DIM}Full log → %s${NC}\n\n" "$LOGFILE"
+printf " ${BOLD}Next steps:${NC}\n"
+printf "    1. ${BOLD}Run the installer:${NC} ${DIR_SCRIPTS}/run_once/setup.sh%b\n" "$WARNING_MSG"
+printf "    2. ${BOLD}Re-open your SSH session.${NC}\n"
