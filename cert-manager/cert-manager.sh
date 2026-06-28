@@ -941,7 +941,7 @@ cmd_setup_cron() {
 usage() {
     cat << EOF
 
-  SSL Certificate Manager for Homeserver
+  SSL Certificate Manager for Wonderland
   ───────────────────────────────────────
 
   Usage: $0 <command> [arguments]
