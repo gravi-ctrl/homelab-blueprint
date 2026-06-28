@@ -52,7 +52,7 @@ fi
 TIMESTAMP=$(date '+%a %b %d %H:%M')
 
 # ── Assemble & Print ───────────────────────────────────────────
-MESSAGE="🖥️ <b>homeserver</b> — ${TIMESTAMP}
+MESSAGE="🖥️ <b>Wonderland</b> — ${TIMESTAMP}
 ━━━━━━━━━━━━━━━━━━━━━
 ⏱️ Uptime: ${UPTIME}
 🌡️ CPU: ${CPU_TEMP} · Load: ${LOAD}
