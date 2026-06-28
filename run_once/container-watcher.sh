@@ -4,10 +4,10 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID, WATCHER_TASKS
 
-[[ -f /opt/ctrl/.env ]] || { echo ".env not found at /opt/ctrl" >&2; exit 1; }
-source /opt/ctrl/.env
+[[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
+source /opt/rabbit-hole/.env
 
-STATE_FILE="/opt/ctrl/.ghost_watcher_state"
+STATE_FILE="/opt/rabbit-hole/.ghost_watcher_state"
 touch "$STATE_FILE"
 
 # ── Framework Helpers ─────────────────────────────────────────────────────────
@@ -40,12 +40,12 @@ check_tailscale() {
 # ⚙️  TASK PAYLOADS
 # ══════════════════════════════════════════════════════════════════════════════
 # Create task_<name>() functions here.
-# The active list of tasks is controlled by WATCHER_TASKS in /opt/ctrl/.env
+# The active list of tasks is controlled by WATCHER_TASKS in /opt/rabbit-hole/.env
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -L -c '%U' /opt/ctrl)" /opt/ctrl/run_once/nextcloud_post-restore_fix.sh
-    /opt/ctrl/nextcloud-dynamic-watch.sh
+    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/rabbit-hole/run_once/nextcloud_post-restore_fix.sh
+    /opt/rabbit-hole/nextcloud-dynamic-watch.sh
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━

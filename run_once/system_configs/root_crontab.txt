@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-BASH_ENV=/opt/ctrl/.env
+BASH_ENV=/opt/rabbit-hole/.env
 
 # .------------ minute (0 - 59)
 # | .---------- hour (0 - 23)
@@ -9,10 +9,10 @@ BASH_ENV=/opt/ctrl/.env
 # | | | | |
 # * * * * *
 # Shutdown if battery is discharging and below 20%
-*/5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/ctrl/battery-monitor.sh"
+*/5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/rabbit-hole/battery-monitor.sh"
 
 # Cold backup of Docker Stacks, scripts, ctrl_s_master, mkcert & SSH keys
-30 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/ctrl/local-opt-backup.sh"
+30 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
 
 # ctrl_s_master Project
 0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard --mode fail "ctrl_s_master" "$CTRL_DIR/run.sh"

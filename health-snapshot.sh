@@ -3,7 +3,7 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: BACKUP_DIR
 
-source "/opt/ctrl/.env" || { echo "❌ /opt/ctrl/.env not found"; exit 1; }
+source "/opt/rabbit-hole/.env" || { echo "❌ /opt/rabbit-hole/.env not found"; exit 1; }
 
 # ── Uptime ────────────────────────────────────────────────────
 UPTIME=$(uptime -p | sed 's/up //')

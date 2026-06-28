@@ -14,47 +14,47 @@ is free to vary.
 
 | Path | What it is | Set in |
 |---|---|---|
-| `/opt/ctrl` | Symlink to the real scripts repo (`$HOME/scripts`) | `setup.sh` |
+| `/opt/rabbit-hole` | Symlink to the real scripts repo (`$HOME/scripts`) | `setup.sh` |
 | `/opt/venv` | The Python virtualenv all scripts run under | `setup.sh` |
 | `/opt/stacks` | Docker Compose stacks (separate repo) | `setup.sh` / `bootstrap.sh` |
 
 **The one variable that's allowed to change** is `MY_SCRIPTS="$HOME/scripts"` in `setup.sh` —
-this is where the *real* files live; `/opt/ctrl` is just the alias every other script points
+this is where the *real* files live; `/opt/rabbit-hole` is just the alias every other script points
 at. If the real location ever moves (different mount, different folder name), only this one
-line needs editing. `/opt/ctrl` itself should never be renamed without a full sweep of every
+line needs editing. `/opt/rabbit-hole` itself should never be renamed without a full sweep of every
 script that hardcodes it — `setup.sh` included, since it both *creates* the symlink and
 *consumes* the alias internally (cron-guard symlink, `.env` checks, systemd `ExecStart`, etc).
 
 A renaming sweep should specifically **not** touch `$HOME` or `$HOME/scripts` patterns —
 those are generic and appear all over the place for unrelated reasons (dotfiles, `.ssh`,
-mkcert). Only the literal string `/opt/ctrl` is safe to blind `grep`/`sed`.
+mkcert). Only the literal string `/opt/rabbit-hole` is safe to blind `grep`/`sed`.
 
 ---
 
 ## 2. Ownership & the Symlink Dereference Trap
 
-`/opt/ctrl` is created via `sudo ln -sf "$MY_SCRIPTS" /opt/ctrl` — so **the symlink itself is
+`/opt/rabbit-hole` is created via `sudo ln -sf "$MY_SCRIPTS" /opt/rabbit-hole` — so **the symlink itself is
 root-owned**, even though the directory it points to belongs to you.
 
 This matters because GNU `stat` defaults to **not** following symlinks (same default as
 `ls -l`). Stat the symlink bare, and you get root's metadata, not the target's:
 
 ```bash
-stat -c '%U' /opt/ctrl       # → root   (the link's own owner — wrong)
-stat -c '%U' /opt/ctrl/.     # → you    (trailing dot forces dereference — correct)
-stat -L -c '%U' /opt/ctrl    # → you    (explicit flag — correct, and clearer to read)
+stat -c '%U' /opt/rabbit-hole       # → root   (the link's own owner — wrong)
+stat -c '%U' /opt/rabbit-hole/.     # → you    (trailing dot forces dereference — correct)
+stat -L -c '%U' /opt/rabbit-hole    # → you    (explicit flag — correct, and clearer to read)
 ```
 
 **The rule:** this only matters when the symlink is the *final* component of the path.
-Anything reached *through* `/opt/ctrl` as an intermediate component — `/opt/ctrl/some_file`,
-`${BASH_SOURCE[0]}` when invoked as `/opt/ctrl/script.sh` — is resolved transparently by the
+Anything reached *through* `/opt/rabbit-hole` as an intermediate component — `/opt/rabbit-hole/some_file`,
+`${BASH_SOURCE[0]}` when invoked as `/opt/rabbit-hole/script.sh` — is resolved transparently by the
 kernel during path lookup. No flag needed. This is why `local-opt-backup.sh`'s
 `stat -c '%U' "${BASH_SOURCE[0]}"` and `vergil.py`'s `Path(__file__).resolve().owner()` are
 both correct as-is: in both cases the *file itself* isn't a symlink, only a directory
 component along the way is.
 
 The one place the bare/dereferenced distinction is actually load-bearing: `container-watcher.sh`'s
-`task_nextcloud()` uses `stat -L -c '%U' /opt/ctrl` (correctly dereferenced) to find the real
+`task_nextcloud()` uses `stat -L -c '%U' /opt/rabbit-hole` (correctly dereferenced) to find the real
 owner for a `sudo -u` call. Without `-L`, that would silently run as root.
 
 ---
@@ -260,9 +260,9 @@ case, even though the live deployment doesn't use it.
 
 ## 10. Quick Reference: Gotchas
 
-- Stat-ing `/opt/ctrl` for ownership? Use `stat -L` or a trailing `/.` — the bare form returns
+- Stat-ing `/opt/rabbit-hole` for ownership? Use `stat -L` or a trailing `/.` — the bare form returns
   root.
-- Renaming `/opt/ctrl`? Sweep the literal string everywhere, `setup.sh` included. Never touch
+- Renaming `/opt/rabbit-hole`? Sweep the literal string everywhere, `setup.sh` included. Never touch
   `$HOME`/`$HOME/scripts` patterns in the same sweep.
 - Restoring ownership after a disaster recovery? Check UID *and* GID — they can drift
   independently even when the UID happens to match.

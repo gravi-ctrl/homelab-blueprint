@@ -216,7 +216,7 @@ alias dcu='docker compose up -d'
 alias dcp='docker compose pull'
 
 # cert-manager
-alias cert='/opt/ctrl/cert-manager/cert-manager.sh'
+alias cert='/opt/rabbit-hole/cert-manager/cert-manager.sh'
 
 # Guest Wi-Fi script
 alias guestwifi='/opt/stacks/wifi-robot/guestwifi'

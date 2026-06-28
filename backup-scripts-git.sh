@@ -11,18 +11,18 @@ set -euo pipefail
 umask 0022
 IFS=$'\n\t'
 
-[[ -f "/opt/ctrl/.env" ]] || { echo ".env does not exist at /opt/ctrl" >&2; exit 1; }
-source "/opt/ctrl/.env"
+[[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
+source "/opt/rabbit-hole/.env"
 
 IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
 
-SNAPSHOT_DIR="/opt/ctrl/run_once/system_configs"
-MASTER_SCRIPT="/opt/ctrl/git-auto-sync.py"
+SNAPSHOT_DIR="/opt/rabbit-hole/run_once/system_configs"
+MASTER_SCRIPT="/opt/rabbit-hole/git-auto-sync.py"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
-mkdir -p "/opt/ctrl/run_once/dotfiles"
+mkdir -p "/opt/rabbit-hole/run_once/dotfiles"
 
 # A. System Files & Raw Crons
 cp /etc/hosts "$SNAPSHOT_DIR/hosts.txt"
@@ -68,13 +68,13 @@ grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' \
     | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt" || true
 
 # E. Dotfiles
-[ -f ~/.zshrc ] && cp ~/.zshrc "/opt/ctrl/run_once/dotfiles/zshrc"
-[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "/opt/ctrl/run_once/dotfiles/p10k.zsh"
-[ -f /etc/nanorc ] && cp /etc/nanorc "/opt/ctrl/run_once/dotfiles/nanorc"
-[ -f ~/.hushlogin ] && cp ~/.hushlogin "/opt/ctrl/run_once/dotfiles/hushlogin"
+[ -f ~/.zshrc ] && cp ~/.zshrc "/opt/rabbit-hole/run_once/dotfiles/zshrc"
+[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "/opt/rabbit-hole/run_once/dotfiles/p10k.zsh"
+[ -f /etc/nanorc ] && cp /etc/nanorc "/opt/rabbit-hole/run_once/dotfiles/nanorc"
+[ -f ~/.hushlogin ] && cp ~/.hushlogin "/opt/rabbit-hole/run_once/dotfiles/hushlogin"
 
 # Mirror specific .config folders
-CONFIG_DEST="/opt/ctrl/run_once/dotfiles/config"
+CONFIG_DEST="/opt/rabbit-hole/run_once/dotfiles/config"
 mkdir -p "$CONFIG_DEST"
 
 for tool in "${TOOLS_ARRAY[@]}"; do
@@ -90,7 +90,7 @@ done
 echo "🚀 Syncing Repositories..."
 
 # --- 2. HANDOFF TO MASTER SCRIPT ---
-"$MASTER_SCRIPT" "/opt/ctrl" "Scripts & System Configs"
+"$MASTER_SCRIPT" "/opt/rabbit-hole" "Scripts & System Configs"
 
 # --- 3. Sync ctrl_s_master ---
 "$MASTER_SCRIPT" "${CTRL_DIR}" "Security Master Update"
@@ -99,13 +99,13 @@ echo "🚀 Syncing Repositories..."
 "$MASTER_SCRIPT" "${STACKS_DIR}" "Server Stacks"
 
 # --- GENERATE DASHBOARDS ---
-if [ -f "/opt/ctrl/generate-dashboards.sh" ]; then
+if [ -f "/opt/rabbit-hole/generate-dashboards.sh" ]; then
     echo "📊 Generating Dashboards..."
-    "/opt/ctrl/generate-dashboards.sh"
+    "/opt/rabbit-hole/generate-dashboards.sh"
 
     # --- 5. PUSH FRESH DASHBOARD COMMITS ---
     echo "🚀 Pushing updated dashboards..."
-    git -C "/opt/ctrl" push origin pages
+    git -C "/opt/rabbit-hole" push origin pages
     git -C "${STACKS_DIR}" push origin pages
 fi
 

@@ -132,7 +132,7 @@ At the end, it spawns the **Ghost Watcher** (`container-watcher.sh`), a backgrou
 
 > [!NOTE]
 > **The Ghost Watcher Engine:**
-> The watcher is fully modular and controlled via `WATCHER_TASKS` in `/opt/ctrl/.env`. Once all tasks complete, the daemon deletes its state file and self-destructs.
+> The watcher is fully modular and controlled via `WATCHER_TASKS` in `/opt/rabbit-hole/.env`. Once all tasks complete, the daemon deletes its state file and self-destructs.
 
 ---
 

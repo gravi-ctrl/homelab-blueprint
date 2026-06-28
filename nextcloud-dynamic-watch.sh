@@ -3,8 +3,8 @@
 # @FREQUENCY: Service (Always) (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_DATA_DIR, NEXTCLOUD_CONTAINER, NEXTCLOUD_MOUNT_NAME, DATA_DIR
 
-[[ -f "/opt/ctrl/.env" ]] || { echo ".env does not exist at /opt/ctrl" >&2; exit 1; }
-source "/opt/ctrl/.env"
+[[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
+source "/opt/rabbit-hole/.env"
 
 SERVICE_NAME="nc-watcher"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"

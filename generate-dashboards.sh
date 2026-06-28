@@ -6,9 +6,9 @@
 
 set -e
 
-[[ -f "/opt/ctrl/.env" ]] || { echo ".env does not exist at /opt/ctrl" >&2; exit 1; }
+[[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 set -a
-source "/opt/ctrl/.env"
+source "/opt/rabbit-hole/.env"
 set +a
 
 echo "🔄 Starting Dashboard Generation Pipeline..."
@@ -23,7 +23,7 @@ DOCKER_TEMP="/tmp/docker_index.html"
 
 # Generate Homelab Dashboard
 echo "🖥️ Generating Homelab Dashboard..."
-cd "/opt/ctrl"
+cd "/opt/rabbit-hole"
 python3 homelab_dash.py
 
 if [ -f "index.html" ]; then
@@ -35,10 +35,10 @@ fi
 
 # Generate Docker Dashboard
 echo "🐳 Generating Docker Dashboard..."
-if [ -f "/opt/ctrl/docker-dash/docker_dash.py" ]; then
-    python3 "/opt/ctrl/docker-dash/docker_dash.py" --env "/opt/ctrl/docker-dash/.env" --out "$DOCKER_TEMP"
+if [ -f "/opt/rabbit-hole/docker-dash/docker_dash.py" ]; then
+    python3 "/opt/rabbit-hole/docker-dash/docker_dash.py" --env "/opt/rabbit-hole/docker-dash/.env" --out "$DOCKER_TEMP"
 else
-    echo "❌ Error: docker_dash.py not found at /opt/ctrl/docker-dash/docker_dash.py"
+    echo "❌ Error: docker_dash.py not found at /opt/rabbit-hole/docker-dash/docker_dash.py"
     exit 1
 fi
 
@@ -125,7 +125,7 @@ deploy_page_local() {
 # 4. Execute Deployments
 # ==========================================
 
-deploy_page_local "/opt/ctrl" "$HOMELAB_TEMP"
+deploy_page_local "/opt/rabbit-hole" "$HOMELAB_TEMP"
 deploy_page_local "$STACKS_DIR" "$DOCKER_TEMP"
 
 echo "✅ Dashboard generation complete! Local 'pages' branches have been updated."
