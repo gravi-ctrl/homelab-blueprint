@@ -173,7 +173,8 @@ sudo mkdir -p /etc/docker
 # Docker DNS: primary = Pi-hole/Unbound (update if server IP changes), fallback = Cloudflare
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
 {
-    "dns": ["${SERVER_IP}", "1.1.1.1"],
+    "dns": ["8.8.8.8", "${SERVER_IP}"],
+    "max-concurrent-downloads": 2,
     "log-driver": "json-file",
     "log-opts": {
         "max-size": "10m",
