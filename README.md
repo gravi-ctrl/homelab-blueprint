@@ -98,8 +98,8 @@ For maximum security, we verify the script's cryptographic hash before executing
 2. Run the command below, replacing `<hash>` with your stored hash:
 
 ```bash
-curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/bootstrap.sh -o "$HOME/bootstrap.sh" || \
-curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/bootstrap.sh -o "$HOME/bootstrap.sh"
+curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/run_once/bootstrap.sh -o "$HOME/bootstrap.sh" || \
+curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
 ```
 ```bash
 echo "<hash> $HOME/bootstrap.sh" | sha256sum --check - && bash "$HOME/bootstrap.sh"
