@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Phase 2 System Provisioning: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
-# @USES_ENV: DATA_DIR, NEXTCLOUD_DATA_DIR, TIMEZONE
+# @USES_ENV: DATA_DIR, NEXTCLOUD_DATA_DIR, TIMEZONE, SERVER_IP
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -172,7 +172,7 @@ task "Write Docker daemon.json"
 sudo mkdir -p /etc/docker
 cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
 {
-    "dns": ["8.8.8.8", "1.1.1.1"],
+    "dns": ["${SERVER_IP}", "8.8.8.8", "1.1.1.1"],
     "max-concurrent-downloads": 2,
     "log-driver": "json-file",
     "log-opts": {
