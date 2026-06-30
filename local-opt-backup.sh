@@ -134,7 +134,7 @@ trap cleanup EXIT INT TERM HUP
 
 echo "--- [1/2] Starting Docker Stacks Backup ---"
 
-keep_kuma_alive >/dev/null 2>&1 &
+ekeep_kuma_alive >/dev/null 2>&1 &
 HEARTBEAT_PID=$!
 
 # Snapshot running stacks before shutdown
@@ -187,7 +187,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='*.sock' \
     --exclude='*.core' \
     --exclude='*.ghost_watcher_state' \
-    --exclude='*.miniflux_digest_state' \
     --exclude='ipc-socket' \
     --exclude='lockfile' \
     --exclude='GPUCache' \
@@ -200,6 +199,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${STACKS_DIR#/}/arrs/config/*/log" \
     --exclude="${STACKS_DIR#/}/arrs/config/*/UpdateLogs" \
     --exclude="${STACKS_DIR#/}/audiobookshelf/backups" \
+    --exclude="${STACKS_DIR#/}/audiobookshelf/metadata/logs" \
     --exclude="${STACKS_DIR#/}/audiobookshelf/metadata/cache" \
     --exclude="${STACKS_DIR#/}/jdownloader/config/logs" \
     --exclude="${STACKS_DIR#/}/jdownloader/config/tmp" \
@@ -227,6 +227,10 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/logs" \
     --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/GeoDB" \
     --exclude="${STACKS_DIR#/}/scrutiny/influxdb" \
+    --exclude="${CTRL_DIR#/}/_logs" \
+    --exclude="${CTRL_DIR#/}/status.json" \
+    --exclude="${CTRL_DIR#/}/status_dashboard.md" \
+    --exclude="${CTRL_DIR#/}/vaults.hc" \
     --exclude="${USER_HOME#/}/scripts/status" \
     --exclude="${USER_HOME#/}/scripts/logs" \
     -C / \
