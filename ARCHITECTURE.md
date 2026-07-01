@@ -27,7 +27,7 @@ script that hardcodes it — `setup.sh` included, since it both *creates* the sy
 
 A renaming sweep should specifically **not** touch `$HOME` or `$HOME/scripts` patterns —
 those are generic and appear all over the place for unrelated reasons (dotfiles, `.ssh`,
-mkcert). Only the literal string `/opt/rabbit-hole` is safe to a blind `grep -rlZ "/opt/rabbit-hole" /path/to/scripts | xargs -0 sed -i 's#/opt/rabbit-hole#/new/path#g'`.
+mkcert). Only the literal string `/opt/rabbit-hole` is safe to a blind `grep`/`sed`.
 
 ---
 
