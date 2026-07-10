@@ -93,7 +93,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
 
     task "Install decryption tools (age, zstd)"
     quietly sudo apt-get update
-    quietly sudo NEEDRESTART_SUSPEND=1 apt-get install -y zstd age
+    quietly sudo apt-get install -y zstd age
     pass
 
     task "Decrypt and extract system archive"
@@ -152,7 +152,7 @@ quietly find "$HOME/.ssh" -type f -name "*.pub" -exec chmod 644 {} +
 pass
 
 task "Remove cloud-init"
-quietly sudo NEEDRESTART_SUSPEND=1 apt-get purge -y cloud-init
+quietly sudo apt-get purge -y cloud-init
 quietly sudo rm -rf /etc/cloud /etc/ssh/sshd_config.d/50-cloud-init.conf
 quietly sudo systemctl restart ssh || true
 pass
