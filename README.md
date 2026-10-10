@@ -90,20 +90,25 @@ Choose your scenario before running the script:
 *   **Option B: Fresh Start (No Backup)**
     Simply place your Git deploy keys into `~/.ssh/` from your password manager.
 
-**2. Verify and Run Bootstrap:**
+**2. Download, Verify, and Run Bootstrap:**
 
-For maximum security, we verify the script's cryptographic hash before executing it.
+For maximum security, verify the script's cryptographic hash before executing it.
 
-1. Retrieve the **trusted SHA-256 hash** of `bootstrap.sh` from your password manager.
-2. Run the command below, replacing `<hash>` with your stored hash:
+1. **Download the script:**
+   ```bash
+   curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/run_once/bootstrap.sh -o "$HOME/bootstrap.sh" || \
+   curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
+   ```
 
-```bash
-curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/run_once/bootstrap.sh -o "$HOME/bootstrap.sh" || \
-curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
-```
-```bash
-echo "<hash> $HOME/bootstrap.sh" | sha256sum --check - && bash "$HOME/bootstrap.sh"
-```
+2. **Retrieve the trusted hash:**
+   Grab the SHA-256 hash of `bootstrap.sh` stored in your password manager.
+
+3. **Verify and execute:**
+   Replace `<hash>` below with your stored hash. If the checksum matches, the script runs immediately:
+   ```bash
+   echo "<hash>  $HOME/bootstrap.sh" | sha256sum --check - && bash "$HOME/bootstrap.sh"
+   ```
+
 > [!NOTE]
 > This script bootstraps your server by handling system configuration, SSH setup, and Git repository cloning. It offers two paths:
 > - **Full Recovery:** Decrypts and restores from an existing backup archive.
@@ -138,7 +143,8 @@ At the end, it spawns the **Ghost Watcher** (`container-watcher.sh`), a backgrou
 
 ### Phase 3 — Docker & Finalize
 
-**1. Reboot the Server:**
+**1. Reboot the Server (Recommended):**
+A quick reboot applies group permissions (`docker`), shell changes (`zsh`), and confirms all systemd services persist cleanly across boots.
 ```bash
 sudo reboot
 ```
