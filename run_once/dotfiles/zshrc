@@ -80,7 +80,6 @@ function actual_show_welcome_msg() {
         "extract|Unzip/Tar"
         "guestwifi|WiFi Toggle"
         "stamp|Timestamp"
-        "cht|Cmd Help"
     )
 
     local -a shortcuts=(
@@ -220,11 +219,6 @@ alias cert='/opt/rabbit-hole/cert-manager/cert-manager.sh'
 
 # Guest Wi-Fi script
 alias guestwifi='/opt/stacks/wifi-robot/guestwifi'
-
-# cheat.sh - a TLDR alternative
-cht() {
-  curl "cheat.sh/${(j:+:)@}"
-}
 
 # Welcome message alias
 alias welcome='actual_show_welcome_msg'
