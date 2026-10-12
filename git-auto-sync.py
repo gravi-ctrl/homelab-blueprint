@@ -7,10 +7,21 @@
 # Usage: python git_auto_sync.py "/path/to/repo" "Commit Label"
 # Example: python git_auto_sync.py "C:\Users\You\stacks" "Server Configs"
 #
-# Syncs EVERY local branch: for each branch -> checkout, pull/rebase with
-# retry, push with retry. A failure on one branch does not stop the others;
-# a summary is printed at the end and the script exits non-zero if any
-# branch failed.
+# Syncs EVERY local branch WITHOUT ever switching the working tree:
+#   * the checked-out branch  -> commit, pull --rebase, push (in place)
+#   * every other branch      -> fetch, then fast-forward / push / rebase in a
+#                                throwaway worktree. The live directory is never
+#                                touched, so a deploy dir full of compose files
+#                                can't be swapped out from under Docker.
+# A failure on one branch does not stop the others; a summary is printed at the
+# end and the script exits non-zero if any branch failed.
+#
+# SAFETY GATES (all abort BEFORE `git add .`):
+#   * rebase/merge in progress or detached HEAD
+#   * checked-out branch != expected branch (AUTOSYNC_BRANCH, else origin/HEAD,
+#     else main/master). Optional: AUTOSYNC_REQUIRE_GITIGNORE=1 also demands a .gitignore.
+#   * more than AUTOSYNC_MAX_DELETIONS (default 3) tracked files would be
+#     deleted by the commit (override once with AUTOSYNC_ALLOW_DELETIONS=1)
 # ==============================================================================
 
 import sys
@@ -19,6 +30,8 @@ import subprocess
 import time
 import socket
 import random  # Added for randomized network jitter
+import shutil
+import tempfile
 from datetime import datetime
 
 # ── Force UTF-8 console output
@@ -87,18 +100,12 @@ def get_local_branches():
         return []
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
 
-def sync_branch(branch_name, max_retries=3):
+def sync_checked_out_branch(branch_name, max_retries=3):
     """
-    Checks out, pulls/rebases, and pushes a single branch.
-    Returns (success: bool, reason: str) — reason is set on failure for the summary.
+    Pulls/rebases and pushes the branch that is ALREADY checked out.
+    Never switches branches. Returns (success: bool, reason: str).
     """
-    print(f"\n=== Branch: {branch_name} ===")
-
-    checkout_proc = run_command(["git", "checkout", branch_name], capture_output=True)
-    if checkout_proc.returncode != 0:
-        msg = (checkout_proc.stderr or "Unknown checkout error").strip()
-        print(f"❌ Could not check out '{branch_name}': {msg}")
-        return False, f"checkout failed: {msg}"
+    print(f"\n=== Branch: {branch_name} (checked out) ===")
 
     # ── Pull / Rebase with retry ─────────────────────────────────────────
     count = 0
@@ -218,6 +225,173 @@ def sync_branch(branch_name, max_retries=3):
 
     return True, ""
 
+def _git_out(args, cwd=None):
+    p = subprocess.run(["git"] + args, cwd=cwd, text=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    return p.stdout.strip() if p.returncode == 0 else ""
+
+def _is_ancestor(a, b):
+    return subprocess.run(["git", "merge-base", "--is-ancestor", a, b],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+def _checked_out_elsewhere(branch_name):
+    """True if another worktree (e.g. generate-dashboards.sh's temp one) has this branch."""
+    out = _git_out(["worktree", "list", "--porcelain"])
+    return f"branch refs/heads/{branch_name}" in out.splitlines()
+
+def _fail(msg):
+    print(f"❌ {msg}")
+    sys.exit(1)
+
+def expected_branch(current):
+    env = os.environ.get("AUTOSYNC_BRANCH")
+    if env:
+        return env
+    head = _git_out(["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"])
+    if head.startswith("origin/"):
+        return head[len("origin/"):]
+    local = get_local_branches()
+    for cand in ("main", "master"):
+        if cand in local:
+            return cand
+    return current
+
+def preflight_checks():
+    """Abort (exit 1) rather than commit from a state that isn't trustworthy. Returns current branch."""
+    for marker in ("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD"):
+        if os.path.exists(os.path.join(".git", marker)):
+            _fail(f"A previous git operation is unfinished ({marker}). Resolve it manually; refusing to commit on top of it.")
+
+    current = _git_out(["symbolic-ref", "--short", "-q", "HEAD"])
+    if not current:
+        _fail("Detached HEAD. Refusing to commit.")
+
+    expected = expected_branch(current)
+    if current != expected:
+        _fail(f"Repo is on '{current}' but '{expected}' is expected. Refusing to commit/sync from the wrong branch "
+              f"(this is how deploy dirs end up with missing files). Fix with: git checkout {expected}")
+
+    # Optional (AUTOSYNC_REQUIRE_GITIGNORE=1): for whitelist-style repos like /opt/stacks, where the
+    # .gitignore itself is tracked. Without it, `git add .` would stage every database and secret.
+    if os.environ.get("AUTOSYNC_REQUIRE_GITIGNORE") == "1" and not os.path.isfile(".gitignore"):
+        _fail("No .gitignore in the working tree; `git add .` would stage everything. Refusing.")
+    return current
+
+def guard_mass_deletions():
+    """After `git add .`: abort if the commit would delete suspiciously many tracked files."""
+    if run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True).returncode != 0:
+        return
+    limit = int(os.environ.get("AUTOSYNC_MAX_DELETIONS", "3"))
+    proc = run_command(["git", "diff", "--cached", "--name-only", "--diff-filter=D"], capture_output=True)
+    deleted = [l for l in (proc.stdout or "").splitlines() if l.strip()]
+    if len(deleted) > limit and os.environ.get("AUTOSYNC_ALLOW_DELETIONS") != "1":
+        print(f"❌ Refusing to commit: {len(deleted)} tracked files are MISSING from disk (limit {limit}):")
+        for f in deleted[:25]:
+            print(f"   - {f}")
+        if len(deleted) > 25:
+            print(f"   ... and {len(deleted) - 25} more")
+        run_command(["git", "reset", "-q"])  # unstage only; nothing on disk is touched
+        print("   Investigate why they vanished (git reflog, git status). If the deletions are intentional,")
+        print("   re-run once with AUTOSYNC_ALLOW_DELETIONS=1.")
+        sys.exit(1)
+
+def _push_ref(branch_name, max_retries=3):
+    last = "Unknown Error"
+    for attempt in range(1, max_retries + 1):
+        print(f"🚀 Pushing '{branch_name}' to origin (Attempt {attempt}/{max_retries})...")
+        r = run_command(["git", "push", "origin", f"refs/heads/{branch_name}:refs/heads/{branch_name}"], capture_output=True)
+        if r.returncode == 0:
+            for out in (r.stdout, r.stderr):
+                if out and out.strip():
+                    print(out.strip())
+            return True, ""
+        err_low = (r.stderr or "").lower()
+        last = (r.stderr or "Unknown Error").strip()
+        if "permission denied" in err_low or "authentication failed" in err_low:
+            return False, "authentication error during push"
+        if "gh001" in err_low or "larger than github's recommended maximum file size" in err_low:
+            return False, "file too large"
+        if "rejected" in err_low and ("non-fast-forward" in err_low or "fetch first" in err_low):
+            return False, "push rejected (remote moved during sync); will retry next run"
+        if attempt < max_retries:
+            jitter_sleep = random.randint(25, 35)
+            print(f"⚠️ Push failed on '{branch_name}'. Error: {last}\nWaiting {jitter_sleep}s before retry...")
+            time.sleep(jitter_sleep)
+    return False, f"push failed after max retries: {last}"
+
+def _rebase_in_temp_worktree(branch_name, remote_ref):
+    """Rebase a NON-checked-out branch onto its remote in a throwaway worktree."""
+    wt = tempfile.mkdtemp(prefix="autosync_wt_")
+    local_ref = f"refs/heads/{branch_name}"
+    try:
+        old_sha = _git_out(["rev-parse", local_ref])
+        add = run_command(["git", "worktree", "add", "-q", "--detach", wt, local_ref], capture_output=True)
+        if add.returncode != 0:
+            return False, f"could not create temp worktree: {(add.stderr or '').strip()}"
+        rb = subprocess.run(["git", "rebase", remote_ref], cwd=wt, text=True,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if rb.returncode != 0:
+            subprocess.run(["git", "rebase", "--abort"], cwd=wt, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return False, "diverged from origin and rebase conflicts; manual merge required"
+        new_sha = _git_out(["rev-parse", "HEAD"], cwd=wt)
+        if subprocess.run(["git", "update-ref", local_ref, new_sha, old_sha]).returncode != 0:
+            return False, "branch moved while rebasing; will retry next run"
+        print(f"🔀 Rebased '{branch_name}' onto origin in a temporary worktree.")
+        return True, ""
+    finally:
+        run_command(["git", "worktree", "remove", "--force", wt], suppress_errors=True)
+        shutil.rmtree(wt, ignore_errors=True)
+        run_command(["git", "worktree", "prune"], suppress_errors=True)
+
+def sync_other_branch(branch_name, max_retries=3):
+    """
+    Syncs a branch that is NOT checked out, without touching the working tree.
+    Returns (success: bool, reason: str).
+    """
+    print(f"\n=== Branch: {branch_name} (not checked out; working tree untouched) ===")
+    if _checked_out_elsewhere(branch_name):
+        print(f"⏭️  '{branch_name}' is checked out in another worktree right now. Skipping this run.")
+        return True, ""
+
+    local_ref, remote_ref = f"refs/heads/{branch_name}", f"refs/remotes/origin/{branch_name}"
+    remote_exists, last_err = None, ""
+    for attempt in range(1, max_retries + 1):
+        print(f"⬇️  Fetching origin/{branch_name} (Attempt {attempt}/{max_retries})...")
+        f = run_command(["git", "fetch", "-q", "origin", f"+{local_ref}:{remote_ref}"], capture_output=True)
+        if f.returncode == 0:
+            remote_exists = True
+            break
+        err_low = (f.stderr or "").lower()
+        last_err = (f.stderr or "").strip()
+        if "couldn't find remote ref" in err_low:
+            print(f"ℹ️  No remote branch 'origin/{branch_name}' yet. Will create it on push.")
+            remote_exists = False
+            break
+        if "permission denied" in err_low or "authentication failed" in err_low:
+            return False, "authentication error during fetch"
+        if attempt < max_retries:
+            jitter_sleep = random.randint(25, 35)
+            print(f"⚠️ Fetch failed. Retrying in {jitter_sleep}s...")
+            time.sleep(jitter_sleep)
+    if remote_exists is None:
+        return False, f"fetch failed after max retries: {last_err}"
+
+    if remote_exists:
+        local_sha, remote_sha = _git_out(["rev-parse", local_ref]), _git_out(["rev-parse", remote_ref])
+        if local_sha == remote_sha:
+            print("✅ Already in sync.")
+            return True, ""
+        if _is_ancestor(local_sha, remote_sha):  # purely behind: just move the ref
+            subprocess.run(["git", "update-ref", local_ref, remote_sha, local_sha])
+            print(f"⏩ Fast-forwarded local '{branch_name}' to origin (no checkout).")
+            return True, ""
+        if not _is_ancestor(remote_sha, local_sha):  # diverged
+            ok, reason = _rebase_in_temp_worktree(branch_name, remote_ref)
+            if not ok:
+                return False, reason
+    return _push_ref(branch_name, max_retries)
+
+
 def main():
     # ── UNIVERSAL AUTOMATION SAFEGUARDS (Cross-Platform) ──────────────────
     # BatchMode: Stops SSH from asking questions/prompts on all systems.
@@ -273,14 +447,14 @@ def main():
         sys.exit(0)
 
     try:
-        # Remember the branch we started on, to restore it at the end
-        starting_branch_proc = run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True)
-        starting_branch = starting_branch_proc.stdout.strip() if starting_branch_proc.returncode == 0 else None
+        # 3. Safety gates BEFORE anything is staged
+        current = preflight_checks()
 
-        # 3. Stage all changes (on whatever branch is currently checked out)
+        # 4. Stage all changes, then refuse mass deletions
         run_command(["git", "add", "."])
+        guard_mass_deletions()
 
-        # 4. Commit ONLY if there are changes
+        # 5. Commit ONLY if there are changes
         head_check = run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True)
         fresh_repo = head_check.returncode != 0
         diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"]) if not fresh_repo else None
@@ -291,27 +465,18 @@ def main():
         else:
             print("Everything up-to-date.")
 
-        # 5. Discover all local branches
+        # 6. Discover all local branches
         branches = get_local_branches()
         if not branches:
             print("❌ Error: No local branches found (not a git repository?).")
             sys.exit(1)
-
         print(f"\n📋 Found {len(branches)} local branch(es): {', '.join(branches)}")
 
-        # 6. Sync each branch independently; keep going even if one fails
-        results = {}
+        # 7. Checked-out branch in place; every other branch WITHOUT checkout
+        results = {current: sync_checked_out_branch(current)}
         for branch in branches:
-            ok, reason = sync_branch(branch)
-            results[branch] = (ok, reason)
-
-        # 7. Restore the original branch
-        restore_failed = False
-        if starting_branch:
-            restore_proc = run_command(["git", "checkout", starting_branch], capture_output=True)
-            if restore_proc.returncode != 0:
-                print(f"\n⚠️ Warning: Could not restore starting branch '{starting_branch}' because the repository is dirty or conflicted.")
-                restore_failed = True
+            if branch != current:
+                results[branch] = sync_other_branch(branch)
 
         # 8. Summary
         print("\n--- Sync Summary ---")
@@ -323,7 +488,7 @@ def main():
                 any_failed = True
                 print(f"❌ {branch}: FAILED — {reason}")
 
-        if any_failed or restore_failed:
+        if any_failed:
             sys.exit(1)
     finally:
         _unlock(lock_fd)
