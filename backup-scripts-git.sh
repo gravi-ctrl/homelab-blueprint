@@ -105,8 +105,16 @@ if [ -f "/opt/rabbit-hole/generate-dashboards.sh" ]; then
 
     # --- 5. PUSH FRESH DASHBOARD COMMITS ---
     echo "🚀 Pushing updated dashboards..."
-    git -C "/opt/rabbit-hole" push origin pages
-    git -C "${STACKS_DIR}" push origin pages
+    for repo in "/opt/rabbit-hole" "${STACKS_DIR}"; do
+        # generate-dashboards.sh leaves a dash-alarm-* flag in .git while a problem (e.g. a pages
+        # conflict) is known and already alarmed. Pushing then would fail every day and defeat
+        # the alarm-once design, so skip until the flag clears.
+        if compgen -G "$(git -C "$repo" rev-parse --absolute-git-dir)/dash-alarm-*" > /dev/null; then
+            echo "🔕 Skipping pages push for $repo (dashboard problem already alarmed)."
+        else
+            git -C "$repo" push origin pages
+        fi
+    done
 fi
 
 echo "✅ Backup process completed successfully."

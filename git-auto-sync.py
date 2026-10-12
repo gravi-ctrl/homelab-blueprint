@@ -16,6 +16,11 @@
 # A failure on one branch does not stop the others; a summary is printed at the
 # end and the script exits non-zero if any branch failed.
 #
+# ALARM-ONCE: a problem makes the script exit 1 (so cron-guard alarms) only the FIRST time.
+# While the same problem persists, later runs still log it but exit 0 (silent). The state is
+# kept in .git/autosync-alarm.json and clears itself as soon as a run finishes with no
+# problems. A DIFFERENT problem alarms again.
+#
 # SAFETY GATES (all abort BEFORE `git add .`):
 #   * rebase/merge in progress or detached HEAD
 #   * checked-out branch != expected branch (AUTOSYNC_BRANCH, else origin/HEAD,
@@ -30,6 +35,8 @@ import subprocess
 import time
 import socket
 import random  # Added for randomized network jitter
+import hashlib
+import json
 import shutil
 import tempfile
 from datetime import datetime
@@ -225,6 +232,54 @@ def sync_checked_out_branch(branch_name, max_retries=3):
 
     return True, ""
 
+class Blocked(Exception):
+    """A safety gate refused to run. `signature` identifies the problem for alarm-once dedup."""
+    def __init__(self, signature, message):
+        super().__init__(message)
+        self.signature = signature
+        self.message = message
+
+ALARM_FILE = os.path.join(".git", "autosync-alarm.json")  # cwd is the repo root
+
+def _load_alarmed():
+    try:
+        with open(ALARM_FILE, encoding="utf-8") as f:
+            return set(json.load(f))
+    except (OSError, ValueError):
+        return set()
+
+def _store_alarmed(signatures):
+    try:
+        if not signatures:
+            if os.path.exists(ALARM_FILE):
+                os.remove(ALARM_FILE)
+            return
+        with open(ALARM_FILE, "w", encoding="utf-8") as f:
+            json.dump(sorted(signatures), f)
+    except OSError:
+        pass
+
+def finalize_alarms(problems):
+    """
+    problems: {signature: message}. Returns the process exit code.
+      no problems          -> clear state, exit 0
+      a NEW problem        -> remember it, exit 1 (cron-guard alarms)
+      only KNOWN problems  -> stay silent: log it, exit 0
+    """
+    alarmed = _load_alarmed()
+    _store_alarmed(set(problems))
+    if not problems:
+        return 0
+    if any(sig not in alarmed for sig in problems):
+        print("\n🚨 New problem(s) detected. Alarming once; later runs stay silent until this is fixed:")
+        for sig, msg in problems.items():
+            print(f"   - {msg}")
+        return 1
+    print("\n🔕 Known problem(s) unchanged since the last alarm; staying silent until fixed:")
+    for sig, msg in problems.items():
+        print(f"   - {msg}")
+    return 0
+
 def _git_out(args, cwd=None):
     p = subprocess.run(["git"] + args, cwd=cwd, text=True,
                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -238,10 +293,6 @@ def _checked_out_elsewhere(branch_name):
     """True if another worktree (e.g. generate-dashboards.sh's temp one) has this branch."""
     out = _git_out(["worktree", "list", "--porcelain"])
     return f"branch refs/heads/{branch_name}" in out.splitlines()
-
-def _fail(msg):
-    print(f"❌ {msg}")
-    sys.exit(1)
 
 def expected_branch(current):
     env = os.environ.get("AUTOSYNC_BRANCH")
@@ -257,43 +308,42 @@ def expected_branch(current):
     return current
 
 def preflight_checks():
-    """Abort (exit 1) rather than commit from a state that isn't trustworthy. Returns current branch."""
+    """Raise Blocked rather than commit from a state that isn't trustworthy. Returns current branch."""
     for marker in ("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD"):
         if os.path.exists(os.path.join(".git", marker)):
-            _fail(f"A previous git operation is unfinished ({marker}). Resolve it manually; refusing to commit on top of it.")
+            raise Blocked(f"unfinished-operation:{marker}",
+                          f"A previous git operation is unfinished ({marker}). Resolve it manually; refusing to commit on top of it.")
 
     current = _git_out(["symbolic-ref", "--short", "-q", "HEAD"])
     if not current:
-        _fail("Detached HEAD. Refusing to commit.")
+        raise Blocked("detached-head", "Detached HEAD. Refusing to commit.")
 
     expected = expected_branch(current)
     if current != expected:
-        _fail(f"Repo is on '{current}' but '{expected}' is expected. Refusing to commit/sync from the wrong branch "
-              f"(this is how deploy dirs end up with missing files). Fix with: git checkout {expected}")
+        raise Blocked(f"wrong-branch:{current}",
+                      f"Repo is on '{current}' but '{expected}' is expected. Refusing to commit/sync from the wrong branch "
+                      f"(this is how deploy dirs end up with missing files). Fix with: git checkout {expected}")
 
     # Optional (AUTOSYNC_REQUIRE_GITIGNORE=1): for whitelist-style repos like /opt/stacks, where the
     # .gitignore itself is tracked. Without it, `git add .` would stage every database and secret.
     if os.environ.get("AUTOSYNC_REQUIRE_GITIGNORE") == "1" and not os.path.isfile(".gitignore"):
-        _fail("No .gitignore in the working tree; `git add .` would stage everything. Refusing.")
+        raise Blocked("no-gitignore", "No .gitignore in the working tree; `git add .` would stage everything. Refusing.")
     return current
 
 def guard_mass_deletions():
-    """After `git add .`: abort if the commit would delete suspiciously many tracked files."""
+    """After `git add .`: refuse if the commit would delete suspiciously many tracked files."""
     if run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True).returncode != 0:
         return
     limit = int(os.environ.get("AUTOSYNC_MAX_DELETIONS", "3"))
     proc = run_command(["git", "diff", "--cached", "--name-only", "--diff-filter=D"], capture_output=True)
-    deleted = [l for l in (proc.stdout or "").splitlines() if l.strip()]
+    deleted = sorted(l for l in (proc.stdout or "").splitlines() if l.strip())
     if len(deleted) > limit and os.environ.get("AUTOSYNC_ALLOW_DELETIONS") != "1":
-        print(f"❌ Refusing to commit: {len(deleted)} tracked files are MISSING from disk (limit {limit}):")
-        for f in deleted[:25]:
-            print(f"   - {f}")
-        if len(deleted) > 25:
-            print(f"   ... and {len(deleted) - 25} more")
         run_command(["git", "reset", "-q"])  # unstage only; nothing on disk is touched
-        print("   Investigate why they vanished (git reflog, git status). If the deletions are intentional,")
-        print("   re-run once with AUTOSYNC_ALLOW_DELETIONS=1.")
-        sys.exit(1)
+        shown = ", ".join(deleted[:10]) + (f" ... and {len(deleted) - 10} more" if len(deleted) > 10 else "")
+        digest = hashlib.sha1("\n".join(deleted).encode("utf-8")).hexdigest()[:10]
+        raise Blocked(f"mass-deletion:{digest}",
+                      f"Refusing to commit: {len(deleted)} tracked files are MISSING from disk (limit {limit}): {shown}. "
+                      f"Investigate (git reflog, git status). If intentional, re-run once with AUTOSYNC_ALLOW_DELETIONS=1.")
 
 def _push_ref(branch_name, max_retries=3):
     last = "Unknown Error"
@@ -446,53 +496,59 @@ def main():
         lock_fd.close()
         sys.exit(0)
 
+    exit_code = 1
     try:
-        # 3. Safety gates BEFORE anything is staged
-        current = preflight_checks()
+        problems = {}
+        try:
+            # 3. Safety gates BEFORE anything is staged
+            current = preflight_checks()
 
-        # 4. Stage all changes, then refuse mass deletions
-        run_command(["git", "add", "."])
-        guard_mass_deletions()
+            # 4. Stage all changes, then refuse mass deletions
+            run_command(["git", "add", "."])
+            guard_mass_deletions()
 
-        # 5. Commit ONLY if there are changes
-        head_check = run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True)
-        fresh_repo = head_check.returncode != 0
-        diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"]) if not fresh_repo else None
+            # 5. Commit ONLY if there are changes
+            head_check = run_command(["git", "rev-parse", "--verify", "HEAD"], capture_output=True, suppress_errors=True)
+            fresh_repo = head_check.returncode != 0
+            diff_check = run_command(["git", "diff-index", "--quiet", "HEAD", "--"]) if not fresh_repo else None
 
-        if fresh_repo or (diff_check and diff_check.returncode != 0):
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            run_command(["git", "commit", "-m", f"{label}: {timestamp}"])
-        else:
-            print("Everything up-to-date.")
-
-        # 6. Discover all local branches
-        branches = get_local_branches()
-        if not branches:
-            print("❌ Error: No local branches found (not a git repository?).")
-            sys.exit(1)
-        print(f"\n📋 Found {len(branches)} local branch(es): {', '.join(branches)}")
-
-        # 7. Checked-out branch in place; every other branch WITHOUT checkout
-        results = {current: sync_checked_out_branch(current)}
-        for branch in branches:
-            if branch != current:
-                results[branch] = sync_other_branch(branch)
-
-        # 8. Summary
-        print("\n--- Sync Summary ---")
-        any_failed = False
-        for branch, (ok, reason) in results.items():
-            if ok:
-                print(f"✅ {branch}: synced successfully")
+            if fresh_repo or (diff_check and diff_check.returncode != 0):
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                run_command(["git", "commit", "-m", f"{label}: {timestamp}"])
             else:
-                any_failed = True
-                print(f"❌ {branch}: FAILED — {reason}")
+                print("Everything up-to-date.")
 
-        if any_failed:
-            sys.exit(1)
+            # 6. Discover all local branches
+            branches = get_local_branches()
+            if not branches:
+                print("❌ Error: No local branches found (not a git repository?).")
+                sys.exit(1)
+            print(f"\n📋 Found {len(branches)} local branch(es): {', '.join(branches)}")
+
+            # 7. Checked-out branch in place; every other branch WITHOUT checkout
+            results = {current: sync_checked_out_branch(current)}
+            for branch in branches:
+                if branch != current:
+                    results[branch] = sync_other_branch(branch)
+
+            # 8. Summary
+            print("\n--- Sync Summary ---")
+            for branch, (ok, reason) in results.items():
+                if ok:
+                    print(f"✅ {branch}: synced successfully")
+                else:
+                    print(f"❌ {branch}: FAILED — {reason}")
+                    problems[f"branch:{branch}:{reason.split(':')[0].strip()}"] = f"{branch}: {reason}"
+        except Blocked as blocked:
+            print(f"❌ {blocked.message}")
+            problems[blocked.signature] = blocked.message
+
+        # 9. Alarm-once: exit 1 only for NEW problems
+        exit_code = finalize_alarms(problems)
     finally:
         _unlock(lock_fd)
         lock_fd.close()
+    sys.exit(exit_code)
 
 if __name__ == "__main__":
     main()
