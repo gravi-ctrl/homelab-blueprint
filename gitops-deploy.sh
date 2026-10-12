@@ -12,9 +12,8 @@ source "/opt/rabbit-hole/.env"
 cd "${STACKS_DIR}"
 PAUSE_FILE="/tmp/gitops_paused"
 
-# Prevent stepping on git-auto-sync.py (or any future script) touching this
-# same repo at the same time. Non-blocking: if busy, skip this run entirely —
-# the next 15-minute cycle will pick up any pending deploy.
+# Prevent stepping on git-auto-sync.py or dashboard generation.
+# Non-blocking: if busy, skip this run entirely.
 exec 200>"${STACKS_DIR}/.git/sync.lock"
 flock -n 200 || { echo "⏭️  Stacks repo busy (locked by another process), skipping this cycle."; exit 0; }
 
@@ -39,8 +38,10 @@ if [ "$BEHIND" -gt 0 ]; then
     # Trigger only if a compose.yml file was modified
     CHANGED_DIRS=$(git diff --name-only HEAD origin/main | grep '/compose\.yml$' | cut -d/ -f1 | sort -u || true)
 
-    # Attempt pull with autostash. Trigger lockout on failure.
+    # Attempt pull with autostash. Trigger lockout and restore clean state on failure.
     if ! git pull -q origin main --rebase --autostash; then
+        git rebase --abort 2>/dev/null || true
+
         if [ ! -f "$PAUSE_FILE" ]; then
             send_telegram "🚨 GitOps Paused: Merge Conflict Detected
 ━━━━━━━━━━━━━━━
@@ -49,7 +50,6 @@ GitOps has been paused on the server to prevent spam.
 Please SSH into the machine and resolve the conflict manually. The script will automatically resume once resolved."
             touch "$PAUSE_FILE"
         fi
-        # Exit 0 here so cron-guard wouldn't keep spamming failures
         exit 0
     fi
 
