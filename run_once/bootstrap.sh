@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repositories.
+# @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repos.
 # @FREQUENCY: Run Once (Disaster Recovery)
 
 set -euo pipefail

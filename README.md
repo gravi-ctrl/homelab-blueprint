@@ -92,7 +92,7 @@ Choose your scenario before running the script:
 
 **2. Download, Verify, and Run Bootstrap:**
 
-For maximum security, verify the script's cryptographic hash before executing it.
+For maximum security, verify the script's cryptographic hash before executing it on a live server.
 
 1. **Download the script:**
    ```bash
