@@ -84,8 +84,9 @@ case "$ACTION" in
             exit 0
         fi
 
-        CURRENT_USER="$(id -un)"
-        CURRENT_GROUP="$(id -gn)"
+        # If run via sudo, get the actual user who invoked sudo, not root
+        CURRENT_USER="${SUDO_USER:-$(id -un)}"
+        CURRENT_GROUP="$(id -gn "$CURRENT_USER" 2>/dev/null || id -gn)"
 
         # Read tab-delimited records: <mode> <ownership> <path>
         while IFS=$'\t' read -r mode ownership path; do
