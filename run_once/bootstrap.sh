@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes SSH permissions, removes cloud-init and re-links blueprint git repos.
+# @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes permissions, removes cloud-init and re-links blueprint git repos.
 # @FREQUENCY: Run Once (Disaster Recovery)
 
 set -euo pipefail
@@ -175,6 +175,10 @@ setup_repo() {
         git -C "$1" remote add origin "$2"
         git -C "$1" fetch origin || { rm -rf "$1/.git"; return 1; }
         git -C "$1" checkout -f -B main origin/main
+    fi
+
+    if [ -f "$HOME/scripts/git-perms.sh" ]; then
+        quietly bash "$HOME/scripts/git-perms.sh" apply "$1"
     fi
 }
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`
 # @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
@@ -86,6 +86,14 @@ for tool in "${TOOLS_ARRAY[@]}"; do
         rsync -a --delete "$SOURCE_PATH/" "$DEST_PATH/"
     fi
 done
+
+# F. REPOSITORY FILE PERMISSIONS (.git-perms)
+echo "🔒 Snapshotting Git repository permissions..."
+if [ -f "/opt/rabbit-hole/git-perms.sh" ]; then
+    "/opt/rabbit-hole/git-perms.sh" save "/opt/rabbit-hole"
+    "/opt/rabbit-hole/git-perms.sh" save "${CTRL_DIR}"
+    "/opt/rabbit-hole/git-perms.sh" save "${STACKS_DIR}"
+fi
 
 echo "🚀 Syncing Repositories..."
 
