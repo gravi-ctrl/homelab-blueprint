@@ -20,6 +20,8 @@
 755	@USER:@GROUP	git-auto-sync.py
 644	@USER:@GROUP	.gitignore
 755	@USER:@GROUP	gitops-deploy.sh
+600	@USER:@GROUP	.git-perms
+755	@USER:@GROUP	git-perms.sh
 755	@USER:@GROUP	health-snapshot.sh
 755	@USER:@GROUP	homelab_dash.py
 644	@USER:@GROUP	LICENSE
