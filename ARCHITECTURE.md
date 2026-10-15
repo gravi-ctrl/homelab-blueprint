@@ -282,7 +282,48 @@ this repo's git state? Lock its own `.git/sync.lock` first.
 
 ---
 
-## 10. Known Trade-offs
+## 10. GitOps Permission Tracking: Why `.git-perms` Exists
+
+Git was designed for source code, not infrastructure state. It only tracks executable bits (`100755` vs `100644`) — it completely discards ownership (`chown`), group assignment, and restricted modes like `600` or `700`.
+
+This creates silent failures during a **Fresh Start**:
+* LinuxServer / S6-overlay containers (like Paperless-ngx) strictly require scripts in `custom-cont-init.d/` to be owned by `root:root` and executable. Git resets them to the cloning user, causing container startup routines to fail silently.
+* Secrets and private configurations (like `docker-compose.env` or `acme.json`) get cloned with default umask permissions (`644`) instead of `600`.
+
+### Why Not Hardcode Exceptions in `setup.sh`?
+Hardcoding commands like `chown root:root /opt/stacks/paperless-ngx/...` into `setup.sh` creates stale technical debt. When a stack is deleted or modified, orphan fixup commands remain in the central provisioning script.
+
+### The Solution: Self-Describing Repositories via `.git-perms`
+Each repo maintains a lightweight, committed `.git-perms` file managed by `git-perms.sh`:
+* **Scoped to tracked files only:** It reads `git ls-files`, ignoring transient media, databases, and logs.
+* **Portable identity via `@USER:@GROUP`:** Files owned by the server's primary user are recorded as `@USER:@GROUP`. On restore, this dynamically resolves to whoever is running the bootstrap (e.g., `alice:alice` or `admin:admin`), preventing UID/GID mismatches across different Linux distros.
+* **Preserves explicit system identities:** Any file owned by `root:root` or container-specific service UIDs (like `33:33` or `1000:1000`) is preserved verbatim.
+* **Automated lifecycle:** `backup-scripts-git.sh` snapshots permissions at 5:00 AM daily before pushing. During Fresh Start, `bootstrap.sh` restores exact permissions right after cloning.
+
+---
+
+## 11. Fresh Start SSH Architecture & Pre-Flight Traps
+
+In a Full Recovery, `~/.ssh` and `/etc/ssh` are restored identically from the encrypted tarball. In a Fresh Start, you begin with a blank slate. Three non-obvious traps govern how `bootstrap.sh` handles SSH:
+
+### 1. The Inbound vs. Outbound Separation
+* **Inbound Access (Your Laptop $\rightarrow$ Server):** Handled purely by `~/.ssh/authorized_keys` containing your laptop's **public key**. The server does not need, and should never hold, your personal private keys.
+* **Outbound Access (Server $\rightarrow$ Git):** Handled by a dedicated, single-purpose Git deploy private key. 
+* **The Lockout Gate:** `bootstrap.sh` explicitly halts in Phase 1B if `~/.ssh/authorized_keys` is missing or empty. Because `setup.sh` installs a hardened SSH configuration that sets `PasswordAuthentication no`, running without `authorized_keys` guarantees permanent lockout.
+
+### 2. The Non-Interactive `known_hosts` Freeze
+On a fresh OS, `~/.ssh/known_hosts` does not exist. The first time `git clone git@codeberg.org` runs, SSH prompts interactively: `Are you sure you want to continue connecting (yes/no)?`.
+Because `bootstrap.sh` routes output through `quietly` (`>> "$LOGFILE" 2>&1`), there is no interactive terminal. The script will freeze indefinitely waiting for input.
+* **The Fix:** Phase 2 runs `ssh-keyscan -H` for both Codeberg and GitHub to seed `known_hosts` before any Git commands execute.
+
+### 3. The `pipefail` Trap on `ssh -T`
+Testing Git access via `ssh -T git@github.com` or `codeberg.org` prints a success message ("*You've successfully authenticated*"), but **deliberately exits with status code `1`** because Git hosts do not provide an interactive shell.
+Under `set -euo pipefail`, piping that directly (`ssh -T ... 2>&1 | grep ...`) causes Bash to treat the exit code `1` as a fatal pipeline failure, making the authentication test fail even when keys are completely valid.
+* **The Fix:** Capture the output into a variable using `|| true` (`GIT_TEST=$(ssh -T ... 2>&1 || true)`) before evaluating with `grep`.
+
+---
+
+## 12. Known Trade-offs
 
 `user_crontab.txt` is hand-wrapped through `cron-guard --mode fail`, but `cmd_setup_cron()`
 would install a different, unwrapped line if I ran it. That's intentional, not a bug —
@@ -293,7 +334,7 @@ it.
 
 ---
 
-## 11. Quick Reference: Gotchas
+## 13. Quick Reference: Gotchas
 
 - Docker DNS acting weird, or OIDC breaking across containers? Check `daemon.json` — `SERVER_IP`
   needs to be first in the list, not Google or Cloudflare. See §2.
@@ -315,3 +356,7 @@ it.
   and then only stays quiet for that specific stuck state.
 - Writing any new script that runs `git checkout`/`pull`/`push` against a shared repo? Take
   the `.git/sync.lock` first — see §9. Don't fall back to schedule-staggering.
+- Adding custom container init scripts (S6-overlay)? Check their permissions in `.git-perms` — scripts in `custom-cont-init.d` must be `755 root:root`.
+- Cloning Git repos inside automated scripts? Pre-seed `known_hosts` with `ssh-keyscan` first, or the script will hang indefinitely on the host verification prompt.
+- Testing SSH authentication via `ssh -T` under `pipefail`? Always append `|| true` to the subshell command; Git hosts exit with code 1 by design, which will trip `set -o pipefail`.
+- Setting up a Fresh Start? Never skip `~/.ssh/authorized_keys`; `setup.sh` disables password authentication, so missing client public keys will lock you out.
