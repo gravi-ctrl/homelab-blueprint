@@ -55,6 +55,8 @@
 644	@USER:@GROUP	run_once/system_configs/my_pip_packages.txt
 644	@USER:@GROUP	run_once/system_configs/my_repos.txt
 644	@USER:@GROUP	run_once/system_configs/root_crontab.txt
+755	@USER:@GROUP	run_once/system_configs/sshd_config.d
+644	@USER:@GROUP	run_once/system_configs/sshd_config.d/69-my-nice-security.conf
 644	@USER:@GROUP	run_once/system_configs/user_crontab.txt
 755	@USER:@GROUP	tg-vergil
 644	@USER:@GROUP	tg-vergil/.env.example
