@@ -43,20 +43,31 @@ if missing:
     sys.exit(1)
 
 # ── GitHub ────────────────────────────────────────────────────────
-def github_tree(user, repo, branch):
+def get_gh_headers(token=None):
+    headers = {"User-Agent": "docker-dash/2.0"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+        headers["Accept"] = "application/vnd.github+json"
+    return headers
+
+def github_tree(user, repo, branch, token=None):
     url = f"https://api.github.com/repos/{user}/{repo}/git/trees/{branch}?recursive=1"
-    r = requests.get(url, headers={"User-Agent":"docker-dash/2.0"}, timeout=20)
+    r = requests.get(url, headers=get_gh_headers(token), timeout=20)
     if r.status_code == 404 and branch == "main":
         print("  Branch 'main' not found, trying 'master'…")
-        return github_tree(user, repo, "master")
+        return github_tree(user, repo, "master", token)
     r.raise_for_status()
     return r.json()["tree"]
 
-def github_raw(user, repo, branch, path):
-    url = f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}"
-    r = requests.get(url, headers={"User-Agent":"docker-dash/2.0"}, timeout=15)
+def github_raw(user, repo, branch, path, token=None):
+    # Authenticated raw fetch via GitHub API (works for both public and private repos)
+    url = f"https://api.github.com/repos/{user}/{repo}/contents/{path}?ref={branch}"
+    headers = get_gh_headers(token)
+    headers["Accept"] = "application/vnd.github.raw"
+    r = requests.get(url, headers=headers, timeout=15)
     r.raise_for_status()
     return r.text
+
 
 # ── NPM API ───────────────────────────────────────────────────────
 class NPMClient:
@@ -686,6 +697,7 @@ def main():
     load_dotenv(env_path)
 
     repo_url  = os.environ.get("GITHUB_REPO","").strip()
+    github_token = os.environ.get("GITHUB_TOKEN","").strip() or None
     branch    = os.environ.get("GITHUB_BRANCH","main").strip()
     exclude   = [x.strip() for x in os.environ.get("EXCLUDE_DIRS","_archive").split(",") if x.strip()]
     npm_url   = os.environ.get("NPM_URL","").strip()
@@ -704,7 +716,7 @@ def main():
 
     print(f"\n📦 Fetching file tree for {slug}@{branch}…")
     try:
-        tree = github_tree(user, repo, branch)
+        tree = github_tree(user, repo, branch, github_token)
     except Exception as e:
         print(f"  Error: {e}"); sys.exit(1)
 
@@ -722,7 +734,7 @@ def main():
     stacks = []
     for cp in compose_paths:
         try:
-            text = github_raw(user, repo, branch, cp)
+            text = github_raw(user, repo, branch, cp, github_token)
             stack = parse_compose(cp, text)
         except Exception as ex:
             stack = {"path":cp,"parse_error":str(ex),"services":[]}
@@ -733,7 +745,7 @@ def main():
 
         if env_ex_path in env_ex_set:
             try:
-                env_text = github_raw(user, repo, branch, env_ex_path)
+                env_text = github_raw(user, repo, branch, env_ex_path, github_token)
                 all_env_vars = parse_env_example(env_text)
 
                 all_svc_keys = {k for sv in stack["services"] for k in sv.get("env_keys", [])}
