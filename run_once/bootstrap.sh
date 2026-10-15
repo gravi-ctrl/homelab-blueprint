@@ -121,6 +121,27 @@ if [[ "$MODE" == "RESTORE" ]]; then
 elif [[ "$MODE" == "FRESH" ]]; then
     header "PHASE 1B" "Fresh Start"
 
+    echo -e "${YELLOW}${BOLD}⚠️  MANUAL ACTIONS REQUIRED BEFORE PROCEEDING:${NC}"
+    echo -e "   1. Place your Git deploy private key(s) in:     ${BOLD}~/.ssh/${NC}"
+    echo -e "   2. Add your workstation/client public key to:  ${BOLD}~/.ssh/authorized_keys${NC}"
+    echo -e "   ${DIM}(Failing to add authorized_keys will permanently lock you out later)${NC}"
+    echo ""
+
+    read -r -p "Have you placed both your deploy keys and authorized_keys? [y/N]: " ready < /dev/tty
+    if [[ ! "$ready" =~ ^[Yy]$ ]]; then
+        echo -e "\n${RED}🛑 Aborting.${NC} Set up your ~/.ssh folder first, then re-run this script."
+        exit 1
+    fi
+    echo ""
+
+    task "Validate inbound SSH access (authorized_keys)"
+    if [ ! -s "$HOME/.ssh/authorized_keys" ]; then
+        echo -e "\n${RED}❌ ERROR: ~/.ssh/authorized_keys is missing or empty!${NC}" >&2
+        echo -e "   Add your public key before proceeding to avoid lockout." >&2
+        exit 1
+    fi
+    pass "authorized_keys verified"
+
     task "Validate SSH private keys"
     PRIVATE_KEYS=0
     if [[ -d "$HOME/.ssh" ]]; then
