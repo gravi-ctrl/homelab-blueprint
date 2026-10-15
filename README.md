@@ -60,14 +60,14 @@ The server can be provisioned in two ways: **Full Recovery** (restoring a weekly
 
 A full backup archive contains everything needed to restore the exact state:
 
-| Path | What |
-|------|------|
-| `~/scripts` | This repository (Automation Engine) |
-| `/opt/stacks` | [Docker Stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) (Compose files & secrets) |
-| `~/ctrl_s_master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) |
-| `~/.ssh` | Deploy keys |
-| `/etc/ssh` | Host keys |
-| `~/.local/share/mkcert` | Local CA for SSL |
+| Path | What | Restoration Note |
+|------|------|------------------|
+| `~/scripts` | This repository (Automation Engine) | Cloned from Git |
+| `/opt/stacks` | [Docker Stacks](https://codeberg.org/gravi-ctrl/server-docker-backup) (Compose files & `.env.example`) | Cloned from Git; permissions restored via `.git-perms` |
+| `~/ctrl_s_master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) | Cloned from Git |
+| `~/.ssh` | Deploy keys & authorized_keys | Restored via tarball (Full) or pre-flight checklist (Fresh) |
+| `/etc/ssh` | Host keys & custom daemon configs | Restored via tarball (Full) or `setup.sh` drop-in (Fresh) |
+| `~/.local/share/mkcert` | Local CA for SSL | Restored via tarball (Full) or recreated on Fresh |
 
 ---
 <p align="center"><b>[ RUNBOOK ]</b></p>
@@ -88,7 +88,10 @@ Choose your scenario before running the script:
     sudo chmod 600 /root/.backup-key.txt
     ```
 *   **Option B: Fresh Start (No Backup)**
-    Simply place your Git deploy keys into `~/.ssh/` from your password manager.
+    Before executing the script, prepare `~/.ssh/` with:
+    1. `authorized_keys`: Your laptop/workstation's **public key** (prevents lockout when password auth is disabled).
+    2. Git Deploy Private Key: Key(s) authorized on Codeberg / GitHub.
+    3. `config` *(optional)*: Host mapping if using custom key names.
 
 **2. Download, Verify, and Run Bootstrap:**
 
