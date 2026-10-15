@@ -116,47 +116,26 @@ if [[ "$MODE" == "RESTORE" ]]; then
     fi
 
 # ══════════════════════════════
-# PHASE 1B: FRESH
-# ═════════════
+# PHASE 1B: FRESH (PREFLIGHT)
+# ══════════════════════════════
 elif [[ "$MODE" == "FRESH" ]]; then
-    header "PHASE 1B" "Fresh Start"
+    header "PHASE 1B" "Fresh Start (Preflight)"
 
-    echo -e "${YELLOW}${BOLD}⚠️  MANUAL ACTIONS REQUIRED BEFORE PROCEEDING:${NC}"
-    echo -e "   1. Place your Git deploy private key(s) in:     ${BOLD}~/.ssh/${NC}"
-    echo -e "   2. Add your workstation/client public key to:  ${BOLD}~/.ssh/authorized_keys${NC}"
-    echo -e "   ${DIM}(Failing to add authorized_keys will permanently lock you out later)${NC}"
-    echo ""
+    echo -e "${YELLOW}${BOLD}📋 FRESH START SSH CHECKLIST (Required in ~/.ssh):${NC}"
+    echo -e "   1. ${BOLD}authorized_keys${NC} : Your laptop/workstation public key (prevents lockout)"
+    echo -e "   2. ${BOLD}Git Private Key${NC} : Key(s) for ${GIT_HOST} / ${GIT_HOST_FALLBACK}"
+    echo -e "   3. ${BOLD}config${NC}          : Host mappings (if using custom key names)\n"
 
-    read -r -p "Have you placed both your deploy keys and authorized_keys? [y/N]: " ready < /dev/tty
-    if [[ ! "$ready" =~ ^[Yy]$ ]]; then
-        echo -e "\n${RED}🛑 Aborting.${NC} Set up your ~/.ssh folder first, then re-run this script."
-        exit 1
-    fi
-    echo ""
+    read -r -p "Have you placed your keys in ~/.ssh? [y/N]: " ready < /dev/tty
+    [[ ! "$ready" =~ ^[Yy]$ ]] && { echo -e "\n${RED}🛑 Aborting.${NC} Populate ~/.ssh first."; exit 1; }
 
-    task "Validate inbound SSH access (authorized_keys)"
-    if [ ! -s "$HOME/.ssh/authorized_keys" ]; then
-        echo -e "\n${RED}❌ ERROR: ~/.ssh/authorized_keys is missing or empty!${NC}" >&2
-        echo -e "   Add your public key before proceeding to avoid lockout." >&2
-        exit 1
-    fi
-    pass "authorized_keys verified"
+    task "Validate ~/.ssh files"
+    [ -s "$HOME/.ssh/authorized_keys" ] || { echo -e "\n${RED}❌ ERROR: ~/.ssh/authorized_keys missing or empty!${NC}" >&2; exit 1; }
 
-    task "Validate SSH private keys"
-    PRIVATE_KEYS=0
-    if [[ -d "$HOME/.ssh" ]]; then
-        PRIVATE_KEYS=$(find "$HOME/.ssh" -maxdepth 1 -type f -name "*.pub" 2>/dev/null | while read -r pub; do
-            priv="${pub%.pub}"
-            [[ -f "$priv" ]] && echo "$priv"
-        done | wc -l)
-    fi
-
-    if [[ "$PRIVATE_KEYS" -eq 0 ]]; then
-        echo -e "\n${RED}❌ ERROR: No SSH private keys found in $HOME/.ssh.${NC}" >&2
-        echo -e "   Please place your private key(s) in $HOME/.ssh before running a Fresh Start." >&2
-        exit 1
-    fi
-    pass "$PRIVATE_KEYS key(s) found"
+    find "$HOME/.ssh" -maxdepth 1 -type f ! -name "*.pub" ! -name "known_hosts*" ! -name "authorized_keys" ! -name "config" 2>/dev/null | grep -q . || {
+        echo -e "\n${RED}❌ ERROR: No private keys found in ~/.ssh.${NC}" >&2; exit 1;
+    }
+    pass "files verified"
 fi
 
 # ══════════════════════════════════════════════════════════════
@@ -165,12 +144,33 @@ fi
 header "PHASE 2" "System Prep"
 
 task "Fix SSH permissions"
-quietly mkdir -p "$HOME/.ssh"
 quietly sudo chown -R "$(id -u):$(id -g)" "$HOME/.ssh"
 quietly chmod 700 "$HOME/.ssh"
 quietly find "$HOME/.ssh" -type f -exec chmod 600 {} +
 quietly find "$HOME/.ssh" -type f -name "*.pub" -exec chmod 644 {} +
+[ -f "$HOME/.ssh/known_hosts" ] && quietly chmod 644 "$HOME/.ssh/known_hosts"
 pass
+
+task "Pre-seed known_hosts (${GIT_HOST})"
+quietly touch "$HOME/.ssh/known_hosts"
+ssh-keyscan -H "$GIT_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+ssh-keyscan -H "$GIT_HOST_FALLBACK" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+pass
+
+task "Test Git authentication"
+GIT_TEST=$(ssh -T -o BatchMode=yes -o ConnectTimeout=5 "git@${GIT_HOST}" 2>&1 || true)
+if echo "$GIT_TEST" | grep -qiE "(successfully authenticated|hi there|welcome)"; then
+    pass "$GIT_HOST"
+else
+    GIT_FALLBACK_TEST=$(ssh -T -o BatchMode=yes -o ConnectTimeout=5 "git@${GIT_HOST_FALLBACK}" 2>&1 || true)
+    if echo "$GIT_FALLBACK_TEST" | grep -qiE "(successfully authenticated|hi there|welcome)"; then
+        pass "fallback ($GIT_HOST_FALLBACK)"
+    else
+        echo -e "\n${RED}❌ ERROR: SSH authentication failed for both Git hosts.${NC}" >&2
+        echo -e "   Check your private key or ~/.ssh/config mapping." >&2
+        exit 1
+    fi
+fi
 
 task "Remove cloud-init"
 quietly sudo apt-get purge -y cloud-init
