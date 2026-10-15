@@ -190,3 +190,17 @@ git remote set-url --add --push origin git@codeberg.org:gravi-ctrl/homelab-bluep
 git remote set-url --add --push origin git@github.com:gravi-ctrl/homelab-blueprint.git
 git remote -v
 ```
+
+---
+
+<div align="center">
+
+[![Maintainer](https://img.shields.io/badge/ARCHITECT-%20gravi--ctrl-1f242b?style=flat-square&labelColor=3c5a73)](https://codeberg.org/gravi-ctrl)
+[![Codeberg](https://img.shields.io/badge/SOURCE-Codeberg-1f242b?style=flat-square&logo=codeberg&logoColor=2185d0)](https://codeberg.org/gravi-ctrl)
+[![GitHub](https://img.shields.io/badge/MIRROR-GitHub-1f242b?style=flat-square&logo=github&logoColor=white)](https://github.com/gravi-ctrl)
+
+<br>
+
+<sub>Part of the **gravi-ctrl** homelab ecosystem • Built for reproducibility and zero-downtime recovery</sub>
+
+</div>
