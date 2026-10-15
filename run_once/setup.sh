@@ -407,6 +407,29 @@ else
     skip "not found"
 fi
 
+task "Restore custom SSH daemon configs"
+SSHD_SNAPSHOT="/opt/rabbit-hole/run_once/system_configs/sshd_config.d"
+
+if [ -d "$SSHD_SNAPSHOT" ] && compgen -G "$SSHD_SNAPSHOT/*.conf" > /dev/null; then
+    sudo mkdir -p /etc/ssh/sshd_config.d
+    sudo cp "$SSHD_SNAPSHOT"/*.conf /etc/ssh/sshd_config.d/
+    sudo chown root:root /etc/ssh/sshd_config.d/*.conf
+    sudo chmod 644 /etc/ssh/sshd_config.d/*.conf
+
+    # Verify config before restarting to prevent connection failure
+    if sudo sshd -t; then
+        quietly sudo systemctl restart ssh
+        pass "applied & verified"
+    else
+        # Syntax error rollback
+        sudo rm -f /etc/ssh/sshd_config.d/*.conf
+        quietly sudo systemctl restart ssh
+        skip "syntax error detected, rolled back"
+    fi
+else
+    skip "no custom configs found"
+fi
+
 task "Restore user crontab"
 if [ -f "$SYSTEM_CONFIGS_DIR/user_crontab.txt" ]; then
     crontab "$SYSTEM_CONFIGS_DIR/user_crontab.txt"

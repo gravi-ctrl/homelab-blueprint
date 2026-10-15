@@ -73,6 +73,13 @@ grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' \
 [ -f /etc/nanorc ] && cp /etc/nanorc "/opt/rabbit-hole/run_once/dotfiles/nanorc"
 [ -f ~/.hushlogin ] && cp ~/.hushlogin "/opt/rabbit-hole/run_once/dotfiles/hushlogin"
 
+# Snapshot custom sshd drop-in configs
+SSHD_DEST="$SNAPSHOT_DIR/sshd_config.d"
+mkdir -p "$SSHD_DEST"
+if compgen -G "/etc/ssh/sshd_config.d/*.conf" > /dev/null; then
+    cp /etc/ssh/sshd_config.d/*.conf "$SSHD_DEST/"
+fi
+
 # Mirror specific .config folders
 CONFIG_DEST="/opt/rabbit-hole/run_once/dotfiles/config"
 mkdir -p "$CONFIG_DEST"
