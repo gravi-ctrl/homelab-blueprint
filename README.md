@@ -63,7 +63,7 @@ A full backup archive contains everything needed to restore the exact state:
 | Path | What | Restoration Note |
 |------|------|------------------|
 | `~/scripts` | This repository (Automation Engine) | Cloned from Git |
-| `/opt/stacks` | `[Docker Stacks [Private Infrastructure]` (Compose files & `.env.example`) | Cloned from Git; permissions restored via `.git-perms` |
+| `/opt/stacks` | Docker Stacks `[Private Infrastructure]` (Compose files & `.env.example`) | Cloned from Git; permissions restored via `.git-perms` |
 | `~/ctrl_s_master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) | Cloned from Git |
 | `~/.ssh` | Deploy keys & authorized_keys | Restored via tarball (Full) or pre-flight checklist (Fresh) |
 | `/etc/ssh` | Host keys & custom daemon configs | Restored via tarball (Full) or `setup.sh` drop-in (Fresh) |
