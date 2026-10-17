@@ -526,3 +526,5 @@ printf "       ${DIM}(A background service will detect when they start and auto-
 printf "    3. ${BOLD}Borgmatic:${NC} Mount external HDD, then run:\n"
 printf "       borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt\n"
 printf "       borgmatic check\n"
+printf "    4. ${BOLD}Backblaze B2 (Offsite):${NC} Link your B2 account on this machine:\n"
+printf "       rclone config create b2 b2 account <YOUR_KEY_ID> key <YOUR_APPLICATION_KEY>\n"

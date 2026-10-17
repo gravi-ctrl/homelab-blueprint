@@ -298,6 +298,26 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
         ls -1t "$BACKUP_DIR"/docker-stacks-*.tar.zst.age \
             | tail -n +3 \
             | xargs -r rm -f
+			
+			# --- OFFSITE REPLICATION ---
+			echo "☁️ Checking offsite replication..."
+			if command -v rclone &>/dev/null; then
+				# Verify the 'b2:' remote actually exists in rclone.conf before running
+				if rclone listremotes 2>/dev/null | grep -q "^b2:$"; then
+					echo "  → Uploading verified archive to Backblaze B2..."
+					if rclone copy "$BACKUP_DIR/$DOCKER_FILENAME" b2:gravi-ctrl-homelab-backup/; then
+						echo "  ✅ Offsite upload successful."
+						# Prune cloud archives older than 30 days
+						rclone delete --min-age 30d b2:gravi-ctrl-homelab-backup/ 2>/dev/null || true
+					else
+						echo "  ⚠️ WARNING: Offsite upload failed (network glitch or bad credentials). Local backup remains intact."
+					fi
+				else
+					echo "  ⏭️  rclone remote 'b2:' not configured yet. Skipping offsite sync."
+				fi
+			else
+				echo "  ⏭️  rclone not installed. Skipping offsite sync."
+			fi
     else
         echo "❌ Backup CORRUPT or key mismatch."
         rm -f "$BACKUP_DIR/$DOCKER_FILENAME"
