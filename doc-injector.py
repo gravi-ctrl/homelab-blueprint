@@ -17,9 +17,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 ENV_PATH = SCRIPT_DIR / ".env"
 CACHE_FILE = SCRIPT_DIR / ".doc_hash_cache.json"
 
-# Exclusions
+# Exclusions — never mutate self or the parent runner script while it's executing!
 IGNORE_DIRS = {".git", "venv", "node_modules", "_archive", "run_once"}
-IGNORE_FILES = {Path(__file__).name}  # Don't mutate self
+IGNORE_FILES = {Path(__file__).name, "backup-scripts-git.sh"}
 
 # Priority order for preferred text models
 PREFERRED_MODELS = [

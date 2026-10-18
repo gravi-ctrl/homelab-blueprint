@@ -2,6 +2,12 @@
 # @DESCRIPTION: Master logic to push/pull Git repos (all local branches)
 # @FREQUENCY: Varies
 # @CRON: user
+# @CAPABILITIES:
+#   • Syncs every local branch via throwaway worktrees, never altering the live working tree, ensuring Docker deployments remain stable.
+#   • Implements cross‑platform file locking (fcntl on POSIX, msvcrt on Windows) to prevent concurrent sync runs.
+#   • Uses alarm‑once JSON state to emit a single cron alarm per unique failure, clearing on successful run.
+#   • Enforces safety gates: aborts if rebase/merge in progress, detached HEAD, branch mismatch, excessive deletions, or missing .gitignore.
+#   • Retries git pull/push with randomized jitter (25‑35s) on network errors, aborts on authentication failures, and logs detailed status.
 # ==============================================================================
 # GENERIC GIT AUTO-SYNC SCRIPT
 # Usage: python git_auto_sync.py "/path/to/repo" "Commit Label"

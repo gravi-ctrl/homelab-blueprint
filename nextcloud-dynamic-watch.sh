@@ -2,6 +2,12 @@
 # @DESCRIPTION: Watches `/data/assets` + Internal Data, scans Nextcloud via Docker
 # @FREQUENCY: Service (Always) (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_DATA_DIR, NEXTCLOUD_CONTAINER, NEXTCLOUD_MOUNT_NAME, DATA_DIR
+# @CAPABILITIES:
+#   • Installs itself as a systemd service, auto‑restarts on failure, and runs as root for Docker access.
+#   • Uses inotifywait to capture close_write, moved_to, delete events, writing unique event files to a queue directory.
+#   • Every 10 seconds, moves queued events to a processing directory, deduplicates scan paths, and triggers docker exec occ files:scan.
+#   • Signal trap for SIGINT/SIGTERM kills child processes and exits, preventing orphaned watchers.
+#   • Increases fs.inotify.max_user_watches to 524288 to support large file systems without watcher limits.
 
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 source "/opt/rabbit-hole/.env"

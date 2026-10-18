@@ -1,1 +1,18 @@
-{}
+{
+  "/home/alice/scripts/backup-scripts-git.sh": "3580c311e9ad21032054d9973647ab693a40da4a3b5d1760b50ea3285434b590",
+  "/home/alice/scripts/battery-monitor.sh": "9d79d4e88b28ddbd9136ee9b571baffbd7c201e94c1b84214d32ae04e3210dbc",
+  "/home/alice/scripts/cert-manager/cert-manager.sh": "9fcc90a59e85155be7871dc25ef429bc76010aa9c0431f135cc5f8aaf29a2b26",
+  "/home/alice/scripts/cleanup_script.py": "5da3be2fb396e4854f3e8cea19605f129342a0f68cd26adbcebf445825a7af20",
+  "/home/alice/scripts/cron-guard.py": "24e9d8272f6ac4c4283bb8170ab4d8222f17aa2381d9f99344ba9ae46d104f96",
+  "/home/alice/scripts/disk-monitor.sh": "a3b056a9eef0ccabfacb3ad2cf20a469f8e2f744c1b8d5a58c542096c3949259",
+  "/home/alice/scripts/docker-dash/docker_dash.py": "91a87acae7420956490b08a48f349005171f42a08a8a4c58f3c443159c49914e",
+  "/home/alice/scripts/generate-dashboards.sh": "62918573e4e4f2afc74ef7ea6bedd63897208900a5cf1be115482801347f739b",
+  "/home/alice/scripts/git-auto-sync.py": "e095ac2045573feee4d0d31b556863889c35f57dd35db2ae8b704f0b8491b084",
+  "/home/alice/scripts/git-perms.sh": "4d863e247029a5e990bd6643b5986663fe3044e5434b9b450b8809b117794c9c",
+  "/home/alice/scripts/gitops-deploy.sh": "9d7b9d81e7b0bc0ff1cc4537696547df6cd898ee73527d733113081974f5e2be",
+  "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
+  "/home/alice/scripts/homelab_dash.py": "935c0ccee85d4e54c73fd13bde2eb6a4bc86a0db372eb3e35ccbf15388106a46",
+  "/home/alice/scripts/local-opt-backup.sh": "dd64e69d054e11ab2bae39363616bcd5b9e3cbfe3fa340a9eb05ec3bfbc37c2d",
+  "/home/alice/scripts/nextcloud-dynamic-watch.sh": "fa84c82a3846817368f4e2456a95bee6006f1673ca283d817dca5cb74ec57b4a",
+  "/home/alice/scripts/tg-vergil/vergil.py": "c1c03a3639351c4ea00b4cae4f216d9482d78acd78cdb537c5608a6e20fad30a"
+}

@@ -3,6 +3,11 @@
 # @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
+# @CAPABILITIES:
+#   • Creates daily snapshots of hosts, crontabs, packages, pip, apt repos, dotfiles, and SSH configs into /opt/rabbit-hole/run_once.
+#   • Preserves repository permissions via git-perms.sh before invoking git-auto-sync.py for secure sync.
+#   • Implements idempotent dashboard generation and conditional git push, skipping when dash-alarm-* flags exist.
+#   • Sources environment variables from /opt/rabbit-hole/.env, exits if missing, ensuring controlled execution context.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================
@@ -102,6 +107,12 @@ if [ -f "/opt/rabbit-hole/git-perms.sh" ]; then
     "/opt/rabbit-hole/git-perms.sh" save "${STACKS_DIR}"
 fi
 
+# G. SCRIPT CAPABILITIES
+if [ -f "/opt/rabbit-hole/doc-injector.py" ]; then
+    echo "🤖 Auditing script capabilities..."
+    python3 "/opt/rabbit-hole/doc-injector.py" || true
+fi
+
 echo "🚀 Syncing Repositories..."
 
 # --- 2. HANDOFF TO MASTER SCRIPT ---
@@ -113,12 +124,7 @@ echo "🚀 Syncing Repositories..."
 # --- 4. Sync /opt/stacks ---
 "$MASTER_SCRIPT" "${STACKS_DIR}" "Server Stacks"
 
-# --- GENERATE CAPABILITIES & DASHBOARDS ---
-if [ -f "/opt/rabbit-hole/doc-injector.py" ]; then
-    echo "🤖 Auditing script capabilities..."
-    python3 "/opt/rabbit-hole/doc-injector.py" || true
-fi
-
+# --- GENERATE DASHBOARDS ---
 if [ -f "/opt/rabbit-hole/generate-dashboards.sh" ]; then
     echo "📊 Generating Dashboards..."
     "/opt/rabbit-hole/generate-dashboards.sh"

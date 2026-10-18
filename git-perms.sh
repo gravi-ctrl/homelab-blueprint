@@ -3,6 +3,12 @@
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)
 # @USES_ENV:
 # @CRON: user
+# @CAPABILITIES:
+#   • Saves Git-tracked file ownership and permissions to .git-perms, abstracting primary user for portability.
+#   • Applies stored permissions, resolving @USER/@GROUP placeholders to current user, preserving symlink ownership.
+#   • Uses set -euo pipefail and umask 0022 for strict error handling and secure defaults.
+#   • Avoids unnecessary git diffs by comparing temp file with existing .git-perms before overwrite.
+#   • Runs only inside a Git work tree, exiting with error if not found.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================

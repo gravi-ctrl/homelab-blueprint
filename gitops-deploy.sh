@@ -3,6 +3,11 @@
 # @FREQUENCY: Every 15 minutes
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
+# @CAPABILITIES:
+#   • Non‑blocking flock lock on .git/sync.lock prevents concurrent runs, skipping cycle if repository busy.
+#   • Auto‑pull with rebase and autostash; aborts on conflict, creates /tmp/gitops_paused flag and sends Telegram alert.
+#   • Detects upstream commits; redeploys only active stacks with running containers, pulling latest compose.yml and restarting via docker compose.
+#   • Clears pause flag when repo syncs, ensuring automatic resume after conflict resolution; notifies via Telegram on success.
 
 set -euo pipefail
 

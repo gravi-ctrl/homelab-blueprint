@@ -3,6 +3,12 @@
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 # @CRON: User
 # @USES_ENV: STACKS_DIR
+# @CAPABILITIES:
+#   • Deploys dashboards to pages branches using temporary worktrees
+#   • Uses alarm_once to suppress repeated errors, clearing on resolution
+#   • Traps EXIT, INT, TERM to clean up worktrees
+#   • Handles rebase conflicts by aborting and alarm_once
+#   • Creates orphan pages branch if missing to avoid code contamination
 
 set -e
 

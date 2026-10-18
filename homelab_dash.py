@@ -1005,7 +1005,12 @@ function renderScripts() {
   D.scripts.forEach((s, idx) => { s._idx = idx; grouped[s.category] = grouped[s.category] || []; grouped[s.category].push(s); });
   const cats = Object.keys(grouped).sort((a,b) => a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
 
-  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Auto-generated or manual feature bullet</div></div></div>`;
+  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:
+#   • Generates an interactive HTML dashboard summarizing all homelab scripts, cron schedules, and environment variables.
+#   • Parses script metadata via @CAPABILITIES, @DESCRIPTION, @FREQUENCY, @CRON, @USES_ENV tags, categorizing by semantic labels.
+#   • Classifies cron expressions into frequency tiers using regex and cron_descriptor, sorting tiers for organized display.
+#   • Safely ignores .git, _archive, node_modules, venv, docker-dash directories and non-script files, preventing accidental inclusion.
+#   • Handles missing dependencies with user prompt and exits, and uses try/except blocks to avoid crashes during parsing.
 
   cats.forEach((cat, c_idx) => {
     const scripts = grouped[cat], gid = `s-cat-${c_idx}`, warnsInCat = scripts.filter(s => s.warnings.length).length;

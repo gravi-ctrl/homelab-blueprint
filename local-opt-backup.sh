@@ -3,6 +3,11 @@
 # @FREQUENCY: Weekly 5:30am on Thursday
 # @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
 # @CRON: root
+# @CAPABILITIES:
+#   • Encrypts backup archive with age, deriving public key from $AGE_KEYFILE and compressing via zstd -9.
+#   • Prevents concurrent execution using /tmp/local-opt-backup.lock and flock, exiting if lock held.
+#   • Runs as background SystemD unit when interactive, ensuring safe SSH disconnection.
+#   • Cleans up on EXIT, INT, TERM, HUP: removes lock, kills heartbeat, restores Docker services.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker

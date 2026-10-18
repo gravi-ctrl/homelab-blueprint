@@ -3,6 +3,12 @@
 # @FREQUENCY: Daily 1am and 1pm
 # @USES_ENV: FILES_TO_KEEP
 # @CRON: user
+# @CAPABILITIES:
+#   • Keeps the N most recent backup items, default 2, configurable via FILES_TO_KEEP environment variable.
+#   • Dry‑run mode (DRY_RUN=1) prints deletions without executing, enabling safe testing.
+#   • Appending ::DELETE_ALL to a path triggers full purge, deleting all files and subfolders.
+#   • Items are sorted by timestamp: mtime on Linux, ctime on Windows, ensuring accurate recency.
+#   • Errors during deletion cause immediate abort of that folder and a non‑zero exit status.
 #
 # --- USAGE EXAMPLES ---
 # 1. Standard (Keep 2 most recent):

@@ -2,6 +2,11 @@
 # @DESCRIPTION: Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole.
 # @FREQUENCY: On Demand - At 03:00, on day 1 of the month
 # @CRON: user
+# @CAPABILITIES:
+#   • Validates .env, required vars, exits on missing configuration.
+#   • Uses mkcert to generate CA and certificates for all listed services.
+#   • Caches NPM auth token, retries curl, checks HTTP status, logs failures.
+#   • Upserts services.list entries atomically, preventing duplicates, triggers regeneration only on change.
 
 # Usage:
 #   ./cert-manager.sh init              One-time: install mkcert, create CA
