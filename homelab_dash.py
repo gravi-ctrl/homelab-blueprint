@@ -119,14 +119,17 @@ def parse_scripts(env_used_by):
                             continue
 
                         if in_caps:
-                            if line.startswith("#"):
-                                clean_cap = re.sub(r'^#\s*[•\-\*]?\s*', '', line).strip()
-                                if clean_cap and not clean_cap.startswith("@"):
-                                    capabilities.append(clean_cap)
-                                else:
-                                    in_caps = False
-                            else:
+                            # Stop immediately on divider lines (# === or # ---) or another @TAG
+                            if not line.startswith("#") or re.match(r'^#\s*[=\-]{3,}', line) or re.match(r'^#\s*@[A-Z_]+:', line):
                                 in_caps = False
+                            else:
+                                # Only capture lines that actually start with a bullet point (•, -, *)
+                                bullet_match = re.match(r'^#\s*[•\-\*]\s*(.+)', line)
+                                if bullet_match:
+                                    capabilities.append(bullet_match.group(1).strip())
+                                else:
+                                    # If it's a plain comment with no bullet, the capabilities block has ended
+                                    in_caps = False
 
                         if "@DESCRIPTION:" in up: desc = line.split(":", 1)[1].strip()
                         elif "@FREQUENCY:" in up: freq = line.split(":", 1)[1].strip()
