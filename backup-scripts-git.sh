@@ -4,12 +4,11 @@
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
 # @CAPABILITIES:
-#   • Creates daily snapshots of hosts, crontabs, packages, pip, apt repos, dotfiles, and SSH configs into /opt/rabbit-hole/run_once.
-#   • Preserves repository permissions via git-perms.sh before invoking git-auto-sync.py for secure sync.
-#   • Skips dashboard git push when dash-alarm-* flags exist, preventing repeated failures.
-#   • Enforces strict error handling with set -euo pipefail and umask 0022 for safe file permissions.
-#   • Sources environment variables from /opt/rabbit-hole/.env, exiting if missing to ensure controlled context.
-#   • Uses rsync -a --delete to mirror .config folders, maintaining up-to-date tool settings.
+#   • Daily snapshot of hosts, crontabs, packages, and dotfiles, ensuring instant rollback and audit trail.
+#   • Preserves repository permissions before sync, preventing accidental exposure of sensitive files.
+#   • Skips dashboard pushes when alarm flags exist, avoiding repetitive failures and alert fatigue.
+#   • Mirrors .config tool folders with rsync, keeping user settings in sync across environments.
+#   • Enforces strict error handling and safe file permissions, guaranteeing reliable execution and data integrity.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================

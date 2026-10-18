@@ -4,13 +4,11 @@
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
 # @CAPABILITIES:
-#   • Uses non‑blocking flock on .git/sync.lock to avoid concurrent executions, skipping cycle if locked.
-#   • Auto‑pulls main branch with rebase and autostash; aborts on conflict, sets /tmp/gitops_paused, alerts via Telegram.
-#   • Redeploys only active stacks whose compose.yml changed, pulling images and restarting with docker compose.
-#   • Clears pause flag after successful sync, automatically resuming operations and notifying success via Telegram.
-#   • Sends Telegram alerts for merge conflicts, pauses, and successful redeployments using bot token and chat ID.
-#   • Uses set -euo pipefail for strict error handling and undefined variable safety.
-#   • Cleans old pause flag when repository fully in sync, ensuring no stale pause state.
+#   • Auto-syncs stack directories from Codeberg every 15 minutes, ensuring production always reflects latest approved changes.
+#   • Uses flock lock to avoid overlapping runs, preventing race conditions and duplicated deployments.
+#   • Detects merge conflicts, pauses operations, and notifies admins via Telegram, stopping faulty deployments until resolved.
+#   • Redeploys only active stacks whose compose.yml changed, pulling fresh images and restarting services without downtime.
+#   • Cleans stale pause flags when repo syncs, ensuring no lingering pauses block future updates.
 
 set -euo pipefail
 

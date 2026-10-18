@@ -3,12 +3,11 @@
 # @FREQUENCY: Every hour
 # @CRON: user
 # @CAPABILITIES:
-#   • Monitors root (/) and /data disk usage, alerting when usage exceeds 90%.
-#   • Parses df output with awk and sed to extract percentage values.
-#   • Exits with status 1 on critical usage, enabling cron error detection.
-#   • Scheduled hourly via cron, no signal traps or locking mechanisms.
-#   • Uses hardcoded THRESHOLD variable set to 90.
-#   • No encryption or rate limiting implemented.
+#   • Detects root or /data disk usage over 90%, triggering immediate alerts to prevent system outages.
+#   • Exits with status 1 on critical usage, enabling cron to log failures and trigger downstream remediation.
+#   • Provides hourly visibility, ensuring timely intervention before critical thresholds are breached.
+#   • Simplifies monitoring by focusing on key partitions, reducing noise from less critical volumes.
+#   • Enables automated alerting without external dependencies, keeping the system lightweight and maintainable.
 
 THRESHOLD=90
 ROOT_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')

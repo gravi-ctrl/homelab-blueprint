@@ -3,13 +3,11 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: BACKUP_DIR
 # @CAPABILITIES:
-#   • Sources /opt/rabbit-hole/.env for BACKUP_DIR; exits if missing.
-#   • Collects uptime, load, CPU temp, /data disk usage, and Docker container status.
-#   • Verifies latest encrypted backup, shows date/size, warns if older than 8 days.
-#   • Formats structured snapshot with timestamp and status icons.
-#   • Counts running Docker containers and flags unhealthy or exited ones.
-#   • Defaults CPU temperature to N/A if thermal data missing.
-#   • Uses df to report /data usage and free space.
+#   • Provides instant server health snapshot, enabling quick status checks without waiting for scheduled reports.
+#   • Highlights Docker container health, instantly flagging unhealthy or exited services to prevent silent failures.
+#   • Warns when the latest encrypted backup exceeds eight days, ensuring backup freshness and compliance.
+#   • Displays CPU temperature and load with icons, giving immediate insight into thermal and performance stress.
+#   • Formats output with timestamps and status icons, making logs easily readable and searchable in monitoring dashboards.
 
 source "/opt/rabbit-hole/.env" || { echo "❌ /opt/rabbit-hole/.env not found"; exit 1; }
 

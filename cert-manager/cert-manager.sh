@@ -3,13 +3,11 @@
 # @FREQUENCY: On Demand - At 03:00, on day 1 of the month
 # @CRON: user
 # @CAPABILITIES:
-#   • Validates .env presence and required variables, exiting on missing configuration to prevent mis‑deployment.
-#   • Uses set -euo pipefail for strict error handling, ensuring immediate exit on unset variables or command failures.
-#   • Atomically updates services.list via temporary file and mv, preventing duplicates and race conditions during upsert operations.
-#   • Caches NPM authentication token, reusing it across API calls to reduce repeated credential exchanges.
-#   • Parses API responses with jq, extracting HTTP status and JSON fields, logging failures for robust error visibility.
-#   • Builds domain list by concatenating base domain with subdomains from services.list, supporting SAN generation.
-#   • Provides command interface for init, add, remove, regen, upload, list, status, and cron setup, enabling full lifecycle management.
+#   • Automates local SSL certificate lifecycle, generating SANs for all services and pushing to Nginx Proxy Manager.
+#   • Atomic upsert of services.list prevents duplicate entries and race conditions during concurrent updates.
+#   • Caches NPM auth token across API calls, reducing credential exchanges and speeding deployment.
+#   • Parses API responses with jq, extracting status and JSON fields, and logs failures for clear visibility.
+#   • Command interface supports init, add, remove, regen, upload, list, status, and cron setup for full lifecycle control.
 
 # Usage:
 #   ./cert-manager.sh init              One-time: install mkcert, create CA

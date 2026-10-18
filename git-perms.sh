@@ -4,12 +4,11 @@
 # @USES_ENV:
 # @CRON: user
 # @CAPABILITIES:
-#   • Saves Git-tracked file ownership and permissions to .git-perms, abstracting primary user for portability.
-#   • Applies stored permissions, resolving @USER/@GROUP placeholders to current user, preserving symlink ownership.
-#   • Uses set -euo pipefail and umask 0022 for strict error handling and secure defaults.
-#   • Avoids unnecessary git diffs by comparing temp file with existing .git-perms before overwrite.
-#   • Safely handles symlinks: chown -h on links, chmod only on non-links, suppressing errors.
-#   • Operates only within a Git worktree, exiting with clear error if repository not found.
+#   • Captures Git-tracked file ownership and permissions into a portable .git-perms, ensuring consistent environment across deployments.
+#   • Restores stored permissions on bootstrap, automatically mapping @USER/@GROUP to the current user, preventing permission drift.
+#   • Avoids unnecessary git diffs by only updating .git-perms when changes occur, keeping repository history clean.
+#   • Safely handles symlinks: chown links, skip chmod, preventing accidental link corruption.
+#   • Strict error handling (set -euo pipefail, umask 0022) guarantees secure defaults and immediate failure on misconfiguration.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================

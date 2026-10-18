@@ -4,13 +4,12 @@
 # @USES_ENV: GROQ_API_KEY
 # @CRON: user
 # @CAPABILITIES:
-#   • Loads .env and GROQ_API_KEY, selecting best model via Groq API with preference list and exclusion patterns.
-#   • Computes SHA-256 hash of script content excluding existing @CAPABILITIES header to detect changes.
-#   • Caches file hashes in .doc_hash_cache.json to skip unchanged scripts unless --force is used.
-#   • Queries Groq chat completions with a prompt enforcing JSON array output, retrying up to 4 times with backoff on 429.
-#   • Injects or updates a # @CAPABILITIES header block within the first 40 lines, preserving other header metadata.
-#   • Ignores .git, venv, node_modules, _archive directories and specific files to avoid processing irrelevant scripts.
-#   • Handles rate limits by parsing 'try again in Xs' from API response and sleeping accordingly.
+#   • Daily injects AI-generated capabilities header into scripts, keeping dashboards up-to-date.
+#   • Caches script hashes to avoid redundant API calls, saving bandwidth and cost.
+#   • Automatically selects best available Groq model, ensuring optimal performance.
+#   • Gracefully handles rate limits with backoff, preventing failures during high traffic.
+#   • Ignores non-script directories and files, focusing only on relevant scripts.
+#   • Injects header within first 40 lines, preserving existing metadata.
 
 import os
 import sys
@@ -70,14 +69,15 @@ def get_file_hash(content: str) -> str:
 def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retries: int = 4) -> list[str]:
     url = "https://api.groq.com/openai/v1/chat/completions"
     prompt = (
-        f"You are a principal systems and DevOps documentation engine. Analyze the following Linux script ('{file_name}').\n"
-        "Extract between 5 to 7 concise, technical bullet points highlighting its core capabilities, safeguards, "
-        "and architectural mechanisms (e.g. signal traps, locking, encryption, health checks, rate limits).\n"
-        "RULES:\n"
-        "- Return ONLY a raw JSON array of strings.\n"
-        "- Do NOT include markdown backticks (no ```json).\n"
-        "- Each bullet must be an active, precise technical statement under 20 words.\n"
-        "- No introductory or conversational filler.\n\n"
+        f"You are a DevOps engineer writing a 'Features & Safeguards' list for a dashboard. Analyze this script ('{file_name}').\n"
+        "Extract 4 to 6 punchy bullet points highlighting its practical utility, unique features, and operational safeguards.\n"
+        "STRICT RULES:\n"
+        "1. Focus on WHAT it achieves and WHY it's useful (e.g., 'Mute mode prevents alert fatigue', 'Self-heals via exponential backoff').\n"
+        "2. DO NOT state obvious mechanics (e.g., 'Executes commands' or 'Uses Python').\n"
+        "3. DO NOT mention or list environment variables (this is handled elsewhere).\n"
+        "4. Return ONLY a raw JSON array of strings.\n"
+        "5. Do NOT include markdown backticks (no ```json).\n"
+        "6. Each bullet must be an active, precise statement under 20 words.\n\n"
         f"CODE:\n{code[:7000]}"
     )
     payload = {"model": model_id, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}

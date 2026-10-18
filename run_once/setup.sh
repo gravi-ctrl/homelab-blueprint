@@ -3,13 +3,12 @@
 # @FREQUENCY: Run Once (Disaster Recovery)
 # @USES_ENV: DATA_DIR, NEXTCLOUD_DATA_DIR, TIMEZONE, SERVER_IP
 # @CAPABILITIES:
-#   • Traps ERR to abort, logs failure line, exits with error, ensuring atomic task completion.
-#   • Runs as non-root, escalates via sudo, keeps sudo session alive with background loop.
-#   • Secures .env with 600 permissions, sources it, preventing credential leakage.
-#   • Restores APT repos and keyrings from backup, then upgrades system, ensuring reproducible state.
-#   • Installs Docker, writes daemon.json with DNS, download limits, log rotation, and creates isolated network.
-#   • Configures sudoers for backup cron, granting NOPASSWD read-root-crontab to current user.
-#   • Uses set -euo pipefail, umask 0022, and quiet logging to /tmp/setup-*.log.
+#   • Restores full system state from backups, ensuring disaster recovery with reproducible package, Docker, and network configurations.
+#   • Keeps credentials safe by securing .env to 600 and preventing accidental exposure during bootstrap.
+#   • Maintains atomicity: traps ERR, logs failure line, aborts on any error to avoid partial setups.
+#   • Keeps sudo session alive in background, allowing non-root user to perform privileged tasks without repeated prompts.
+#   • Configures Docker daemon with DNS, download limits, log rotation, and isolated network for consistent container behavior.
+#   • Grants NOPASSWD sudoers rule for reading root crontab, enabling automated backup checks without password prompts.
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
