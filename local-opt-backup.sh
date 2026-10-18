@@ -1,7 +1,7 @@
 #!/bin/bash
 # @DESCRIPTION: Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive
 # @FREQUENCY: Weekly 5:30am on Thursday
-# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR
+# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
 # @CRON: root
 # ==============================================================================
 # RESTORE:
@@ -301,19 +301,23 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
 			
 			# --- OFFSITE REPLICATION ---
 			echo "☁️ Checking offsite replication..."
-			if command -v rclone &>/dev/null; then
-				# Verify the 'b2:' remote actually exists in rclone.conf before running
-				if rclone listremotes 2>/dev/null | grep -q "^b2:$"; then
-					echo "  → Uploading verified archive to Backblaze B2..."
-					if rclone copy "$BACKUP_DIR/$DOCKER_FILENAME" b2:gravi-ctrl-homelab-backup/; then
+			if [ -z "${OFFSITE_BACKUP_TARGET:-}" ]; then
+				echo "  ⏭️  OFFSITE_BACKUP_TARGET not set in .env. Skipping offsite sync."
+			elif command -v rclone &>/dev/null; then
+				REMOTE_NAME="${OFFSITE_BACKUP_TARGET%%:*}" # Extracts "b2", "gdrive", "r2", etc.
+				
+				# Verify the remote actually exists in rclone.conf before running
+				if rclone listremotes 2>/dev/null | grep -q "^${REMOTE_NAME}:$"; then
+					echo "  → Uploading verified archive to ${REMOTE_NAME} (${OFFSITE_BACKUP_TARGET})..."
+					if rclone copy "$BACKUP_DIR/$DOCKER_FILENAME" "${OFFSITE_BACKUP_TARGET}/"; then
 						echo "  ✅ Offsite upload successful."
 						# Prune cloud archives older than 30 days
-						rclone delete --min-age 30d b2:gravi-ctrl-homelab-backup/ 2>/dev/null || true
+						rclone delete --min-age 30d "${OFFSITE_BACKUP_TARGET}/" 2>/dev/null || true
 					else
 						echo "  ⚠️ WARNING: Offsite upload failed (network glitch or bad credentials). Local backup remains intact."
 					fi
 				else
-					echo "  ⏭️  rclone remote 'b2:' not configured yet. Skipping offsite sync."
+					echo "  ⏭️  rclone remote '${REMOTE_NAME}:' not configured yet. Skipping offsite sync."
 				fi
 			else
 				echo "  ⏭️  rclone not installed. Skipping offsite sync."
