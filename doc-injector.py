@@ -63,7 +63,7 @@ def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retrie
     url = "https://api.groq.com/openai/v1/chat/completions"
     prompt = (
         f"You are a principal systems and DevOps documentation engine. Analyze the following Linux script ('{file_name}').\n"
-        "Extract between 3 to 5 concise, technical bullet points highlighting its core capabilities, safeguards, "
+        "Extract between 5 to 7 concise, technical bullet points highlighting its core capabilities, safeguards, "
         "and architectural mechanisms (e.g. signal traps, locking, encryption, health checks, rate limits).\n"
         "RULES:\n"
         "- Return ONLY a raw JSON array of strings.\n"
