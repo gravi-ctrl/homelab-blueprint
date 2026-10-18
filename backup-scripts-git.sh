@@ -113,7 +113,12 @@ echo "🚀 Syncing Repositories..."
 # --- 4. Sync /opt/stacks ---
 "$MASTER_SCRIPT" "${STACKS_DIR}" "Server Stacks"
 
-# --- GENERATE DASHBOARDS ---
+# --- GENERATE CAPABILITIES & DASHBOARDS ---
+if [ -f "/opt/rabbit-hole/doc-injector.py" ]; then
+    echo "🤖 Auditing script capabilities..."
+    python3 "/opt/rabbit-hole/doc-injector.py" || true
+fi
+
 if [ -f "/opt/rabbit-hole/generate-dashboards.sh" ]; then
     echo "📊 Generating Dashboards..."
     "/opt/rabbit-hole/generate-dashboards.sh"

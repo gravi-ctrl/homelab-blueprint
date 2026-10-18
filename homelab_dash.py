@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # @DESCRIPTION: Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.
 # @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
 
@@ -97,7 +96,7 @@ def parse_scripts(env_used_by):
 
     for root, dirs, files in os.walk(SCRIPT_DIR):
         dirs.sort()
-        if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv']):
+        if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv', 'docker-dash']):
             continue
         for file in sorted(files):
             p = Path(root) / file
@@ -105,21 +104,41 @@ def parse_scripts(env_used_by):
                 continue
 
             desc, freq, uses_env, cron_ctx = None, None, [], None
+            capabilities = []
+            in_caps = False
+
             try:
                 with open(p, 'r', encoding='utf-8', errors='ignore') as f:
-                    for _ in range(50):
+                    for _ in range(80):
                         line_raw = f.readline()
-                        if not line_raw: break 
+                        if not line_raw: break
                         line = line_raw.strip()
-                        if not line: continue 
+                        if not line:
+                            in_caps = False
+                            continue
+
                         up = line.upper()
+                        if "@CAPABILITIES:" in up:
+                            in_caps = True
+                            continue
+
+                        if in_caps:
+                            if line.startswith("#"):
+                                clean_cap = re.sub(r'^#\s*[•\-\*]?\s*', '', line).strip()
+                                if clean_cap and not clean_cap.startswith("@"):
+                                    capabilities.append(clean_cap)
+                                else:
+                                    in_caps = False
+                            else:
+                                in_caps = False
+
                         if "@DESCRIPTION:" in up: desc = line.split(":", 1)[1].strip()
                         elif "@FREQUENCY:" in up: freq = line.split(":", 1)[1].strip()
                         elif "@CRON:" in up: cron_ctx = line.split(":", 1)[1].strip()
                         elif "@USES_ENV:" in up:
                             raw = line.split(":", 1)[1].strip()
                             uses_env = [v.strip() for v in re.split(r'[,\s]+', raw) if v.strip()]
-            except: pass
+            except Exception: pass
 
             rel_str = str(p.relative_to(SCRIPT_DIR)).replace('\\', '/')
             rel_dir = p.parent.relative_to(SCRIPT_DIR)
@@ -144,7 +163,7 @@ def parse_scripts(env_used_by):
                 "name": file, "path": rel_str, "dir_path": dir_str,
                 "category": cat.replace('_', ' ').title(), "semantic_cat": get_semantic_category(desc, file),
                 "desc": desc, "freq": freq, "cron_ctx": cron_ctx or "",
-                "env": uses_env, "warnings": warnings
+                "env": uses_env, "capabilities": capabilities, "warnings": warnings
             })
     return sorted(scripts_data, key=lambda x: (x["dir_path"], x["name"]))
 
@@ -198,7 +217,7 @@ def expand_cron_slots(raw_schedule):
                     a, b = map(int, chunk.split("-"))
                     out.update(range(a, b + 1))
                 else: out.add(int(chunk))
-            except: continue
+            except Exception: continue
         return sorted(out)
 
     dow_names = {"sun":0,"mon":1,"tue":2,"wed":3,"thu":4,"fri":5,"sat":6}
@@ -265,14 +284,12 @@ def parse_crontabs():
                                 elif cmd.startswith("if [") or cmd.startswith("[ ") or cmd.startswith("test "): desc += " <br>**(⚠️ Conditional: Bash Logic Check)**"
                                 elif " | grep " in cmd or " || " in cmd: desc += " <br>**(⚠️ Conditional: Pipeline Check)**"
                         
-                        # Store the exact explanatory comment completely raw, without truncation
                         if last_comment:
                             clean_comment = last_comment.strip()
-                            clean_comment = re.sub(r'^[#\s\-*]+', '', clean_comment) # Strip leading # and spacing
+                            clean_comment = re.sub(r'^[#\s\-*]+', '', clean_comment)
                         else:
                             clean_comment = ""
 
-                        # Extract exact cron-guard wrapper name for a clean, short UI Label, or fallback
                         cg_match = re.search(r'cron-guard(?:\.py)?\s+--mode\s+(?:fail|success|all|mute)\s+["\']([^"\']+)["\']', cmd, re.IGNORECASE)
                         if cg_match:
                             label = cg_match.group(1).strip()
@@ -287,8 +304,8 @@ def parse_crontabs():
                         env_vars = sorted(list(set(re.findall(r'\$\{?([A-Z_][A-Z0-9_]*)\}?', cmd))))
                         crons_data.append({
                             "label": label,
-                            "full_comment": clean_comment, # Injected to display un-truncated explanations
-                            "has_wrapper": has_wrapper, # Flags whether this task was wrapped by cron-guard
+                            "full_comment": clean_comment,
+                            "has_wrapper": has_wrapper,
                             "owner": owner_label, "is_root": is_root,
                             "raw_schedule": raw_sched, "human_desc": desc,
                             "command": cmd, "tier": classify_frequency(raw_sched),
@@ -296,7 +313,7 @@ def parse_crontabs():
                             "env": env_vars, "heat_slots": expand_cron_slots(raw_sched),
                             "day_conditional": day_conditional,
                         })
-                    except: pass
+                    except Exception: pass
                     last_comment = ""
     process_file("user_crontab.txt", f"👤 User Cron ({BACKUP_USER})", False)
     process_file("root_crontab.txt", "⚡ Root Cron", True)
@@ -453,6 +470,18 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .card-sub{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
 .card-desc{font-size:12.5px;color:var(--ink-2);background:var(--surface);padding:7px 9px;border-radius:var(--radius-sm);border:1px solid var(--border)}
 
+/* ── Capabilities Drawer ───────────────────────────────────────── */
+.caps-details{margin-top:2px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden}
+.caps-summary{padding:6px 10px;font-size:11.5px;font-weight:600;color:var(--accent);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft)}
+.caps-summary:hover{background:var(--bg-sub);color:var(--ink)}
+.caps-summary::-webkit-details-marker{display:none}
+.caps-summary::after{content:'▾';font-size:10px;color:var(--ink-3);transition:transform .2s}
+.caps-details[open] .caps-summary::after{transform:rotate(180deg)}
+.caps-details[open] .caps-summary{border-bottom:1px solid var(--border)}
+.caps-list{padding:8px 12px 8px 24px;margin:0;font-size:12px;color:var(--ink-2);line-height:1.6}
+.caps-list li{margin-bottom:3px}
+.caps-list li:last-child{margin-bottom:0}
+
 /* Dynamic Badges & Tiers */
 .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:3px}
 .bdg{font-size:10.5px;padding:3px 9px;border-radius:100px;display:inline-flex;align-items:center;line-height:1.4;white-space:nowrap;font-weight:500;border:1px solid transparent}
@@ -564,7 +593,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   </div>
 
   <div class="filter-bar" id="global-filter-bar">
-    <input type="text" id="search" placeholder="Search names, paths, variables…" oninput="applyFilter()">
+    <input type="text" id="search" placeholder="Search names, paths, capabilities, variables…" oninput="applyFilter()">
     <button class="fbtn warn-on" id="f-warn" onclick="tog('warn')">Warnings</button>
     <button class="fbtn" id="f-user" onclick="tog('user')">User</button>
     <button class="fbtn" id="f-root" onclick="tog('root')">Root</button>
@@ -671,7 +700,6 @@ function getDailyRunTimes(c, dateObj) {
     const parsed = c._parsed;
     if (!parsed) return [];
     
-    // Command level AND constraint check (e.g. only runs if current weekday matches conditional day)
     if (c.day_conditional !== undefined && c.day_conditional !== null) {
         if (dateObj.getDay() !== c.day_conditional) return [];
     }
@@ -977,7 +1005,7 @@ function renderScripts() {
   D.scripts.forEach((s, idx) => { s._idx = idx; grouped[s.category] = grouped[s.category] || []; grouped[s.category].push(s); });
   const cats = Object.keys(grouped).sort((a,b) => a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
 
-  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2</div></div></div>`;
+  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Auto-generated or manual feature bullet</div></div></div>`;
 
   cats.forEach((cat, c_idx) => {
     const scripts = grouped[cat], gid = `s-cat-${c_idx}`, warnsInCat = scripts.filter(s => s.warnings.length).length;
@@ -987,8 +1015,15 @@ function renderScripts() {
       if(s.freq) badges.push(bdg('b-green', s.freq));
       if(s.cron_ctx) { if(s.cron_ctx.toLowerCase().includes('root')) badges.push(bdg('b-root', 'Root')); if(s.cron_ctx.toLowerCase().includes('user')) badges.push(bdg('b-user', 'User')); }
       s.env.forEach(ev => badges.push(bdg('b-env', ev)));
+      
       const warnHtml = s.warnings.length ? `<div class="card-desc" style="border-color:var(--danger);background:var(--danger-soft)"><ul class="warning-list">${s.warnings.map(w=>`<li>${e(w)}</li>`).join('')}</ul></div>` : '';
-      html += `<div class="card item-card" data-idx="${s._idx}"><div class="card-title"><span>${e(s.name)}</span></div><div class="card-sub">${e(s.path)}</div>${s.desc?`<div class="card-desc">${e(s.desc)}</div>`:''}${warnHtml}<div class="badges">${badges.join('')}</div></div>`;
+      
+      let capsHtml = '';
+      if (s.capabilities && s.capabilities.length > 0) {
+        capsHtml = `<details class="caps-details"><summary class="caps-summary"><span>⚡ Capabilities &amp; Safeguards (${s.capabilities.length})</span></summary><ul class="caps-list">${s.capabilities.map(c => `<li>${e(c)}</li>`).join('')}</ul></details>`;
+      }
+
+      html += `<div class="card item-card" data-idx="${s._idx}"><div class="card-title"><span>${e(s.name)}</span></div><div class="card-sub">${e(s.path)}</div>${s.desc?`<div class="card-desc">${e(s.desc)}</div>`:''}${capsHtml}${warnHtml}<div class="badges">${badges.join('')}</div></div>`;
     });
     html += `</div></div>`;
   });
@@ -1131,8 +1166,9 @@ def main():
     
     warn_scripts = sum(1 for s in scripts if s["warnings"])
     mismatch_envs = sum(1 for e in envs if e["mismatch"])
+    caps_count = sum(len(s.get("capabilities", [])) for s in scripts)
     
-    print(f"  ✓ Found {len(scripts)} Scripts ({warn_scripts} flagged with warnings)")
+    print(f"  ✓ Found {len(scripts)} Scripts ({caps_count} capabilities mapped, {warn_scripts} warnings)")
     print(f"  ✓ Found {len(crons)} Cron Jobs")
     print(f"  ✓ Found {len(envs)} Tracked Variables ({mismatch_envs} env mismatches detected)")
     
