@@ -9,6 +9,7 @@ import sys
 import re
 import json
 import hashlib
+import time
 import requests
 from pathlib import Path
 
@@ -82,7 +83,9 @@ def get_file_hash(content: str) -> str:
     stripped = re.sub(r'# @CAPABILITIES:.*?(?=\n# [A-Z_]+:|\n# ===|\n[^#]|\Z)', '', content, flags=re.DOTALL)
     return hashlib.sha256(stripped.strip().encode("utf-8")).hexdigest()
 
-def query_groq_capabilities(file_name: str, code: str, model_id: str) -> list[str]:
+import time
+
+def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retries: int = 4) -> list[str]:
     url = "https://api.groq.com/openai/v1/chat/completions"
     prompt = (
         f"You are a principal systems and DevOps documentation engine. Analyze the following Linux script ('{file_name}').\n"
@@ -93,32 +96,51 @@ def query_groq_capabilities(file_name: str, code: str, model_id: str) -> list[st
         "- Do NOT include markdown backticks (no ```json).\n"
         "- Each bullet must be an active, precise technical statement under 20 words.\n"
         "- No introductory or conversational filler.\n\n"
-        f"CODE:\n{code[:8000]}"
+        f"CODE:\n{code[:7000]}"
     )
 
-    try:
-        r = requests.post(
-            url,
-            headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": model_id,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.2
-            },
-            timeout=20
-        )
-        if r.status_code != 200:
-            print(f"    ⚠ Groq API Error ({r.status_code}) on {file_name}: {r.text}", file=sys.stderr)
-            return []
+    payload = {
+        "model": model_id,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2
+    }
+    headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
 
-        raw = r.json()["choices"][0]["message"]["content"].strip()
-        raw = re.sub(r'^```(?:json)?\s*', '', raw)
-        raw = re.sub(r'\s*```$', '', raw)
-        bullets = json.loads(raw)
-        return [b.strip() for b in bullets if isinstance(b, str) and b.strip()]
-    except Exception as e:
-        print(f"    ⚠ Request failed on {file_name}: {e}", file=sys.stderr)
-        return []
+    for attempt in range(1, max_retries + 1):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=25)
+
+            # Handle free-tier rate limits (429) automatically
+            if r.status_code == 429:
+                wait_time = 14.0  # Safe default
+                m = re.search(r'try again in (\d+(?:\.\d+)?)s', r.text)
+                if m:
+                    wait_time = float(m.group(1)) + 1.5
+                elif r.headers.get("retry-after"):
+                    try: wait_time = float(r.headers.get("retry-after")) + 1.0
+                    except ValueError: pass
+
+                print(f"    ⏳ Rate limit (TPM) reached. Waiting {wait_time:.1f}s before retry (attempt {attempt}/{max_retries})...")
+                time.sleep(wait_time)
+                continue
+
+            if r.status_code != 200:
+                print(f"    ⚠ Groq API Error ({r.status_code}) on {file_name}: {r.text}", file=sys.stderr)
+                return []
+
+            raw = r.json()["choices"][0]["message"]["content"].strip()
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+            bullets = json.loads(raw)
+            return [b.strip() for b in bullets if isinstance(b, str) and b.strip()]
+
+        except Exception as e:
+            if attempt == max_retries:
+                print(f"    ⚠ Request failed on {file_name}: {e}", file=sys.stderr)
+                return []
+            time.sleep(3)
+
+    return []
 
 def inject_capabilities(path: Path, bullets: list[str]) -> bool:
     if not bullets: return False
@@ -209,6 +231,7 @@ def main():
                 cache[str(p)] = get_file_hash(new_content)
                 updated_count += 1
                 print(f"    ✓ Injected @CAPABILITIES ({len(bullets)} items)")
+                time.sleep(2)  # Pace batch runs
 
     CACHE_FILE.write_text(json.dumps(cache, indent=2), encoding="utf-8")
     print(f"✅ Capabilities check complete. ({updated_count} file(s) updated)")
