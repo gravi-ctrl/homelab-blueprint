@@ -4,10 +4,12 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID, WATCHER_TASKS
 # @CAPABILITIES:
-#   • Monitors Docker containers defined in WATCHER_TASKS, executing task_<name> once readiness check passes.
-#   • Uses state file to idempotently mark tasks, disabling service after all tasks complete.
-#   • Sends Telegram notifications via curl with retry logic for post‑restore actions.
-#   • Implements custom readiness checks (check_<task>) and falls back to is_running, ensuring containers are fully operational before task execution.
+#   • Monitors Docker containers defined in WATCHER_TASKS, executing task_<name> after readiness checks pass.
+#   • Uses a state file to idempotently mark completed tasks, then disables its systemd service when all tasks finish.
+#   • Sends Telegram alerts via curl with 3 retries and 5‑second backoff for post‑restore actions.
+#   • Implements custom check_<task> functions; falls back to is_running() if none defined, ensuring containers are fully operational.
+#   • Runs in a loop with 10‑second sleep, disabling itself when no valid tasks remain or all are done.
+#   • Executes privileged commands (sudo, docker exec) only within defined task functions, limiting scope of elevated privileges.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env

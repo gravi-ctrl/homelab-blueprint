@@ -7,7 +7,9 @@
 #   • Runs as non-root, escalates via sudo, keeps sudo session alive with background loop.
 #   • Secures .env with 600 permissions, sources it, preventing credential leakage.
 #   • Restores APT repos and keyrings from backup, then upgrades system, ensuring reproducible state.
-#   • Installs Docker, configures daemon.json with DNS, download limits, log rotation, and creates isolated network.
+#   • Installs Docker, writes daemon.json with DNS, download limits, log rotation, and creates isolated network.
+#   • Configures sudoers for backup cron, granting NOPASSWD read-root-crontab to current user.
+#   • Uses set -euo pipefail, umask 0022, and quiet logging to /tmp/setup-*.log.
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.

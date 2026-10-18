@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.
 # @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
+# @CAPABILITIES:
+#   • Parses all scripts for @DESCRIPTION, @FREQUENCY, @CRON, @USES_ENV, and @CAPABILITIES tags within first 60 lines.
+#   • Classifies cron schedules into frequency tiers using regex, labeling as minutes, hourly, daily, weekly, monthly, yearly, or reboot.
+#   • Builds an environment variable usage map from .env.example, linking variables to scripts via @USED_BY comments.
+#   • Generates a self‑contained interactive HTML dashboard summarizing scripts, cron schedules, env usage, and capabilities.
+#   • Ignores hidden or non‑script directories (.git, node_modules, venv) and files lacking shebang or known extensions.
+#   • Safely reads files with UTF‑8, ignoring errors, and limits capability parsing to 60 lines to avoid excessive I/O.
+#   • Exits with informative message if cron_descriptor dependency missing, preventing partial execution.
 
 import os
 import re

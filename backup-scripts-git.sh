@@ -6,8 +6,10 @@
 # @CAPABILITIES:
 #   • Creates daily snapshots of hosts, crontabs, packages, pip, apt repos, dotfiles, and SSH configs into /opt/rabbit-hole/run_once.
 #   • Preserves repository permissions via git-perms.sh before invoking git-auto-sync.py for secure sync.
-#   • Implements idempotent dashboard generation and conditional git push, skipping when dash-alarm-* flags exist.
-#   • Sources environment variables from /opt/rabbit-hole/.env, exits if missing, ensuring controlled execution context.
+#   • Skips dashboard git push when dash-alarm-* flags exist, preventing repeated failures.
+#   • Enforces strict error handling with set -euo pipefail and umask 0022 for safe file permissions.
+#   • Sources environment variables from /opt/rabbit-hole/.env, exiting if missing to ensure controlled context.
+#   • Uses rsync -a --delete to mirror .config folders, maintaining up-to-date tool settings.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================

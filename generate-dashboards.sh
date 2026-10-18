@@ -4,11 +4,12 @@
 # @CRON: User
 # @USES_ENV: STACKS_DIR
 # @CAPABILITIES:
-#   • Deploys dashboards to pages branches using isolated temporary worktrees, preventing main repo interference.
-#   • Employs alarm_once to suppress repeated error alerts, clearing flags when issues resolve.
-#   • Traps EXIT, INT, TERM signals to clean up worktrees, avoiding orphaned temp directories.
+#   • Uses temporary worktrees to deploy dashboards, isolating pages branch from main repo.
+#   • Traps EXIT, INT, TERM to clean up worktrees, preventing orphan temp directories.
+#   • Implements alarm_once flags in .git dir to suppress repeated error alerts until issue resolves.
 #   • Handles rebase conflicts by aborting, alarm_once, and resetting pages branch to origin state.
 #   • Creates orphan pages branch if missing, ensuring dashboards never contaminate code branch.
+#   • Cleans stale worktrees before deployment, ensuring idempotent, conflict-free updates.
 
 set -e
 

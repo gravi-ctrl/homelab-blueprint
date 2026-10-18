@@ -5,9 +5,11 @@
 # @CAPABILITIES:
 #   • Monitors battery via upower; triggers shutdown if discharging and ≤20%.
 #   • Logs critical event with timestamp to /var/log/battery_shutdown.log.
-#   • Schedules shutdown in two minutes using /sbin/shutdown -h +2.
-#   • Runs as root, cron job every 5 minutes.
-#   • Exits with status 1 after initiating shutdown.
+#   • Schedules system halt in two minutes using /sbin/shutdown -h +2.
+#   • Runs as root under cron every 5 minutes, limiting frequency.
+#   • Exits with status 1 after initiating shutdown to signal error state.
+#   • Uses upower device path /org/freedesktop/UPower/devices/battery_BAT0 for status.
+#   • No signal traps or file locking; relies on cron schedule for rate limiting.
 # =============================
 # Get battery percentage
 BATTERY_LEVEL=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | awk '{print $2}' | tr -d '%')

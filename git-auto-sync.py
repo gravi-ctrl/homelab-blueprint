@@ -3,11 +3,13 @@
 # @FREQUENCY: Varies
 # @CRON: user
 # @CAPABILITIES:
-#   • Syncs all local branches using throwaway worktrees, preserving the live working tree for Docker deployments.
-#   • Implements cross‑platform file locking (fcntl/msvcrt) to block concurrent sync executions.
-#   • Emits a single cron alarm per unique failure via .git/autosync‑alarm.json, clearing on successful run.
+#   • Synchronizes every local branch via throwaway worktrees, leaving the live working tree untouched for Docker deployments.
+#   • Implements cross‑platform file locking (fcntl on Unix, msvcrt on Windows) to prevent concurrent sync executions.
+#   • Emits a single cron alarm per unique failure in .git/autosync‑alarm.json, clearing it after a successful run.
 #   • Aborts before git add if rebase/merge in progress, detached HEAD, branch mismatch, excessive deletions, or missing .gitignore.
-#   • Retries git pull/push with 25‑35s randomized jitter on network errors, aborts on authentication failures, logs detailed status.
+#   • Retries git pull/push with 25‑35s randomized jitter on network errors, aborting on authentication failures.
+#   • Uses environment variables (AUTOSYNC_MAX_DELETIONS, AUTOSYNC_REQUIRE_GITIGNORE) to enforce safety gates before committing.
+#   • Logs detailed status and errors to stdout, suppressing non‑critical output via subprocess.DEVNULL.
 # ==============================================================================
 # GENERIC GIT AUTO-SYNC SCRIPT
 # Usage: python git_auto_sync.py "/path/to/repo" "Commit Label"

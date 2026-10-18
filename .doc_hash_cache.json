@@ -1,5 +1,5 @@
 {
-  "/home/alice/scripts/backup-scripts-git.sh": "3580c311e9ad21032054d9973647ab693a40da4a3b5d1760b50ea3285434b590",
+  "/home/alice/scripts/backup-scripts-git.sh": "d17e13ffd64093c3f7e3eeaf8b1214d236f41735c23220ba1320c94c719563b2",
   "/home/alice/scripts/battery-monitor.sh": "9d79d4e88b28ddbd9136ee9b571baffbd7c201e94c1b84214d32ae04e3210dbc",
   "/home/alice/scripts/cert-manager/cert-manager.sh": "9fcc90a59e85155be7871dc25ef429bc76010aa9c0431f135cc5f8aaf29a2b26",
   "/home/alice/scripts/cleanup_script.py": "5da3be2fb396e4854f3e8cea19605f129342a0f68cd26adbcebf445825a7af20",
@@ -11,7 +11,7 @@
   "/home/alice/scripts/git-perms.sh": "4d863e247029a5e990bd6643b5986663fe3044e5434b9b450b8809b117794c9c",
   "/home/alice/scripts/gitops-deploy.sh": "9d7b9d81e7b0bc0ff1cc4537696547df6cd898ee73527d733113081974f5e2be",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
-  "/home/alice/scripts/homelab_dash.py": "935c0ccee85d4e54c73fd13bde2eb6a4bc86a0db372eb3e35ccbf15388106a46",
+  "/home/alice/scripts/homelab_dash.py": "1ae18db5807084b2c0d884a480813ef7f2dc7de1b3ab4219c39785bcaa68125d",
   "/home/alice/scripts/local-opt-backup.sh": "dd64e69d054e11ab2bae39363616bcd5b9e3cbfe3fa340a9eb05ec3bfbc37c2d",
   "/home/alice/scripts/nextcloud-dynamic-watch.sh": "fa84c82a3846817368f4e2456a95bee6006f1673ca283d817dca5cb74ec57b4a",
   "/home/alice/scripts/tg-vergil/vergil.py": "c1c03a3639351c4ea00b4cae4f216d9482d78acd78cdb537c5608a6e20fad30a",
@@ -19,5 +19,6 @@
   "/home/alice/scripts/run_once/container-watcher.sh": "acde9b8c7bff578a7e86125a303e9b743a5c3ae00b98bd70b1dc09efdcf7fa3b",
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
   "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
-  "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8"
+  "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
+  "/home/alice/scripts/doc-injector.py": "2326aae276c14cc120a252034d0226507bb48c986f845a0f94357b718e5a5c08"
 }

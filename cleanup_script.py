@@ -4,11 +4,13 @@
 # @USES_ENV: FILES_TO_KEEP
 # @CRON: user
 # @CAPABILITIES:
-#   • Keeps the N most recent backup items, default 2, configurable via FILES_TO_KEEP environment variable.
+#   • Keeps N most recent backup items, default 2, configurable via FILES_TO_KEEP environment variable.
 #   • Dry‑run mode (DRY_RUN=1) prints deletions without executing, enabling safe testing.
 #   • Appending ::DELETE_ALL to a path triggers full purge, deleting all files and subfolders.
 #   • Errors during deletion abort that folder immediately and exit with non‑zero status.
 #   • Items sorted by timestamp (mtime on Linux, ctime on Windows) for accurate recency.
+#   • Script loads configuration from .env file using dotenv, enabling environment‑based tuning.
+#   • Uses glob to list items and shutil.rmtree for recursive directory deletion.
 
 import os
 import glob

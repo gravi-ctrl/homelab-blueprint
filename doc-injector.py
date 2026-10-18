@@ -3,6 +3,14 @@
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 # @USES_ENV: GROQ_API_KEY
 # @CRON: user
+# @CAPABILITIES:
+#   • Loads .env and GROQ_API_KEY, selecting best model via Groq API with preference list and exclusion patterns.
+#   • Computes SHA-256 hash of script content excluding existing @CAPABILITIES header to detect changes.
+#   • Caches file hashes in .doc_hash_cache.json to skip unchanged scripts unless --force is used.
+#   • Queries Groq chat completions with a prompt enforcing JSON array output, retrying up to 4 times with backoff on 429.
+#   • Injects or updates a # @CAPABILITIES header block within the first 40 lines, preserving other header metadata.
+#   • Ignores .git, venv, node_modules, _archive directories and specific files to avoid processing irrelevant scripts.
+#   • Handles rate limits by parsing 'try again in Xs' from API response and sleeping accordingly.
 
 import os
 import sys

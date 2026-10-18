@@ -2,11 +2,13 @@
 # @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes permissions, removes cloud-init and re-links blueprint git repos.
 # @FREQUENCY: Run Once (Disaster Recovery)
 # @CAPABILITIES:
-#   • Decrypts age‑encrypted backup archive and restores files with tar, preserving ownership via --same-owner and numeric-owner flags.
-#   • Caches sudo credentials and runs a background keep‑alive loop to avoid password prompts during long operations.
+#   • Decrypts age‑encrypted backup with age, streams to tar preserving ownership via --same-owner and --numeric-owner.
+#   • Caches sudo credentials with a background keep‑alive loop, preventing password prompts during long operations.
 #   • Implements ERR trap that logs failure, prints line number, and exits, ensuring deterministic error handling.
-#   • Validates SSH key presence and permissions, pre‑seeds known_hosts, and tests Git authentication via ssh -T.
-#   • Uses find to remap backup UID/GID to current user, preventing ownership mismatches after restoration.
+#   • Remaps backup UID/GID to current user using find and chown, avoiding ownership mismatches after restoration.
+#   • Validates SSH key presence, sets strict permissions, and pre‑seeds known_hosts for secure Git authentication.
+#   • Installs decryption tools (age, zstd) automatically if missing, ensuring required utilities are available.
+#   • Logs all tasks to a timestamped file, providing audit trail and facilitating troubleshooting.
 
 set -euo pipefail
 umask 0022

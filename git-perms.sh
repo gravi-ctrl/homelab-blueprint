@@ -8,6 +8,8 @@
 #   • Applies stored permissions, resolving @USER/@GROUP placeholders to current user, preserving symlink ownership.
 #   • Uses set -euo pipefail and umask 0022 for strict error handling and secure defaults.
 #   • Avoids unnecessary git diffs by comparing temp file with existing .git-perms before overwrite.
+#   • Safely handles symlinks: chown -h on links, chmod only on non-links, suppressing errors.
+#   • Operates only within a Git worktree, exiting with clear error if repository not found.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================

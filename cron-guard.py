@@ -5,11 +5,13 @@
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user, root
 # @CAPABILITIES:
-#   • Executes arbitrary shell commands, streams combined stdout/stderr, captures output for alerting and optional logging.
+#   • Executes arbitrary shell commands, streaming combined stdout/stderr, capturing output for alerting and optional logging.
 #   • Sends Telegram alerts with 3‑retry delivery, logs failures to failed_alerts.log, skips retry if credentials missing.
-#   • Implements configurable timeout; kills entire process tree via SIGTERM (Linux) or taskkill (Windows) on expiry or signal.
+#   • Implements configurable timeout; kills entire process tree via SIGTERM (Linux) or taskkill (Windows) on expiry.
 #   • Writes per‑job heartbeat JSON in status/ with hash‑based filename, preserving ownership for root or sudo invocations.
 #   • Stores full logs only when alert triggers and output exceeds 15 lines or 3000 chars, linking log path in message.
+#   • Forwards SIGTERM/SIGINT to child process tree for clean shutdown on kill/reboot or timeout, preventing orphaned children.
+#   • Uses environment variables TELEGRAM_DANTE_BOT_TOKEN and TELEGRAM_CHAT_ID; logs missing credentials to MISSING_TELEGRAM_CREDENTIALS.log.
 
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
 

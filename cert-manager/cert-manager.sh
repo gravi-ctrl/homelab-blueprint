@@ -3,11 +3,13 @@
 # @FREQUENCY: On Demand - At 03:00, on day 1 of the month
 # @CRON: user
 # @CAPABILITIES:
-#   • Automates mkcert CA and SAN certificate generation for all services listed in services.list.
-#   • Validates .env and required vars, exiting on missing configuration to prevent mis‑deployment.
-#   • Atomically upserts services.list entries via temporary file and mv, avoiding duplicates and race conditions.
-#   • Caches NPM auth token, retries curl, checks HTTP status, and logs failures for robust API interactions.
-#   • Triggers certificate regeneration only when services.list changes, reducing unnecessary renewals and API calls.
+#   • Validates .env presence and required variables, exiting on missing configuration to prevent mis‑deployment.
+#   • Uses set -euo pipefail for strict error handling, ensuring immediate exit on unset variables or command failures.
+#   • Atomically updates services.list via temporary file and mv, preventing duplicates and race conditions during upsert operations.
+#   • Caches NPM authentication token, reusing it across API calls to reduce repeated credential exchanges.
+#   • Parses API responses with jq, extracting HTTP status and JSON fields, logging failures for robust error visibility.
+#   • Builds domain list by concatenating base domain with subdomains from services.list, supporting SAN generation.
+#   • Provides command interface for init, add, remove, regen, upload, list, status, and cron setup, enabling full lifecycle management.
 
 # Usage:
 #   ./cert-manager.sh init              One-time: install mkcert, create CA
