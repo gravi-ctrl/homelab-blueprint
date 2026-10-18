@@ -69,15 +69,16 @@ def get_file_hash(content: str) -> str:
 def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retries: int = 4) -> list[str]:
     url = "https://api.groq.com/openai/v1/chat/completions"
     prompt = (
-        f"You are a DevOps engineer writing a 'Features & Safeguards' list for a dashboard. Analyze this script ('{file_name}').\n"
-        "Extract 4 to 6 punchy bullet points highlighting its practical utility, unique features, and operational safeguards.\n"
+        f"You are a DevOps engineer writing a 'Features & Safeguards' list for an infrastructure dashboard. Analyze this script ('{file_name}').\n"
+        "Extract between 2 to 8 punchy bullet points highlighting its practical utility, unique features, and operational safeguards.\n"
         "STRICT RULES:\n"
-        "1. Focus on WHAT it achieves and WHY it's useful (e.g., 'Mute mode prevents alert fatigue', 'Self-heals via exponential backoff').\n"
-        "2. DO NOT state obvious mechanics (e.g., 'Executes commands' or 'Uses Python').\n"
-        "3. DO NOT mention or list environment variables (this is handled elsewhere).\n"
-        "4. Return ONLY a raw JSON array of strings.\n"
-        "5. Do NOT include markdown backticks (no ```json).\n"
-        "6. Each bullet must be an active, precise statement under 20 words.\n\n"
+        "1. Scale the number of bullets to the script's complexity (e.g., 2 bullets for simple scripts, up to 8 for massive automation engines).\n"
+        "2. Focus on WHAT it achieves and WHY it's useful (e.g., 'Mute mode prevents alert fatigue', 'Self-heals via exponential backoff').\n"
+        "3. DO NOT state obvious mechanics (e.g., 'Executes commands' or 'Uses Python').\n"
+        "4. DO NOT mention or list environment variables (this is handled elsewhere).\n"
+        "5. Return ONLY a raw JSON array of strings.\n"
+        "6. Do NOT include markdown backticks (no ```json).\n"
+        "7. Each bullet must be an active, precise statement under 20 words.\n\n"
         f"CODE:\n{code[:7000]}"
     )
     payload = {"model": model_id, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}
