@@ -7,18 +7,8 @@
 #   • Keeps the N most recent backup items, default 2, configurable via FILES_TO_KEEP environment variable.
 #   • Dry‑run mode (DRY_RUN=1) prints deletions without executing, enabling safe testing.
 #   • Appending ::DELETE_ALL to a path triggers full purge, deleting all files and subfolders.
-#   • Items are sorted by timestamp: mtime on Linux, ctime on Windows, ensuring accurate recency.
-#   • Errors during deletion cause immediate abort of that folder and a non‑zero exit status.
-#
-# --- USAGE EXAMPLES ---
-# 1. Standard (Keep 2 most recent):
-#    python3 cleanup_script.py /backup/daily
-#
-# 2. Delete EVERYTHING in the folder:
-#    python3 cleanup_script.py /backup/temp::DELETE_ALL
-#
-# 3. Dry Run (See what would happen without deleting):
-#    DRY_RUN=1 python3 cleanup_script.py /backup/daily
+#   • Errors during deletion abort that folder immediately and exit with non‑zero status.
+#   • Items sorted by timestamp (mtime on Linux, ctime on Windows) for accurate recency.
 
 import os
 import glob

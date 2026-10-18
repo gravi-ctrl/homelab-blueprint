@@ -5,9 +5,9 @@
 # @CRON: user
 # @CAPABILITIES:
 #   • Non‑blocking flock lock on .git/sync.lock prevents concurrent runs, skipping cycle if repository busy.
-#   • Auto‑pull with rebase and autostash; aborts on conflict, creates /tmp/gitops_paused flag and sends Telegram alert.
-#   • Detects upstream commits; redeploys only active stacks with running containers, pulling latest compose.yml and restarting via docker compose.
-#   • Clears pause flag when repo syncs, ensuring automatic resume after conflict resolution; notifies via Telegram on success.
+#   • Auto‑pull with rebase and autostash aborts on conflict, creates /tmp/gitops_paused flag, and alerts via Telegram.
+#   • Redeploys only active stacks whose compose.yml changed, pulling latest images and restarting with docker compose.
+#   • Clears pause flag after successful sync, automatically resuming operations and notifying success via Telegram.
 
 set -euo pipefail
 

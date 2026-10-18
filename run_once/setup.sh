@@ -2,6 +2,12 @@
 # @DESCRIPTION: Phase 2 System Provisioning: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.
 # @FREQUENCY: Run Once (Disaster Recovery)
 # @USES_ENV: DATA_DIR, NEXTCLOUD_DATA_DIR, TIMEZONE, SERVER_IP
+# @CAPABILITIES:
+#   • Traps ERR to abort, logs failure line, exits with error, ensuring atomic task completion.
+#   • Runs as non-root, escalates via sudo, keeps sudo session alive with background loop.
+#   • Secures .env with 600 permissions, sources it, preventing credential leakage.
+#   • Restores APT repos and keyrings from backup, then upgrades system, ensuring reproducible state.
+#   • Installs Docker, configures daemon.json with DNS, download limits, log rotation, and creates isolated network.
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.

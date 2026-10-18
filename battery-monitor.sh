@@ -3,10 +3,10 @@
 # @FREQUENCY: Every 5 minutes
 # @CRON: root
 # @CAPABILITIES:
-#   • Checks battery level via upower, triggers shutdown if discharging and ≤20%.
+#   • Monitors battery via upower; triggers shutdown if discharging and ≤20%.
 #   • Logs critical event with timestamp to /var/log/battery_shutdown.log.
-#   • Executes /sbin/shutdown -h +2, scheduling shutdown in two minutes.
-#   • Runs as root, scheduled every 5 minutes via cron.
+#   • Schedules shutdown in two minutes using /sbin/shutdown -h +2.
+#   • Runs as root, cron job every 5 minutes.
 #   • Exits with status 1 after initiating shutdown.
 # =============================
 # Get battery percentage

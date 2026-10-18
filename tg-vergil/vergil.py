@@ -2,10 +2,10 @@
 # @DESCRIPTION: Runs scripts and commands directly on server with logs
 # @FREQUENCY: On Demand (triggered by `setup.sh`)
 # @CAPABILITIES:
-#   • Validates TELEGRAM_VERGIL_BOT_TOKEN and TELEGRAM_CHAT_ID from .env, exiting if missing.
+#   • Validates TELEGRAM_VERGIL_BOT_TOKEN and TELEGRAM_CHAT_ID from .env, aborting if absent.
 #   • Restricts command execution to a single Telegram user ID, preventing unauthorized access.
-#   • Dynamically maps CMD_ prefixed environment variables to /<trigger> commands, enabling flexible script deployment.
-#   • Executes commands in a sandboxed PATH including the virtualenv bin, isolating runtime environment.
+#   • Dynamically maps CMD_ prefixed env vars to /<trigger> commands, enabling flexible script deployment.
+#   • Executes commands in a sandboxed PATH including virtualenv bin, isolating runtime environment.
 #   • Sends long outputs as documents and optionally mutes success messages via MUTE_<trigger> env flag.
 
 import os

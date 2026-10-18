@@ -14,5 +14,10 @@
   "/home/alice/scripts/homelab_dash.py": "935c0ccee85d4e54c73fd13bde2eb6a4bc86a0db372eb3e35ccbf15388106a46",
   "/home/alice/scripts/local-opt-backup.sh": "dd64e69d054e11ab2bae39363616bcd5b9e3cbfe3fa340a9eb05ec3bfbc37c2d",
   "/home/alice/scripts/nextcloud-dynamic-watch.sh": "fa84c82a3846817368f4e2456a95bee6006f1673ca283d817dca5cb74ec57b4a",
-  "/home/alice/scripts/tg-vergil/vergil.py": "c1c03a3639351c4ea00b4cae4f216d9482d78acd78cdb537c5608a6e20fad30a"
+  "/home/alice/scripts/tg-vergil/vergil.py": "c1c03a3639351c4ea00b4cae4f216d9482d78acd78cdb537c5608a6e20fad30a",
+  "/home/alice/scripts/run_once/bootstrap.sh": "4e61e35c3d33f0b937c1ae38479fa9923a239b8ac1628baa0badbda52df3d16a",
+  "/home/alice/scripts/run_once/container-watcher.sh": "acde9b8c7bff578a7e86125a303e9b743a5c3ae00b98bd70b1dc09efdcf7fa3b",
+  "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
+  "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
+  "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8"
 }

@@ -5,12 +5,10 @@
 import os
 import re
 import json
-import argparse
 import getpass
 from pathlib import Path
 from datetime import datetime, timezone
 
-# ── Dependency check ──────────────────────────────────────────────
 try:
     from cron_descriptor import get_description, Options
     cron_opts = Options()
@@ -19,14 +17,12 @@ except ImportError:
     print("Missing dependency: cron_descriptor\nInstall: pip install cron-descriptor")
     exit(1)
 
-# ── Configuration ─────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 CRON_SOURCE_DIR = os.path.join(SCRIPT_DIR, "run_once", "system_configs")
 ENV_EXAMPLE_FILE = os.path.join(SCRIPT_DIR, ".env.example")
 
 BACKUP_USER = getpass.getuser()
 SCRIPT_EXTS = {".sh", ".py"}
-
 NON_SCRIPT_CONSUMERS = {"crontab"}
 
 FREQUENCY_TIERS = [
@@ -109,7 +105,7 @@ def parse_scripts(env_used_by):
 
             try:
                 with open(p, 'r', encoding='utf-8', errors='ignore') as f:
-                    for _ in range(80):
+                    for _ in range(60):
                         line_raw = f.readline()
                         if not line_raw: break
                         line = line_raw.strip()
@@ -270,7 +266,7 @@ def parse_crontabs():
                                 raw_sched = " ".join(parts[:5])
                                 cmd = parts[5]
                                 try: desc = get_description(raw_sched, cron_opts)
-                                except: desc = raw_sched
+                                except Exception: desc = raw_sched
 
                                 date_match = re.match(r'^\[\s*"\$\(date \+\\%[uwaA]\)"\s*=\s*"?(\w+)"?\s*\]\s*&&\s*(.*)', cmd, re.IGNORECASE)
                                 if date_match:
@@ -319,7 +315,6 @@ def parse_crontabs():
     process_file("root_crontab.txt", "⚡ Root Cron", True)
     return sorted(crons_data, key=lambda x: (1 if x["is_root"] else 0, x["tier_order"], x["label"], x["command"]))
 
-# ── HTML Template ─────────────────────────────────────────────────
 HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -470,7 +465,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .card-sub{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
 .card-desc{font-size:12.5px;color:var(--ink-2);background:var(--surface);padding:7px 9px;border-radius:var(--radius-sm);border:1px solid var(--border)}
 
-/* ── Capabilities Drawer ───────────────────────────────────────── */
 .caps-details{margin-top:2px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden}
 .caps-summary{padding:6px 10px;font-size:11.5px;font-weight:600;color:var(--accent);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft)}
 .caps-summary:hover{background:var(--bg-sub);color:var(--ink)}
@@ -482,7 +476,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .caps-list li{margin-bottom:3px}
 .caps-list li:last-child{margin-bottom:0}
 
-/* Dynamic Badges & Tiers */
 .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:3px}
 .bdg{font-size:10.5px;padding:3px 9px;border-radius:100px;display:inline-flex;align-items:center;line-height:1.4;white-space:nowrap;font-weight:500;border:1px solid transparent}
 .b-amber { color: var(--warn); border-color: var(--warn-bd); background: rgba(224, 183, 115, 0.08); }
@@ -505,7 +498,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .guide-head{background:var(--accent-soft) !important;color:var(--accent) !important}
 .guide-status{background:var(--accent-bd) !important;color:var(--accent) !important;font-size:9.5px !important;font-weight:700 !important;text-transform:uppercase;letter-spacing:.06em}
 
-/* ── Cron UI Specific ─────────────────────────────────────────── */
 .cron-schedule-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:18px}
 .heatmap-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:var(--surface-2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
 .heatmap-header-left{display:flex;align-items:center;gap:10px}
@@ -533,7 +525,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .cron-content-pane{display:none;}
 .cron-content-pane.active{display:block;}
 
-/* Heatmap View */
 .heatmap-grid{display:grid;grid-template-columns:30px repeat(24,1fr);gap:2px;align-items:center}
 .heatmap-grid .hm-corner{font-size:9px}
 .heatmap-grid .hm-hour-label{font-size:8.5px;color:var(--ink-3);text-align:center;font-family:var(--mono)}
@@ -547,7 +538,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10px;color:var(--ink-3)}
 .heatmap-legend .hm-cell{width:10px;height:10px;aspect-ratio:unset;display:inline-block}
 
-/* Monthly Calendar View */
 .calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .calendar-title{font-size:14.5px;font-weight:600;color:var(--ink)}
 .calendar-nav{display:flex;gap:4px}
@@ -563,7 +553,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 .cal-job{font-size:9.5px;padding:1px 5px;border-radius:3px;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;line-height:1.2;}
 .cal-more{font-size:9px;color:var(--ink-3);font-weight:600;padding-left:2px;margin-top:0px;}
 
-/* Agenda View */
 .agenda-section{margin-bottom:24px}
 .agenda-header{font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:4px}
 .agenda-row{display:flex;align-items:center;gap:16px;padding:10px 4px;border-bottom:1px solid var(--border-2);}
@@ -623,9 +612,10 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   <div class="no-match" id="no-match">No results match your filter.</div>
 </div>
 
+<script id="dashboard-data" type="application/json">__DATA__</script>
 <script>
-const D = __DATA__;
-let activeTab = 'scripts';
+const D = JSON.parse(document.getElementById('dashboard-data').textContent);
+let activeTab = 'overview';
 const F = { warn: false, user: false, root: false, docker: false, quick: false, secrets: false, orphans: false };
 let activeParentDir = null, activeChildDir = null;
 
@@ -650,7 +640,6 @@ function getTierHex(colorId) {
   return 'var(--ink-3)';
 }
 
-/* ── Client-Side JS Cron Engine (Deterministic builds) ────────────── */
 function parseCronField(str, min, max) {
     if (str === '*' || str === '?') return null;
     let vals = new Set();
@@ -721,7 +710,6 @@ function getDailyRunTimes(c, dateObj) {
 
 D.crons.forEach(c => c._parsed = parseCron(c.raw_schedule));
 
-/* ── UI Logic ─────────────────────────────────────────────────────── */
 function toggleGroup(id) {
   document.getElementById(id+'-head').classList.toggle('is-open');
   document.getElementById(id+'-body').classList.toggle('is-open');
@@ -1005,12 +993,7 @@ function renderScripts() {
   D.scripts.forEach((s, idx) => { s._idx = idx; grouped[s.category] = grouped[s.category] || []; grouped[s.category].push(s); });
   const cats = Object.keys(grouped).sort((a,b) => a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
 
-  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:
-#   • Generates an interactive HTML dashboard summarizing all homelab scripts, cron schedules, and environment variables.
-#   • Parses script metadata via @CAPABILITIES, @DESCRIPTION, @FREQUENCY, @CRON, @USES_ENV tags, categorizing by semantic labels.
-#   • Classifies cron expressions into frequency tiers using regex and cron_descriptor, sorting tiers for organized display.
-#   • Safely ignores .git, _archive, node_modules, venv, docker-dash directories and non-script files, preventing accidental inclusion.
-#   • Handles missing dependencies with user prompt and exits, and uses try/except blocks to avoid crashes during parsing.
+  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Bullet 1</div></div></div>`;
 
   cats.forEach((cat, c_idx) => {
     const scripts = grouped[cat], gid = `s-cat-${c_idx}`, warnsInCat = scripts.filter(s => s.warnings.length).length;

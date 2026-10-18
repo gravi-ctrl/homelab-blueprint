@@ -4,10 +4,11 @@
 # @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
 # @CRON: root
 # @CAPABILITIES:
-#   • Encrypts backup archive with age, deriving public key from $AGE_KEYFILE and compressing via zstd -9.
-#   • Prevents concurrent execution using /tmp/local-opt-backup.lock and flock, exiting if lock held.
-#   • Runs as background SystemD unit when interactive, ensuring safe SSH disconnection.
-#   • Cleans up on EXIT, INT, TERM, HUP: removes lock, kills heartbeat, restores Docker services.
+#   • Encrypts tar.zst archive with age using key from $AGE_KEYFILE, compresses with zstd -9.
+#   • Uses /tmp/local-opt-backup.lock and flock to prevent concurrent executions.
+#   • Runs as systemd-run background unit when invoked interactively, enabling safe SSH disconnection.
+#   • Traps EXIT, INT, TERM, HUP to cleanup: remove lock, kill heartbeat, restore Docker services.
+#   • Maintains heartbeat to KUMA_HC_URL every 240s to keep health check alive during backup.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker

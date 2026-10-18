@@ -3,6 +3,11 @@
 # @DESCRIPTION: Auto-configures containers once they are manually started
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, N8N_WEBHOOK_UUID, WATCHER_TASKS
+# @CAPABILITIES:
+#   • Monitors Docker containers defined in WATCHER_TASKS, executing task_<name> once readiness check passes.
+#   • Uses state file to idempotently mark tasks, disabling service after all tasks complete.
+#   • Sends Telegram notifications via curl with retry logic for post‑restore actions.
+#   • Implements custom readiness checks (check_<task>) and falls back to is_running, ensuring containers are fully operational before task execution.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env

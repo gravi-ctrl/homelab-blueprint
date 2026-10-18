@@ -2,6 +2,11 @@
 # @DESCRIPTION: Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime.
 # @FREQUENCY: Run Once (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_CONTAINER
+# @CAPABILITIES:
+#   • Detects and corrects wrong ownership on /var/www/html and /var/www/html/data, applying www-data recursively.
+#   • Verifies health via .ncdata marker and user directory; triggers fresh setup if missing.
+#   • Creates user and appdata directories, enables maintenance mode, then runs occ scans and repairs.
+#   • Executes all commands inside the Nextcloud container using docker exec, ensuring isolation and correct user context.
 
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 source "/opt/rabbit-hole/.env"

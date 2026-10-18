@@ -1,6 +1,12 @@
 #!/bin/bash
 # @DESCRIPTION: Resets UFW and applies correct rules (Private Server Mode)
 # @FREQUENCY: Run Once (triggered by `setup.sh`)
+# @CAPABILITIES:
+#   • Resets UFW to defaults.
+#   • Sets default deny incoming, allow outgoing.
+#   • Allows all traffic from 192.168.0.0/16.
+#   • Allows all traffic on tailscale0 interface.
+#   • Enables firewall and outputs status.
 # ==============================================================================
 # 🛡️ UFW FIREWALL RESTORATION SCRIPT
 # Strategy: Block Internet, Trust LAN, Trust VPN, Trust Docker.

@@ -3,10 +3,10 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: BACKUP_DIR
 # @CAPABILITIES:
-#   • Prints on-demand server health: uptime, load, CPU temp, and /data disk usage.
-#   • Reports Docker container status, counting running and flagging exited, unhealthy, or restarting containers.
-#   • Verifies latest encrypted backup, displaying date, size, and warning if older than 8 days.
 #   • Sources /opt/rabbit-hole/.env for BACKUP_DIR; exits if missing.
+#   • Collects uptime, load, CPU temp, /data disk usage, and Docker container status.
+#   • Verifies latest encrypted backup, shows date/size, warns if older than 8 days.
+#   • Formats and echoes a structured health snapshot with timestamp and status icons.
 
 source "/opt/rabbit-hole/.env" || { echo "❌ /opt/rabbit-hole/.env not found"; exit 1; }
 
