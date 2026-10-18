@@ -10,6 +10,8 @@
 644	@USER:@GROUP	.commit-warning
 755	@USER:@GROUP	cron-guard.py
 755	@USER:@GROUP	disk-monitor.sh
+644	@USER:@GROUP	.doc_hash_cache.json
+755	@USER:@GROUP	doc-injector.py
 755	@USER:@GROUP	docker-dash
 755	@USER:@GROUP	docker-dash/docker_dash.py
 644	@USER:@GROUP	docker-dash/.env.example
