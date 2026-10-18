@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Analyzes homelab scripts and automatically injects an AI-generated capabilities header block using Groq
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
-# @USES_ENV: GROQ_API_KEY
+# @USES_ENV: GROQ_API_KEY, GROQ_MODEL
 # @CRON: user
 
 import os
@@ -20,6 +20,17 @@ CACHE_FILE = SCRIPT_DIR / ".doc_hash_cache.json"
 IGNORE_DIRS = {".git", "venv", "node_modules", "_archive", "run_once"}
 IGNORE_FILES = {Path(__file__).name}  # Don't mutate self
 
+# Priority order for preferred text models
+PREFERRED_MODELS = [
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b",
+    "allam-2-7b"
+]
+
+# Substrings identifying non-general-chat models to ignore
+EXCLUDE_PATTERNS = ["whisper", "guard", "orpheus", "vision"]
+
 def load_dotenv(path):
     if not path.is_file(): return
     with open(path, "r", encoding="utf-8") as f:
@@ -32,12 +43,46 @@ def load_dotenv(path):
 load_dotenv(ENV_PATH)
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
 
+def discover_best_model(token: str) -> str:
+    """Dynamically queries Groq to pick an active text model, preventing deprecation breakages."""
+    # 1. Check if user specified a manual override in .env
+    override = os.environ.get("GROQ_MODEL", "").strip()
+    if override:
+        return override
+
+    try:
+        r = requests.get(
+            "https://api.groq.com/openai/v1/models",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        if r.status_code == 200:
+            available = [m["id"] for m in r.json().get("data", [])]
+            
+            # Match against preferred priority list
+            for pref in PREFERRED_MODELS:
+                if pref in available:
+                    return pref
+            
+            # Dynamic fallback: pick first text model that isn't audio/guardrail
+            chat_models = [
+                m for m in available
+                if not any(pattern in m.lower() for pattern in EXCLUDE_PATTERNS)
+            ]
+            if chat_models:
+                return chat_models[0]
+    except Exception as e:
+        print(f"    ⚠ Auto-discovery error ({e}), using default fallback.", file=sys.stderr)
+
+    # Static default if API discovery fails
+    return "openai/gpt-oss-20b"
+
 def get_file_hash(content: str) -> str:
     # Hash code without the existing @CAPABILITIES block to detect real functional edits
     stripped = re.sub(r'# @CAPABILITIES:.*?(?=\n# [A-Z_]+:|\n# ===|\n[^#]|\Z)', '', content, flags=re.DOTALL)
     return hashlib.sha256(stripped.strip().encode("utf-8")).hexdigest()
 
-def query_groq_capabilities(file_name: str, code: str) -> list[str]:
+def query_groq_capabilities(file_name: str, code: str, model_id: str) -> list[str]:
     url = "https://api.groq.com/openai/v1/chat/completions"
     prompt = (
         f"You are a principal systems and DevOps documentation engine. Analyze the following Linux script ('{file_name}').\n"
@@ -56,20 +101,23 @@ def query_groq_capabilities(file_name: str, code: str) -> list[str]:
             url,
             headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
             json={
-                "model": "llama-3.3-70b-versatile",
+                "model": model_id,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.2
             },
             timeout=20
         )
-        r.raise_for_status()
+        if r.status_code != 200:
+            print(f"    ⚠ Groq API Error ({r.status_code}) on {file_name}: {r.text}", file=sys.stderr)
+            return []
+
         raw = r.json()["choices"][0]["message"]["content"].strip()
         raw = re.sub(r'^```(?:json)?\s*', '', raw)
         raw = re.sub(r'\s*```$', '', raw)
         bullets = json.loads(raw)
         return [b.strip() for b in bullets if isinstance(b, str) and b.strip()]
     except Exception as e:
-        print(f"    ⚠ Groq API Error on {file_name}: {e}", file=sys.stderr)
+        print(f"    ⚠ Request failed on {file_name}: {e}", file=sys.stderr)
         return []
 
 def inject_capabilities(path: Path, bullets: list[str]) -> bool:
@@ -107,6 +155,10 @@ def main():
     if not GROQ_KEY:
         print("⏭️  GROQ_API_KEY missing in .env. Skipping capability generation.")
         sys.exit(0)
+
+    # 1. Discover or resolve active text model
+    active_model = discover_best_model(GROQ_KEY)
+    print(f"🤖 Connected to Groq using live model: {active_model}")
 
     cache = {}
     if CACHE_FILE.exists():
@@ -150,14 +202,13 @@ def main():
             continue
 
         print(f"  → Analyzing: {p.relative_to(SCRIPT_DIR)}")
-        bullets = query_groq_capabilities(p.name, content)
+        bullets = query_groq_capabilities(p.name, content, active_model)
         if bullets:
             if inject_capabilities(p, bullets):
-                # Update hash on new content
                 new_content = p.read_text(encoding="utf-8")
                 cache[str(p)] = get_file_hash(new_content)
                 updated_count += 1
-                print(f"    ✓ Updated @CAPABILITIES ({len(bullets)} items)")
+                print(f"    ✓ Injected @CAPABILITIES ({len(bullets)} items)")
 
     CACHE_FILE.write_text(json.dumps(cache, indent=2), encoding="utf-8")
     print(f"✅ Capabilities check complete. ({updated_count} file(s) updated)")
