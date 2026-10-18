@@ -66,7 +66,7 @@ def get_file_hash(content: str) -> str:
     stripped = re.sub(r'# @CAPABILITIES:.*?(?=\n# [A-Z_]+:|\n# ===|\n[^#]|\Z)', '', content, flags=re.DOTALL)
     return hashlib.sha256(stripped.strip().encode("utf-8")).hexdigest()
 
-def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retries: int = 4) -> list[str]:
+def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retries: int = 6) -> list[str]:
     url = "https://api.groq.com/openai/v1/chat/completions"
     prompt = (
         f"You are a DevOps engineer writing a 'Features & Safeguards' list for an infrastructure dashboard. Analyze this script ('{file_name}').\n"
@@ -87,26 +87,38 @@ def query_groq_capabilities(file_name: str, code: str, model_id: str, max_retrie
     for attempt in range(1, max_retries + 1):
         try:
             r = requests.post(url, headers=headers, json=payload, timeout=25)
+            
             if r.status_code == 429:
-                wait_time = 14.0
+                wait_time = None
+                # Try to parse the exact time from Groq's error message
                 m = re.search(r'try again in (\d+(?:\.\d+)?)s', r.text)
-                if m: wait_time = float(m.group(1)) + 1.5
-                print(f"    ⏳ Rate limit (TPM). Waiting {wait_time:.1f}s before retry (attempt {attempt}/{max_retries})...")
+                if m:
+                    wait_time = float(m.group(1)) + 2.0
+                
+                # If parsing fails (e.g., hit RPM limit instead), use exponential backoff: 15s, 30s, 60s...
+                if not wait_time:
+                    wait_time = 15.0 * (2 ** (attempt - 1))
+                
+                print(f"    ⏳ Rate limit reached. Waiting {wait_time:.1f}s before retry (attempt {attempt}/{max_retries})...")
                 time.sleep(wait_time)
                 continue
+
             if r.status_code != 200:
                 print(f"    ⚠ Groq API Error ({r.status_code}) on {file_name}: {r.text}", file=sys.stderr)
                 return []
+            
             raw = r.json()["choices"][0]["message"]["content"].strip()
             raw = re.sub(r'^```(?:json)?\s*', '', raw)
             raw = re.sub(r'\s*```$', '', raw)
             bullets = json.loads(raw)
             return [b.strip() for b in bullets if isinstance(b, str) and b.strip()]
+            
         except Exception as e:
             if attempt == max_retries:
                 print(f"    ⚠ Request failed on {file_name}: {e}", file=sys.stderr)
                 return []
-            time.sleep(3)
+            time.sleep(5)
+            
     return []
 
 def inject_capabilities(path: Path, bullets: list[str]) -> bool:
