@@ -56,6 +56,7 @@ case "$ACTION" in
             git ls-files | while IFS= read -r f; do dirname "$f"; done | sort -u
         } | while IFS= read -r path; do
             [ "$path" = "." ] && continue
+            [ "$path" = ".git-perms" ] && continue
             [ -e "$path" ] || [ -L "$path" ] || continue
 
             mode=$(stat -c '%a' "$path")
