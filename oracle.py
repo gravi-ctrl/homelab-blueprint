@@ -3,12 +3,11 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
-#   • Streams Gemini AI responses to terminal, preserving up to 200k characters for uninterrupted log diagnostics.
-#   • Auto‑fails over to lighter models during 503 spikes, keeping analysis continuous without manual intervention.
-#   • Masks API keys, tokens, and passwords in piped logs, protecting secrets while reviewing sensitive data.
+#   • Streams 200k+ characters of Gemini AI responses directly to terminal, keeping diagnostics uninterrupted.
+#   • Auto‑fails over to lighter models on 503 spikes, ensuring continuous analysis without manual intervention.
+#   • Masks API keys, tokens, passwords, and private keys in piped logs, protecting secrets during review.
 #   • Handles binary or corrupted log streams gracefully, preventing crashes from non‑UTF8 input.
-#   • Supports multi‑turn chat, script reviews, and log diagnostics via pipe or interactive mode, enabling rapid troubleshooting.
-#   • Provides model discovery and selection, listing available Gemini models and allowing overrides for tailored performance.
+#   • Supports multi‑turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting.
 
 import os
 import sys
@@ -108,12 +107,24 @@ def clean_piped_text(text: str) -> str:
     cleaned = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', text)
 
     patterns = [
+        # 1. Platform-Specific High-Entropy Prefixes (Zero false positive risk)
         (r'AIzaSy[a-zA-Z0-9_\-]{33}', '[REDACTED_GEMINI_KEY]'),
         (r'gsk_[a-zA-Z0-9]{40,}', '[REDACTED_GROQ_KEY]'),
         (r'ghp_[a-zA-Z0-9]{36}', '[REDACTED_GITHUB_TOKEN]'),
-        (r'(?i)(password|passwd|secret|api_key|token)\s*[:=]\s*["\']?([^"\'\s,;]+)["\']?', r'\1: [REDACTED]'),
+        (r'github_pat_[a-zA-Z0-9_]{82}', '[REDACTED_GITHUB_PAT]'),
+        (r'sk-[a-zA-Z0-9]{48}', '[REDACTED_OPENAI_KEY]'),
+
+        # 2. Private Keys & Certificates
+        (r'-----BEGIN [A-Z ]+PRIVATE KEY----[\s\S]*?-----END [A-Z ]+PRIVATE KEY-----', '[REDACTED_PRIVATE_KEY]'),
+        (r'-----BEGIN CERTIFICATE----[\s\S]*?-----END CERTIFICATE-----', '[REDACTED_CERTIFICATE]'),
+
+        # 3. Network & Auth Headers
         (r'(?i)bearer\s+[a-zA-Z0-9_\-\.]+', 'Bearer [REDACTED]'),
-        (r'(?i)authorization:\s*[^\n]+', 'Authorization: [REDACTED]')
+        (r'(?i)authorization:\s*[^\n]+', 'Authorization: [REDACTED]'),
+        (r'(?i)(postgres|mysql|mongodb|redis|amqp|smtp)://([^:]+):([^@]+)@', r'\1://\2:[REDACTED]@'),
+
+        # 4. Comprehensive Assignment Secrets (Catches password, passwd, secret, key, token, auth, api, credential, jwt, salt, hash, salt, etc.)
+        (r'(?i)\b(password|passwd|secret|api[\s_\-]?key|token|auth|credential|jwt|salt|hash|client[\s_\-]?secret)\s*[:=]\s*["\']?([^"\'\s,;]+)["\']?', r'\1: [REDACTED]'),
     ]
     for pattern, repl in patterns:
         cleaned = re.sub(pattern, repl, cleaned)
