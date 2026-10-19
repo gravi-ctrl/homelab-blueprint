@@ -4,12 +4,11 @@
 # @USES_ENV:
 # @CRON: user
 # @CAPABILITIES:
-#   • Abstracts primary user ownership to ensure portable permission snapshots across diverse deployment environments.
-#   • Prevents repository noise by committing permission changes only when actual file attributes differ.
-#   • Safely handles symbolic links by applying ownership without corrupting link targets via chmod.
-#   • Resolves abstract user placeholders to the current executor, supporting seamless sudo-based bootstrap operations.
-#   • Enforces strict error handling and secure umask defaults to guarantee immediate failure on misconfiguration.
-#   • Validates target directory existence and Git repository context before executing any permission modifications.
+#   • Snapshots POSIX ownership and permissions of all tracked files into a portable .git-perms file.
+#   • Abstracts primary user and group to @USER/@GROUP, keeping snapshots portable across deployments.
+#   • Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.
+#   • Safely handles symlinks by chowning the link itself and avoiding chmod on link targets.
+#   • Commits changes only when permissions differ, preventing noise and unnecessary git diffs.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================

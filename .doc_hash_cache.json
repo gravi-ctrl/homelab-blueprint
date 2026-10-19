@@ -8,7 +8,7 @@
   "/home/alice/scripts/docker-dash/docker_dash.py": "9f24d26ce72a051c848f2aacced99b133cc24ef74e2e5fa88ad2df273bf9adde",
   "/home/alice/scripts/generate-dashboards.sh": "ff8a6cd8648dd39687c097d0615f97b871a3a31f8b0699add9e4fb35514d7a8e",
   "/home/alice/scripts/git-auto-sync.py": "e095ac2045573feee4d0d31b556863889c35f57dd35db2ae8b704f0b8491b084",
-  "/home/alice/scripts/git-perms.sh": "4d863e247029a5e990bd6643b5986663fe3044e5434b9b450b8809b117794c9c",
+  "/home/alice/scripts/git-perms.sh": "7e53b56bbc0332769305749c5957f4f173ee5a189ef48979a54998a628626f83",
   "/home/alice/scripts/gitops-deploy.sh": "9d7b9d81e7b0bc0ff1cc4537696547df6cd898ee73527d733113081974f5e2be",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
   "/home/alice/scripts/homelab_dash.py": "1ae18db5807084b2c0d884a480813ef7f2dc7de1b3ab4219c39785bcaa68125d",
