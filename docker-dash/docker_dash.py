@@ -525,8 +525,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   <div class="stacks" id="stacks"></div>
   <div class="no-match" id="no-match">No stacks match your filter.</div>
 </div>
+<script id="dashboard-data" type="application/json">__DATA__</script>
 <script>
-const D=__DATA__;
+const D = JSON.parse(document.getElementById('dashboard-data').textContent);
 function e(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function bdg(cls,txt){return`<span class="bdg ${cls}">${e(txt)}</span>`}
 function extLink(url,label){
@@ -824,7 +825,7 @@ def main():
         .replace("__SLUG__",     slug)
         .replace("__BRANCH__",   branch)
         .replace("__DATE__",     now)
-        .replace("__DATA__",     json.dumps(stacks, ensure_ascii=False, sort_keys=True)))
+        .replace("__DATA__",     json.dumps(stacks, ensure_ascii=False, sort_keys=True, indent=2)))
     out_path.write_text(html, encoding="utf-8")
 
     total_svcs  = sum(len(s["services"]) for s in stacks)
