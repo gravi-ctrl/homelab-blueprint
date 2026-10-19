@@ -1173,7 +1173,7 @@ def main():
     out_path = Path("index.html")
     data = {"scripts": scripts, "crons": crons, "envs": envs}
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    html_out = HTML.replace("__DATE__", now).replace("__DATA__", json.dumps(data, ensure_ascii=False, sort_keys=True))
+    html_out = HTML.replace("__DATE__", now).replace("__DATA__", json.dumps(data, ensure_ascii=False, sort_keys=True, indent=2))
     out_path.write_text(html_out, encoding="utf-8")
     print(f"\n✅ Dashboard generated: {out_path.resolve()}")
 

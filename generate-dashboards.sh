@@ -162,7 +162,7 @@ deploy_page_local() {
     fi
     clear_alarm "$repo" stage
 
-    if git -C "$wt" diff --cached --quiet -I "[Gg]enerated "; then
+    if git -C "$wt" diff --cached --quiet -I '<div class="meta-line">Generated '; then
         echo "   (Only timestamp changed in $repo - skipping commit)"
     else
         if ! git -C "$wt" commit -q -m "Auto-update dashboard [skip ci]"; then

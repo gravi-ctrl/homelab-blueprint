@@ -6,7 +6,7 @@
   "/home/alice/scripts/cron-guard.py": "24e9d8272f6ac4c4283bb8170ab4d8222f17aa2381d9f99344ba9ae46d104f96",
   "/home/alice/scripts/disk-monitor.sh": "a3b056a9eef0ccabfacb3ad2cf20a469f8e2f744c1b8d5a58c542096c3949259",
   "/home/alice/scripts/docker-dash/docker_dash.py": "91a87acae7420956490b08a48f349005171f42a08a8a4c58f3c443159c49914e",
-  "/home/alice/scripts/generate-dashboards.sh": "62918573e4e4f2afc74ef7ea6bedd63897208900a5cf1be115482801347f739b",
+  "/home/alice/scripts/generate-dashboards.sh": "0f91af167bf497b730594974b72002fa3c6c4bda195cdf6e67a97ca49cacfc43",
   "/home/alice/scripts/git-auto-sync.py": "e095ac2045573feee4d0d31b556863889c35f57dd35db2ae8b704f0b8491b084",
   "/home/alice/scripts/git-perms.sh": "4d863e247029a5e990bd6643b5986663fe3044e5434b9b450b8809b117794c9c",
   "/home/alice/scripts/gitops-deploy.sh": "9d7b9d81e7b0bc0ff1cc4537696547df6cd898ee73527d733113081974f5e2be",
