@@ -4,10 +4,10 @@
 # @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
 #   • Streams 200k+ characters of Gemini AI responses directly to terminal, keeping diagnostics uninterrupted.
-#   • Auto‑fails over to lighter models on 503 spikes, ensuring continuous analysis without manual intervention.
+#   • Auto-fails over to lighter models on 503 spikes, ensuring continuous analysis without manual intervention.
 #   • Masks API keys, tokens, passwords, and private keys in piped logs, protecting secrets during review.
 #   • Handles binary or corrupted log streams gracefully, preventing crashes from non‑UTF8 input.
-#   • Supports multi‑turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting.
+#   • Supports multi-turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting.
 
 import os
 import sys
@@ -320,10 +320,12 @@ def main():
         )
         messages = [
             {"role": "system", "content": (
-                "You are an expert Linux Systems, DevOps, and infrastructure engineer. "
-                "Analyze the provided terminal output, logs, or code strictly in an engineering context.\n"
-                "- If the logs show normal operation, healthy services, or zero errors, state clearly that everything is running normally in 1-2 concise sentences. Do not invent issues, critique grammar, or nitpick wording.\n"
-                "- If there are actual errors, explain the root cause concisely and provide exact CLI fix commands.\n"
+                "You are a strict, direct Linux Systems and DevOps command-line assistant. "
+                "Analyze the provided terminal output, logs, or code.\n"
+                "RULES:\n"
+                "- Answer the user's specific query immediately and directly. Do NOT start with conversational fillers like 'Everything is running normally', 'The provided input is...', or 'Here is the analysis'.\n"
+                "- If analyzing code/scripts, give straight answers, explanations, or code improvements.\n"
+                "- If analyzing logs with no errors, state that plainly in one short sentence without a meta-commentary preamble.\n"
                 "- Avoid markdown tables unless comparing multiple distinct entities.\n\n"
                 "TERMINAL FORMATTING RULES:\n"
                 "- Output plain text strictly formatted for a Linux CLI terminal.\n"
@@ -342,12 +344,8 @@ def main():
     if user_query:
         messages = [
             {"role": "system", "content": (
-                "You are an expert Linux Systems and DevOps engineering assistant. Provide direct, accurate terminal solutions and explanations.\n\n"
-                "TERMINAL FORMATTING RULES:\n"
-                "- Output plain text strictly formatted for a Linux CLI terminal.\n"
-                "- Do NOT use markdown headers (no '#', '##', or '###'). Write section headings in clean UPPERCASE followed by a colon.\n"
-                "- Do NOT use markdown bold/italic asterisks (no '**' or '*'). Write terms cleanly without asterisks.\n"
-                "- Use clean unicode bullets ('•') for lists."
+                "You are a strict, direct Linux Systems and DevOps command-line assistant. "
+                "Answer the user's question directly and concisely. Never use introductory filler or conversational preamble. Output clean terminal text only."
             )},
             {"role": "user", "content": user_query}
         ]
