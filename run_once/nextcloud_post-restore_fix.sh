@@ -3,11 +3,12 @@
 # @FREQUENCY: Run Once (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_CONTAINER
 # @CAPABILITIES:
-#   • Detects and corrects mismatched ownership of /var/www/html and /var/www/html/data, stopping permission-related crashes.
-#   • Verifies .ncdata marker and user directory; auto‑creates them for a clean Nextcloud instance after a restore.
-#   • Runs occ scans, cleanup, and repair inside the container while the site is in maintenance mode, ensuring data integrity.
-#   • Executes all actions via docker exec, preserving container isolation and running as www‑data, so host files stay untouched.
-#   • Exits gracefully if the container is stopped, making the script safe to schedule without manual checks.
+#   • Self-heals permission mismatches by conditionally resetting ownership to www-data.
+#   • Auto-creates missing .ncdata markers and user directories for clean post-restore states.
+#   • Executes all operations via docker exec to preserve container isolation and host safety.
+#   • Runs integrity scans and repairs exclusively during maintenance mode to prevent data corruption.
+#   • Gracefully exits when the container is stopped, enabling safe unattended scheduling.
+#   • Applies granular file and directory permissions to enforce strict access controls.
 
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 source "/opt/rabbit-hole/.env"

@@ -3,11 +3,12 @@
 # @DESCRIPTION: Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard
 # @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
 # @CAPABILITIES:
-#   • Generates a self‑contained HTML dashboard from GitHub Docker stacks, instantly visualizing service status and URLs.
-#   • Auto‑detects secret keys in .env.example, flags them, and embeds default values with comments for secure, transparent configuration.
-#   • Matches Nginx Proxy Manager hosts to services by name or container, injecting live URLs and SSL status into the dashboard.
-#   • Implements request timeouts and retry logic for GitHub and NPM APIs, preventing hangs and ensuring reliable data retrieval.
-#   • Validates required Python packages at launch, auto‑prompting installation, so the tool runs smoothly without manual dependency checks.
+#   • Generates self-contained HTML dashboards from GitHub Docker stacks for instant service visualization.
+#   • Auto-detects and flags secret keys in .env.example to ensure secure, transparent configuration defaults.
+#   • Matches Nginx Proxy Manager hosts to services, injecting live URLs and SSL status into the view.
+#   • Implements request timeouts and retry logic for GitHub and NPM APIs to prevent hangs.
+#   • Validates required Python packages at launch, auto-prompting installation to eliminate manual dependency checks.
+#   • Supports custom service descriptions via compose labels for enhanced dashboard context and clarity.
 
 """
 docker_dash.py  —  Docker Stack Dashboard Generator

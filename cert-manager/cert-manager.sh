@@ -3,11 +3,12 @@
 # @FREQUENCY: On Demand - At 03:00, on day 1 of the month
 # @CRON: user
 # @CAPABILITIES:
-#   • Automates local SSL certificate lifecycle, generating SANs for all services and pushing to Nginx Proxy Manager.
-#   • Atomic upsert of services.list prevents duplicate entries and race conditions during concurrent updates.
-#   • Caches NPM auth token across API calls, reducing credential exchanges and speeding deployment.
-#   • Parses API responses with jq, extracting status and JSON fields, and logs failures for clear visibility.
-#   • Command interface supports init, add, remove, regen, upload, list, status, and cron setup for full lifecycle control.
+#   • Orchestrates full local SSL lifecycle from CA creation to Nginx Proxy Manager deployment.
+#   • Atomic service upserts eliminate duplicate entries and prevent race conditions during updates.
+#   • Caches NPM authentication tokens to minimize credential exchanges and accelerate API operations.
+#   • Supports granular proxy configuration including IP, port, and scheme per service entry.
+#   • Automates monthly certificate renewal via cron to ensure continuous valid SSL coverage.
+#   • Parses API responses with jq to extract status and log failures for operational visibility.
 
 # Usage:
 #   ./cert-manager.sh init              One-time: install mkcert, create CA

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-# @DESCRIPTION: Analyzes homelab scripts and automatically injects an AI-generated capabilities header block using Groq
+# @DESCRIPTION: Analyzes ~/scripts and automatically injects an AI-generated capabilities header block using Groq
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
-# @USES_ENV: GROQ_API_KEY
+# @USES_ENV: GROQ_API_KEY, GROQ_MODEL
 # @CRON: user
 # @CAPABILITIES:
-#   • Daily injects AI-generated capabilities header into scripts, keeping dashboards up-to-date.
-#   • Caches script hashes to avoid redundant API calls, saving bandwidth and cost.
-#   • Automatically selects best available Groq model, ensuring optimal performance.
-#   • Gracefully handles rate limits with backoff, preventing failures during high traffic.
-#   • Ignores non-script directories and files, focusing only on relevant scripts.
-#   • Injects header within first 40 lines, preserving existing metadata.
+#   • Caches script hashes to skip redundant API calls, saving bandwidth and cost.
+#   • Auto-selects the best available Groq model for optimal performance and compatibility.
+#   • Parses exact rate-limit wait times to minimize downtime during high traffic.
+#   • Falls back to exponential backoff when precise retry timing is unavailable.
+#   • Restricts header injection to the first 40 lines, preserving existing metadata.
+#   • Ignores non-script directories and files to focus strictly on relevant code.
 
 import os
 import sys

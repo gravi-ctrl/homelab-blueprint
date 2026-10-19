@@ -3,11 +3,12 @@
 # @FREQUENCY: Service (Always) (triggered by `container-watcher. sh`)
 # @USES_ENV: NEXTCLOUD_USER, NEXTCLOUD_DATA_DIR, NEXTCLOUD_CONTAINER, NEXTCLOUD_MOUNT_NAME, DATA_DIR
 # @CAPABILITIES:
-#   • Installs itself as a systemd service that auto‑restarts on failure, guaranteeing continuous Nextcloud monitoring.
-#   • Uses inotify to queue file events, then deduplicates paths and triggers a single occ files:scan per parent directory.
-#   • Maps external asset paths to the Nextcloud mount, ensuring scans cover both internal and external storage in one pass.
-#   • Increases fs.inotify.max_user_watches to 524288, preventing watcher exhaustion on large file trees.
-#   • Traps SIGINT/SIGTERM to kill child processes, avoiding orphaned watchers and resource leaks.
+#   • Self-installs as a systemd service with automatic restarts to guarantee continuous monitoring.
+#   • Deduplicates file events to trigger a single scan per parent directory, minimizing overhead.
+#   • Maps external asset paths to internal mounts, ensuring unified coverage in one pass.
+#   • Raises inotify limits to 524,288, preventing watcher exhaustion on large file trees.
+#   • Traps termination signals to kill child processes, avoiding orphaned watchers and resource leaks.
+#   • Uses atomic directory rotation for event processing, preventing race conditions during high load.
 
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 source "/opt/rabbit-hole/.env"

@@ -4,12 +4,14 @@
 # @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
 # @CRON: root
 # @CAPABILITIES:
-#   • Generates a single age‑encrypted, zstd‑compressed archive of Docker stacks, user scripts, SSH keys, and mkcert data.
-#   • Uses a lockfile and flock to guarantee only one backup runs at a time, avoiding resource contention.
-#   • Launches as a systemd‑run unit when invoked interactively, allowing SSH sessions to close safely.
-#   • Sends a 240‑second heartbeat to a Kuma health‑check URL, keeping the service marked alive during long backups.
-#   • Gracefully stops running Docker stacks, masks Docker services, and restores them on exit, preventing data loss.
-#   • Traps signals to clean up locks, kill heartbeats, and unmask Docker, ensuring the system returns to a stable state.
+#   • Encrypts and compresses critical infrastructure data into a single portable archive.
+#   • Prevents concurrent execution conflicts using file locking mechanisms.
+#   • Automatically detaches interactive runs into background systemd units.
+#   • Maintains service health status via periodic heartbeat pings during long operations.
+#   • Gracefully stops and restores Docker stacks to prevent data corruption.
+#   • Ensures system stability by trapping signals to clean up locks and services.
+#   • Automatically installs missing compression and encryption dependencies on demand.
+#   • Excludes transient files and caches to minimize backup size and noise.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker

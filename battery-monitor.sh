@@ -3,11 +3,11 @@
 # @FREQUENCY: Every 5 minutes
 # @CRON: root
 # @CAPABILITIES:
-#   • Prevents data loss by auto‑shutting down when battery drops below 20% during discharging.
-#   • Reduces downtime risk by scheduling a safe 2‑minute shutdown, giving processes time to finish.
-#   • Provides audit trail with timestamped logs, enabling post‑mortem analysis of critical battery events.
-#   • Runs under root via cron, ensuring consistent checks every 5 minutes without manual intervention.
-#   • Signals error state after shutdown initiation, allowing monitoring tools to detect and alert on power events.
+#   • Prevents data loss by triggering a safe shutdown when battery drops below 20%.
+#   • Grants a two-minute grace period for processes to finish before power cuts.
+#   • Logs timestamped critical events to enable post-mortem analysis of power failures.
+#   • Signals error state after shutdown initiation to trigger external monitoring alerts.
+#   • Automates power protection via cron, eliminating manual intervention during outages.
 # =============================
 # Get battery percentage
 BATTERY_LEVEL=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | awk '{print $2}' | tr -d '%')

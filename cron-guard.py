@@ -5,12 +5,12 @@
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user, root
 # @CAPABILITIES:
-#   • Instant Telegram alerts for success, failure, or timeout, ensuring operators see critical events immediately.
-#   • Three‑attempt delivery with automatic logging of undelivered messages, keeping a reliable audit trail.
-#   • Timeout kills the entire process tree, preventing orphaned child jobs and freeing system resources.
-#   • Mute mode writes a lightweight heartbeat JSON, giving admins a local status snapshot without external alerts.
-#   • Logs are stored only when alerts fire and output exceeds thresholds, keeping storage lean while providing full context.
-#   • Ownership of status and log files is auto‑adjusted for root or sudo runs, ensuring proper access for all users.
+#   • Kills entire process trees on timeout, preventing orphaned child jobs from consuming resources.
+#   • Retries Telegram delivery three times, logging failures locally to maintain a reliable audit trail.
+#   • Writes local JSON heartbeats in mute mode, providing silent status snapshots for manual verification.
+#   • Auto-adjusts file ownership for root or sudo runs, ensuring correct access permissions across users.
+#   • Stores full logs only when alerts fire and output exceeds thresholds, keeping disk storage lean.
+#   • Hashes job names for unique file identifiers, preventing disk collisions between similarly named tasks.
 
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
 

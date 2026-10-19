@@ -4,11 +4,13 @@
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
 # @CAPABILITIES:
-#   • Daily snapshot of hosts, crontabs, packages, and dotfiles, ensuring instant rollback and audit trail.
-#   • Preserves repository permissions before sync, preventing accidental exposure of sensitive files.
+#   • Captures hosts, crons, packages, and dotfiles for instant rollback and audit trails.
+#   • Preserves repository permissions before sync to prevent accidental exposure of sensitive files.
 #   • Skips dashboard pushes when alarm flags exist, avoiding repetitive failures and alert fatigue.
 #   • Mirrors .config tool folders with rsync, keeping user settings in sync across environments.
 #   • Enforces strict error handling and safe file permissions, guaranteeing reliable execution and data integrity.
+#   • Backs up APT keyrings and source lists to preserve exact repository trust configurations.
+#   • Automates multi-repository Git synchronization for scripts, security masters, and server stacks.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================

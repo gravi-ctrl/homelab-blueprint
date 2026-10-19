@@ -2,12 +2,14 @@
 # @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes permissions, removes cloud-init and re-links blueprint git repos.
 # @FREQUENCY: Run Once (Disaster Recovery)
 # @CAPABILITIES:
-#   • Decrypts encrypted backup and restores system state, enabling rapid disaster recovery.
-#   • Caches sudo credentials to keep long operations uninterrupted, preventing manual password prompts.
-#   • Remaps backup ownership to current user, avoiding permission conflicts after restoration.
-#   • Validates SSH key presence and sets strict permissions, securing Git access.
-#   • Logs all actions to a timestamped file, providing audit trail for troubleshooting.
-#   • Installs missing decryption tools automatically, ensuring prerequisites are met without manual intervention.
+#   • Enables rapid disaster recovery by decrypting and restoring full system state.
+#   • Prevents manual password interruptions during long operations via cached sudo credentials.
+#   • Automatically remaps file ownership to the current user, eliminating permission conflicts.
+#   • Enforces strict SSH permissions and validates key presence to secure Git access.
+#   • Generates timestamped audit logs for precise troubleshooting and operational transparency.
+#   • Auto-installs missing decryption prerequisites, ensuring the environment is ready without manual steps.
+#   • Blocks root execution to prevent accidental system-level damage during bootstrap.
+#   • Offers dual-mode operation to support both full restoration and fresh deployments.
 
 set -euo pipefail
 umask 0022

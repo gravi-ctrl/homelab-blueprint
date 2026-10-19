@@ -4,10 +4,10 @@
 # @CRON: User
 # @USES_ENV: STACKS_DIR
 # @CAPABILITIES:
-#   • Deploys dashboards to a dedicated pages branch, keeping production code untouched.
+#   • Deploys dashboards to isolated pages branches, keeping production code untouched.
 #   • Automatically cleans stale worktrees on exit, preventing orphan temp directories.
 #   • Suppresses repeated alerts with alarm_once flags, reducing noise until issues resolve.
-#   • Aborts rebase conflicts, resets pages to origin, and re‑arms alarms for quick recovery.
+#   • Aborts rebase conflicts, resets pages to origin, and re-arms alarms for quick recovery.
 #   • Creates orphan pages branch if missing, ensuring dashboards never contaminate code branch.
 
 set -e

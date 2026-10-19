@@ -3,11 +3,11 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: BACKUP_DIR
 # @CAPABILITIES:
-#   • Provides instant server health snapshot, enabling quick status checks without waiting for scheduled reports.
-#   • Highlights Docker container health, instantly flagging unhealthy or exited services to prevent silent failures.
-#   • Warns when the latest encrypted backup exceeds eight days, ensuring backup freshness and compliance.
-#   • Displays CPU temperature and load with icons, giving immediate insight into thermal and performance stress.
-#   • Formats output with timestamps and status icons, making logs easily readable and searchable in monitoring dashboards.
+#   • Delivers instant on-demand server health snapshots without waiting for scheduled reports.
+#   • Flags unhealthy or exited Docker containers immediately to prevent silent service failures.
+#   • Enforces backup compliance by warning when encrypted archives exceed eight days old.
+#   • Visualizes CPU temperature and load with icons for immediate thermal stress assessment.
+#   • Formats output with timestamps and status icons for easy dashboard log parsing.
 
 source "/opt/rabbit-hole/.env" || { echo "❌ /opt/rabbit-hole/.env not found"; exit 1; }
 

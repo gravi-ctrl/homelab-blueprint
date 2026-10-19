@@ -4,11 +4,12 @@
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
 # @CAPABILITIES:
-#   • Auto-syncs stack directories from Codeberg every 15 minutes, ensuring production always reflects latest approved changes.
-#   • Uses flock lock to avoid overlapping runs, preventing race conditions and duplicated deployments.
-#   • Detects merge conflicts, pauses operations, and notifies admins via Telegram, stopping faulty deployments until resolved.
-#   • Redeploys only active stacks whose compose.yml changed, pulling fresh images and restarting services without downtime.
-#   • Cleans stale pause flags when repo syncs, ensuring no lingering pauses block future updates.
+#   • Non-blocking flock prevents race conditions with concurrent sync processes.
+#   • Auto-pauses and alerts admins via Telegram on merge conflicts.
+#   • Redeploys only active stacks with modified compose files.
+#   • Skips stopped stacks to preserve intentional offline states.
+#   • Self-heals by clearing stale pause flags once repo syncs.
+#   • Ensures zero-downtime updates via targeted image pulls.
 
 set -euo pipefail
 

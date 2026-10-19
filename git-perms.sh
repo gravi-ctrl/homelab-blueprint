@@ -4,11 +4,12 @@
 # @USES_ENV:
 # @CRON: user
 # @CAPABILITIES:
-#   • Captures Git-tracked file ownership and permissions into a portable .git-perms, ensuring consistent environment across deployments.
-#   • Restores stored permissions on bootstrap, automatically mapping @USER/@GROUP to the current user, preventing permission drift.
-#   • Avoids unnecessary git diffs by only updating .git-perms when changes occur, keeping repository history clean.
-#   • Safely handles symlinks: chown links, skip chmod, preventing accidental link corruption.
-#   • Strict error handling (set -euo pipefail, umask 0022) guarantees secure defaults and immediate failure on misconfiguration.
+#   • Abstracts primary user ownership to ensure portable permission snapshots across diverse deployment environments.
+#   • Prevents repository noise by committing permission changes only when actual file attributes differ.
+#   • Safely handles symbolic links by applying ownership without corrupting link targets via chmod.
+#   • Resolves abstract user placeholders to the current executor, supporting seamless sudo-based bootstrap operations.
+#   • Enforces strict error handling and secure umask defaults to guarantee immediate failure on misconfiguration.
+#   • Validates target directory existence and Git repository context before executing any permission modifications.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================

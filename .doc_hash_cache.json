@@ -20,5 +20,5 @@
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
   "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
-  "/home/alice/scripts/doc-injector.py": "09b808d95563e93cf7d9b8fae4e1f38ccae1b318a4f1b8fd595451d98f8e3208"
+  "/home/alice/scripts/doc-injector.py": "fc469f4dc5b9834c73d81dd83b86a1bdf22c2340a8681bcabd01d00fb7fcbf07"
 }

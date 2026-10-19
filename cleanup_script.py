@@ -4,11 +4,11 @@
 # @USES_ENV: FILES_TO_KEEP
 # @CRON: user
 # @CAPABILITIES:
-#   • Keeps only the newest N backups, automatically freeing disk space without manual pruning.
-#   • Dry‑run mode lets operators preview deletions safely, preventing accidental data loss.
-#   • Appending ::DELETE_ALL triggers a full purge, enabling quick recovery from corrupted backup sets.
-#   • Immediate abort on deletion errors stops cascading failures, ensuring only verified cleanups complete.
-#   • Timestamp‑based sorting guarantees the most recent items are preserved, even across OS differences.
+#   • Automatically frees disk space by retaining only the newest N backup items.
+#   • Dry-run mode previews deletions safely, preventing accidental data loss.
+#   • Timestamp-based sorting preserves recent items reliably across different operating systems.
+#   • Immediate abort on deletion errors stops cascading failures during cleanup.
+#   • Special trigger enables full folder purging for rapid recovery from corrupted sets.
 
 import os
 import glob

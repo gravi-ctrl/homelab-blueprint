@@ -2,11 +2,12 @@
 # @DESCRIPTION: Resets UFW and applies correct rules (Private Server Mode)
 # @FREQUENCY: Run Once (triggered by `setup.sh`)
 # @CAPABILITIES:
-#   • Instantly resets UFW to a clean state, eliminating legacy rule conflicts.
-#   • Enforces a strict deny-all incoming policy, safeguarding the server from unsolicited traffic.
-#   • Grants full LAN access, enabling seamless local device connectivity without port juggling.
-#   • Trusts the Tailscale VPN interface, allowing secure remote management from anywhere.
-#   • Allows Docker subnet traffic, ensuring container communication while keeping external exposure minimal.
+#   • Eliminates legacy rule conflicts by forcing a complete UFW state reset.
+#   • Enforces strict deny-all incoming policy to block unsolicited internet traffic.
+#   • Grants full LAN access, removing the need for individual port whitelisting.
+#   • Trusts Tailscale VPN interface for secure, unrestricted remote management.
+#   • Permits Docker subnet traffic to ensure seamless container-to-container communication.
+#   • Operates non-interactively via force flags, enabling safe unattended automation.
 # ==============================================================================
 # 🛡️ UFW FIREWALL RESTORATION SCRIPT
 # Strategy: Block Internet, Trust LAN, Trust VPN, Trust Docker.

@@ -2,12 +2,13 @@
 # @DESCRIPTION: Runs scripts and commands directly on server with logs
 # @FREQUENCY: On Demand (triggered by `setup.sh`)
 # @CAPABILITIES:
-#   • Enables secure remote server management through Telegram, reducing need for SSH access.
-#   • Limits command execution to a single authorized user, preventing unauthorized control.
-#   • Dynamically maps CMD_ variables to /commands, allowing quick script deployment without code changes.
-#   • Runs commands in a virtualenv PATH, isolating dependencies and minimizing system impact.
-#   • Sends lengthy outputs as documents, keeping chat readable and preserving full logs.
-#   • Installs as a systemd service with auto‑restart, ensuring continuous availability and minimal manual intervention.
+#   • Replaces SSH access with secure, single-user Telegram command execution.
+#   • Dynamically maps environment variables to bot commands for zero-code deployment.
+#   • Isolates command execution within a virtualenv to prevent system dependency conflicts.
+#   • Prevents alert fatigue by muting successful runs via configurable flags.
+#   • Automatically converts lengthy outputs into downloadable documents for readability.
+#   • Installs as a self-healing systemd service with automatic restart capabilities.
+#   • Validates critical configuration immediately, aborting startup if credentials are missing.
 
 import os
 import sys
