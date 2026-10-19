@@ -6,7 +6,7 @@
 #   • Prevents data loss by triggering a safe shutdown when battery drops below 20%.
 #   • Grants a two-minute grace period for processes to finish before power cuts.
 #   • Logs timestamped critical events to enable post-mortem analysis of power failures.
-#   • Signals error state after shutdown initiation to trigger external monitoring alerts.
+#   • Signals error state after shutdown initiation to trigger a cron-guard alert.
 #   • Automates power protection via cron, eliminating manual intervention during outages.
 # =============================
 # Get battery percentage
