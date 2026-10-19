@@ -71,6 +71,7 @@ function actual_show_welcome_msg() {
     # =========================================================
     local -a aliases=(
         "welcome|Briefing"
+        "oracle|AI Assistant"
         "dps|Docker Table"
         "dcp|DC Pull"
         "dcu|DC Up -d"
@@ -216,6 +217,9 @@ alias dcp='docker compose pull'
 
 # cert-manager
 alias cert='/opt/rabbit-hole/cert-manager/cert-manager.sh'
+
+# oracle - AI Assistant
+alias oracle='/opt/rabbit-hole/oracle.py'
 
 # Guest Wi-Fi script
 alias guestwifi='/opt/stacks/wifi-robot/guestwifi'
