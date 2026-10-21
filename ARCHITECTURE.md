@@ -355,7 +355,7 @@ On Google AI Studio's free tier, standard flagship models (`gemini-3.5-flash`) f
 
 ---
 
-## 15. Self-Documenting Headers: The `doc-injector` Pipeline
+## 14. Self-Documenting Headers: The `doc-injector` Pipeline
 
 To keep the live dashboard accurate without manual documentation overhead, `doc-injector.py` analyzes modified scripts and injects structured `# @CAPABILITIES:` blocks directly into their headers before daily commits.
 
