@@ -3,6 +3,7 @@ age
 apparmor
 apport
 apt
+auditd
 base-files
 bash
 bat
