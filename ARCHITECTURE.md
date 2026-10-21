@@ -334,7 +334,49 @@ it.
 
 ---
 
-## 13. Quick Reference: Gotchas
+## 13. Terminal AI Diagnostics (`oracle`): Failover, Sanitization & Pipe Gotchas
+
+`oracle` acts as an on-demand terminal copilot for debugging container crashes, reviewing scripts, and querying system status via Google Gemini without leaving the shell.
+
+### 1. In-Flight Secret Sanitization (Zero-Leakage Guarantee)
+Piping terminal logs or configuration files directly to a cloud API carries a risk of leaking live credentials. 
+* Before any payload is transmitted, `clean_piped_text()` executes an in-memory regex scrubbing pass that strips high-entropy tokens (`gsk_...`, `ghp_...`, `AIzaSy...`), private key blocks (`-----BEGIN PRIVATE KEY-----`), database connection URIs, and generic secret assignments (`password=`, `token=`).
+* The sanitization occurs in RAM before the HTTP request is constructed, ensuring live secrets never leave the server.
+
+### 2. The 503 High-Demand Failover Cascade
+On Google AI Studio's free tier, standard flagship models (`gemini-3.5-flash`) frequently experience transient `503 Service Unavailable` spikes during peak hours when processing multi-thousand-token prompts (such as full 400-line scripts or container log dumps).
+* To prevent terminal crashes, `stream_gemini()` implements a `MODEL_CASCADE` failover loop:
+  `gemini-3.5-flash` > `gemini-flash-lite-latest` > `gemini-3.5-flash-lite`
+* If a 503 occurs, the engine immediately switches to the high-concurrency `-lite` variant, which uses significantly less compute and almost never experiences load-shedding, streaming the answer without interrupting the user.
+
+### 3. The Binary Pipe & Empty-Pipe Defense
+* **Corrupted Logs:** In Linux, reading raw text from a pipe (`sys.stdin.read()`) crashes with a fatal `UnicodeDecodeError` if a crashed container spits out non-UTF8 bytes or binary memory dumps. `oracle` uses `sys.stdin.buffer.read().decode('utf-8', errors='replace')` to guarantee it never fails on dirty logs.
+* **Empty Pipes:** If an inspected service has zero logs (e.g. `cat /dev/null | oracle`), standard CLI prompts hit an immediate `EOFError`. The script checks for whitespace-only input and exits cleanly with an informational notice.
+
+---
+
+## 15. Self-Documenting Headers: The `doc-injector` Pipeline
+
+To keep the live dashboard accurate without manual documentation overhead, `doc-injector.py` analyzes modified scripts and injects structured `# @CAPABILITIES:` blocks directly into their headers before daily commits.
+
+### 1. The Self-Modifying Bash Script Crash (Why `backup-scripts-git.sh` is Ignored)
+Bash does not buffer an entire script into memory before running; it reads from disk in sequential 4KB chunks using byte offsets.
+* If `doc-injector.py` analyzes and injects capabilities into `backup-scripts-git.sh` *while `backup-scripts-git.sh` is actively executing*, the file size shifts on disk by ~250 bytes. 
+* Bash's file pointer then lands on corrupted byte offsets in the middle of downstream commands, resulting in syntax errors (e.g. `syntax error near unexpected token '('`).
+* **The Rule:** `backup-scripts-git.sh` (and `doc-injector.py` itself) must remain strictly blacklisted in `IGNORE_FILES` during automated directory walks.
+
+### 2. Infinite Hash Recursion Prevention
+To prevent `doc-injector.py` from constantly triggering AI requests on scripts that haven't functionally changed:
+* `get_file_hash()` uses regex to strip out any existing `# @CAPABILITIES:` block *before* calculating the SHA-256 checksum.
+* This ensures that updating the documentation header does not invalidate the file's code hash on subsequent runs.
+
+### 3. Pipeline Execution Sequence
+In `backup-scripts-git.sh`, `doc-injector.py` must execute in **Step 1 (Snapshot phase)** *before* `git-auto-sync.py` runs on `/opt/rabbit-hole`. 
+* Running it after Step 2 leaves newly injected capabilities sitting uncommitted in the working tree, delaying their deployment to the `main` branch by 24 hours.
+
+---
+
+## Quick Reference: Gotchas
 
 - Docker DNS acting weird, or OIDC breaking across containers? Check `daemon.json` — `SERVER_IP`
   needs to be first in the list, not Google or Cloudflare. See §2.
@@ -360,3 +402,7 @@ it.
 - Cloning Git repos inside automated scripts? Pre-seed `known_hosts` with `ssh-keyscan` first, or the script will hang indefinitely on the host verification prompt.
 - Testing SSH authentication via `ssh -T` under `pipefail`? Always append `|| true` to the subshell command; Git hosts exit with code 1 by design, which will trip `set -o pipefail`.
 - Setting up a Fresh Start? Never skip `~/.ssh/authorized_keys`; `setup.sh` disables password authentication, so missing client public keys will lock you out.
+- Piping Docker logs to `oracle`? Always use `2>&1` (e.g. `docker logs container 2>&1 | oracle`) — Docker routes runtime application logs to stderr, which will bypass a standard `|` pipe unless merged.
+- `oracle` hitting Google 503 capacity errors? It auto-fails over to `-lite` models automatically, but you can set `GEMINI_MODEL='gemini-flash-lite-latest'` in `.env` to make the high-capacity model default.
+- Adding new scripts to the automatic documentation pipeline? Never let a script modify itself while actively executing under Bash; keep caller runner scripts in `IGNORE_FILES`.
+- Wondering why `doc-injector.py` isn't re-analyzing a script? It checks code hashes excluding the `@CAPABILITIES` block — use `--force` to bypass the cache.
