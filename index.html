@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-21 16:18 UTC</div>
+    <div class="meta-line">Generated 2026-10-21 19:32 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5234,16 +5234,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Monitors root and /data partitions to prevent critical system outages.",
-        "Triggers immediate alerts when disk usage exceeds the 90% threshold.",
-        "Exits with status 1 on failure to enable downstream remediation workflows.",
-        "Provides hourly visibility for timely intervention before storage becomes full.",
-        "Reduces monitoring noise by focusing exclusively on key operational partitions.",
-        "Operates without external dependencies, ensuring lightweight and maintainable infrastructure."
+        "Detects root or /data exceeding 90% and triggers immediate alerts.",
+        "Enables proactive remediation by exiting with status 1 for downstream automation.",
+        "Provides hourly visibility to prevent critical system outages.",
+        "Operates without external dependencies for lightweight, maintainable monitoring."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Check if root (/) or /data exceeds 90%",
+      "desc": "Check if root (/) or /data exceeds 90% and send an alert",
       "dir_path": "Core Scripts",
       "env": [],
       "freq": "Every hour",
