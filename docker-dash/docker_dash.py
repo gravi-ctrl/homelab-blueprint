@@ -3,11 +3,11 @@
 # @DESCRIPTION: Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard
 # @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
 # @CAPABILITIES:
-#   • Generates self-contained HTML dashboards from GitHub Docker stacks for instant service visualization.
-#   • Auto-detects and flags secret keys in .env.example to ensure secure, transparent configuration defaults.
+#   • Generates instant, self‑contained HTML dashboards from GitHub Docker stacks for quick service visibility.
+#   • Auto‑detects and flags secret keys in .env.example, ensuring secure configuration defaults.
 #   • Matches Nginx Proxy Manager hosts to services, injecting live URLs and SSL status into the view.
 #   • Implements request timeouts and retry logic for GitHub and NPM APIs to prevent hangs.
-#   • Validates required Python packages at launch, auto-prompting installation to eliminate manual dependency checks.
+#   • Validates required Python packages at launch, auto‑prompting installation to eliminate manual dependency checks.
 #   • Supports custom service descriptions via compose labels for enhanced dashboard context and clarity.
 
 """
@@ -35,7 +35,8 @@ Options:
 
 import sys, json, argparse, re, os
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # ── Dependency check ──────────────────────────────────────────────
 missing = []
@@ -819,7 +820,8 @@ def main():
         print("\n⚠  NPM credentials not set — skipping URL lookup")
 
     print("\n✍  Generating HTML…")
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    cairo_tz = ZoneInfo(os.environ.get("TIMEZONE", "Africa/Cairo"))
+    now = datetime.now(cairo_tz).strftime("%Y-%m-%d %H:%M %Z")
     html = (HTML
         .replace("__REPO_URL__", repo_url)
         .replace("__SLUG__",     slug)

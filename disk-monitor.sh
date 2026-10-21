@@ -1,14 +1,12 @@
 #!/bin/bash
-# @DESCRIPTION: Check if root (/) or /data exceeds 90%
+# @DESCRIPTION: Check if root (/) or /data exceeds 90% and send an alert
 # @FREQUENCY: Every hour
 # @CRON: user
 # @CAPABILITIES:
-#   • Monitors root and /data partitions to prevent critical system outages.
-#   • Triggers immediate alerts when disk usage exceeds the 90% threshold.
-#   • Exits with status 1 on failure to enable downstream remediation workflows.
-#   • Provides hourly visibility for timely intervention before storage becomes full.
-#   • Reduces monitoring noise by focusing exclusively on key operational partitions.
-#   • Operates without external dependencies, ensuring lightweight and maintainable infrastructure.
+#   • Detects root or /data exceeding 90% and triggers immediate alerts.
+#   • Enables proactive remediation by exiting with status 1 for downstream automation.
+#   • Provides hourly visibility to prevent critical system outages.
+#   • Operates without external dependencies for lightweight, maintainable monitoring.
 
 THRESHOLD=90
 ROOT_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')

@@ -14,7 +14,8 @@ import re
 import json
 import getpass
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 try:
     from cron_descriptor import get_description, Options
@@ -1172,7 +1173,8 @@ def main():
     
     out_path = Path("index.html")
     data = {"scripts": scripts, "crons": crons, "envs": envs}
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    cairo_tz = ZoneInfo(os.environ.get("TIMEZONE", "Africa/Cairo"))
+    now = datetime.now(cairo_tz).strftime("%Y-%m-%d %H:%M %Z")
     html_out = HTML.replace("__DATE__", now).replace("__DATA__", json.dumps(data, ensure_ascii=False, sort_keys=True, indent=2))
     out_path.write_text(html_out, encoding="utf-8")
     print(f"\n✅ Dashboard generated: {out_path.resolve()}")
