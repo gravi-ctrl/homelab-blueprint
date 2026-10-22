@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-21 19:32 EEST</div>
+    <div class="meta-line">Generated 2026-10-22 03:52 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4969,16 +4969,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "env_used": [
-        "container-watcher.sh"
-      ],
-      "mismatch": false,
-      "name": "N8N_WEBHOOK_UUID",
-      "script_used": [
-        "container-watcher.sh"
-      ]
-    },
-    {
-      "env_used": [
         "nextcloud-dynamic-watch.sh",
         "nextcloud_post-restore_fix.sh"
       ],
@@ -5519,11 +5509,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Idempotent state tracking prevents duplicate work and self-disables the watcher upon completion.",
-        "Custom readiness checks allow fine-grained control, falling back to simple running status when undefined.",
-        "Limited privileged execution confines sudo and docker exec to task functions, reducing attack surface.",
-        "Telegram notifications with retry logic keep operators informed of successful setups or critical failures.",
-        "Automates post-restore configuration for Nextcloud, Tailscale, NPM, and Pi-hole immediately after manual start."
+        "Idempotent state tracking disables watcher after all tasks complete, preventing redundant runs.",
+        "Custom readiness checks allow fine‑grained verification before executing service‑specific post‑restore scripts.",
+        "Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security.",
+        "Telegram alerts with retry logic keep operators informed of successful setups or critical failures.",
+        "Automates immediate configuration for Nextcloud, Tailscale, NPM, and Pi‑hole after manual container start."
       ],
       "category": "Run Once",
       "cron_ctx": "",
@@ -5532,7 +5522,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "env": [
         "TELEGRAM_DANTE_BOT_TOKEN",
         "TELEGRAM_CHAT_ID",
-        "N8N_WEBHOOK_UUID",
         "WATCHER_TASKS"
       ],
       "freq": "Run Once",
