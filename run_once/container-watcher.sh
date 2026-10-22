@@ -4,11 +4,11 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, WATCHER_TASKS
 # @CAPABILITIES:
-#   • Idempotent state tracking prevents duplicate work and self-disables the watcher upon completion.
-#   • Custom readiness checks allow fine-grained control, falling back to simple running status when undefined.
-#   • Limited privileged execution confines sudo and docker exec to task functions, reducing attack surface.
-#   • Telegram notifications with retry logic keep operators informed of successful setups or critical failures.
-#   • Automates post-restore configuration for Nextcloud, Tailscale, NPM, and Pi-hole immediately after manual start.
+#   • Idempotent state tracking disables watcher after all tasks complete, preventing redundant runs.
+#   • Custom readiness checks allow fine‑grained verification before executing service‑specific post‑restore scripts.
+#   • Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security.
+#   • Telegram alerts with retry logic keep operators informed of successful setups or critical failures.
+#   • Automates immediate configuration for Nextcloud, Tailscale, NPM, and Pi‑hole after manual container start.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env
