@@ -312,12 +312,12 @@ In a Full Recovery, `~/.ssh` and `/etc/ssh` are restored identically from the en
 * **The Lockout Gate:** `bootstrap.sh` explicitly halts in Phase 1B if `~/.ssh/authorized_keys` is missing or empty. Because `setup.sh` installs a hardened SSH configuration that sets `PasswordAuthentication no`, running without `authorized_keys` guarantees permanent lockout.
 
 ### 2. The Non-Interactive `known_hosts` Freeze
-On a fresh OS, `~/.ssh/known_hosts` does not exist. The first time `git clone git@codeberg.org` runs, SSH prompts interactively: `Are you sure you want to continue connecting (yes/no)?`.
+On a fresh OS, `~/.ssh/known_hosts` does not exist. The first time `git clone git@github.com` runs, SSH prompts interactively: `Are you sure you want to continue connecting (yes/no)?`.
 Because `bootstrap.sh` routes output through `quietly` (`>> "$LOGFILE" 2>&1`), there is no interactive terminal. The script will freeze indefinitely waiting for input.
 * **The Fix:** Phase 2 runs `ssh-keyscan -H` for both Codeberg and GitHub to seed `known_hosts` before any Git commands execute.
 
 ### 3. The `pipefail` Trap on `ssh -T`
-Testing Git access via `ssh -T git@github.com` or `codeberg.org` prints a success message ("*You've successfully authenticated*"), but **deliberately exits with status code `1`** because Git hosts do not provide an interactive shell.
+Testing Git access via `ssh -T git@github.com` prints a success message ("*You've successfully authenticated*"), but **deliberately exits with status code `1`** because Git hosts do not provide an interactive shell.
 Under `set -euo pipefail`, piping that directly (`ssh -T ... 2>&1 | grep ...`) causes Bash to treat the exit code `1` as a fatal pipeline failure, making the authentication test fail even when keys are completely valid.
 * **The Fix:** Capture the output into a variable using `|| true` (`GIT_TEST=$(ssh -T ... 2>&1 || true)`) before evaluating with `grep`.
 
