@@ -32,8 +32,14 @@ send_telegram() {
     fi
 }
 
-# Enforce main branch tracking
-git checkout -q main
+# Verify the server is on 'main' before touching live containers
+CURRENT_BRANCH=$(git symbolic-ref --short -q HEAD || echo "detached")
+
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "⏭️  Stacks repo is on branch '${CURRENT_BRANCH}' (expected 'main'). Skipping GitOps deploy."
+    exit 0
+fi
+
 git fetch -q origin main
 
 # Count how many remote commits we are missing
