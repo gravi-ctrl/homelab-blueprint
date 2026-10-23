@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-22 03:52 EEST</div>
+    <div class="meta-line">Generated 2026-10-23 23:05 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5325,12 +5325,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Non-blocking flock prevents race conditions with concurrent sync processes.",
-        "Auto-pauses and alerts admins via Telegram on merge conflicts.",
-        "Redeploys only active stacks with modified compose files.",
-        "Skips stopped stacks to preserve intentional offline states.",
-        "Self-heals by clearing stale pause flags once repo syncs.",
-        "Ensures zero-downtime updates via targeted image pulls."
+        "Auto‑syncs only the main branch, preventing accidental deployments from feature branches.",
+        "Detects and pauses on merge conflicts, notifying admins via Telegram to avoid broken stacks.",
+        "Redeploys only running stacks, keeping intentionally stopped services offline.",
+        "Uses non‑blocking flock to avoid race conditions between concurrent sync runs.",
+        "Pulls updated images before restarting, ensuring zero‑downtime updates.",
+        "Cleans stale pause flags once the repo is fully synced, restoring normal operation."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
@@ -5390,14 +5390,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Encrypts and compresses critical infrastructure data into a single portable archive.",
-        "Prevents concurrent execution conflicts using file locking mechanisms.",
-        "Automatically detaches interactive runs into background systemd units.",
-        "Maintains service health status via periodic heartbeat pings during long operations.",
-        "Gracefully stops and restores Docker stacks to prevent data corruption.",
-        "Ensures system stability by trapping signals to clean up locks and services.",
-        "Automatically installs missing compression and encryption dependencies on demand.",
-        "Excludes transient files and caches to minimize backup size and noise."
+        "Creates a single age‑encrypted, zstd‑compressed archive of Docker stacks, SSH configs, and critical system files for secure off‑site storage.",
+        "Prevents overlapping runs with a file lock, ensuring backups never collide and system resources remain stable.",
+        "Runs interactively via systemd-run, automatically detaching into a background unit so SSH sessions can be closed safely.",
+        "Keeps the monitoring service alive with periodic heartbeats during long operations, preventing false outage alerts.",
+        "Gracefully stops Docker stacks before backup and restores them afterward, eliminating data corruption risks.",
+        "Automatically installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup."
       ],
       "category": "Core Scripts",
       "cron_ctx": "root",
@@ -5419,12 +5417,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Self-installs as a systemd service with automatic restarts to guarantee continuous monitoring.",
-        "Deduplicates file events to trigger a single scan per parent directory, minimizing overhead.",
-        "Maps external asset paths to internal mounts, ensuring unified coverage in one pass.",
-        "Raises inotify limits to 524,288, preventing watcher exhaustion on large file trees.",
-        "Traps termination signals to kill child processes, avoiding orphaned watchers and resource leaks.",
-        "Uses atomic directory rotation for event processing, preventing race conditions during high load."
+        "Installs itself as a systemd service with automatic restarts, ensuring uninterrupted monitoring of Nextcloud file changes.",
+        "Raises inotify watch limits to 524,288, preventing watcher exhaustion on large asset trees.",
+        "Deduplicates events by collapsing to parent directories, triggering a single scan per affected folder.",
+        "Maps external asset paths to internal Nextcloud mounts, allowing unified scanning of both host and container storage.",
+        "Uses atomic queue rotation to avoid race conditions during high‑volume file operations.",
+        "Traps SIGINT/SIGTERM to terminate child processes cleanly, preventing orphaned watchers and resource leaks."
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
