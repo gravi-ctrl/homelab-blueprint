@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-23 23:05 EEST</div>
+    <div class="meta-line">Generated 2026-10-24 02:24 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3955,7 +3955,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "env": [
         "STACKS_DIR"
       ],
-      "full_comment": "Scan docker-compose files and open dependency update PRs on Codeberg",
+      "full_comment": "Scan docker-compose files and open dependency update PRs on Github",
       "has_wrapper": false,
       "heat_slots": [
         [
@@ -5180,11 +5180,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Automatically frees disk space by retaining only the newest N backup items.",
-        "Dry-run mode previews deletions safely, preventing accidental data loss.",
-        "Timestamp-based sorting preserves recent items reliably across different operating systems.",
-        "Immediate abort on deletion errors stops cascading failures during cleanup.",
-        "Special trigger enables full folder purging for rapid recovery from corrupted sets."
+        "Keeps only the newest N backups, instantly freeing disk space without manual intervention.",
+        "Dry‑run mode previews deletions, eliminating accidental data loss during testing.",
+        "Timestamp‑based sorting works reliably on Windows and Linux, ensuring correct retention order.",
+        "Immediate abort on deletion errors prevents cascading failures and preserves remaining data.",
+        "Special purge trigger deletes entire folders, enabling rapid recovery from corrupted backup sets."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
@@ -5286,12 +5286,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Isolates branch syncs in worktrees to protect live Docker deployment directories.",
-        "Prevents concurrent execution via cross-platform file locking, eliminating race conditions.",
-        "Alarms only on unique failures, silencing repeated alerts to prevent notification fatigue.",
-        "Aborts commits if rebases, detached HEADs, or excessive file deletions are detected.",
-        "Retries network operations with randomized jitter, aborting immediately on auth failures.",
-        "Continues syncing remaining branches after individual failures, ensuring partial recovery."
+        "Isolates branch syncs in separate worktrees, protecting live Docker deployments from accidental overwrites.",
+        "Enforces single-instance execution with cross‑platform file locking, preventing race conditions in concurrent cron runs.",
+        "Implements alarm‑once logic: first failure triggers alert; subsequent identical failures are logged silently to avoid alert fatigue.",
+        "Auto‑aborts unsafe commits—rebase in progress, detached HEAD, or excessive deletions—to maintain repository integrity.",
+        "Retries network operations with randomized jitter, aborting immediately on authentication errors to reduce unnecessary load.",
+        "Continues syncing remaining branches after individual failures, ensuring partial recovery and minimizing downtime."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
@@ -5325,16 +5325,16 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Auto‑syncs only the main branch, preventing accidental deployments from feature branches.",
-        "Detects and pauses on merge conflicts, notifying admins via Telegram to avoid broken stacks.",
-        "Redeploys only running stacks, keeping intentionally stopped services offline.",
-        "Uses non‑blocking flock to avoid race conditions between concurrent sync runs.",
+        "Synces only main branch, blocking feature branch changes.",
+        "Detects merge conflicts, pauses deployment, alerts admins via Telegram to avoid broken stacks.",
+        "Redeploys only stacks with running containers, keeping intentionally stopped services offline.",
+        "Uses non‑blocking flock to skip concurrent runs, preventing race conditions.",
         "Pulls updated images before restarting, ensuring zero‑downtime updates.",
-        "Cleans stale pause flags once the repo is fully synced, restoring normal operation."
+        "Cleans stale pause flags when repo is fully synced, restoring normal operation."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Monitors /opt/stacks for remote Codeberg changes done by Renovate and auto-deploys updated compose stacks.",
+      "desc": "Monitors /opt/stacks for remote Github changes done by Renovate and auto-deploys updated compose stacks.",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR",
@@ -5443,11 +5443,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Streams large AI responses without truncation, preserving full context.",
-        "Auto-fails over to lighter models on 503 spikes, ensuring continuous analysis.",
-        "Masks API keys, tokens, passwords, and private keys in piped logs, protecting secrets.",
-        "Handles binary or corrupted log streams gracefully, preventing crashes from non‑UTF8 input.",
-        "Supports multi-turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting."
+        "Streams AI responses up to 200k characters, preserving full log context for deep diagnostics.",
+        "Auto‑fails over to lighter models on 503 spikes, keeping analysis uninterrupted.",
+        "Redacts API keys, tokens, passwords, and certificates from piped logs, safeguarding secrets.",
+        "Gracefully handles binary or corrupted streams, preventing crashes from non‑UTF8 input.",
+        "Supports multi‑turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting."
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
@@ -5465,12 +5465,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Orchestrates full local SSL lifecycle from CA creation to Nginx Proxy Manager deployment.",
-        "Atomic service upserts eliminate duplicate entries and prevent race conditions during updates.",
-        "Caches NPM authentication tokens to minimize credential exchanges and accelerate API operations.",
-        "Supports granular proxy configuration including IP, port, and scheme per service entry.",
-        "Automates monthly certificate renewal via cron to ensure continuous valid SSL coverage.",
-        "Parses API responses with jq to extract status and log failures for operational visibility."
+        "Automates local SSL lifecycle, from CA creation to deployment on Nginx Proxy Manager.",
+        "Atomic service upserts prevent duplicate entries and race conditions during updates.",
+        "Caches NPM auth tokens to speed API calls and reduce credential traffic.",
+        "Supports per-service proxy settings: IP, port, and HTTP/HTTPS scheme.",
+        "Schedules monthly renewal via cron to maintain uninterrupted SSL coverage.",
+        "Logs API responses with jq, surfacing failures for quick troubleshooting."
       ],
       "category": "Cert-Manager",
       "cron_ctx": "user",
@@ -5485,14 +5485,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Enables rapid disaster recovery by decrypting and restoring full system state.",
-        "Prevents manual password interruptions during long operations via cached sudo credentials.",
-        "Automatically remaps file ownership to the current user, eliminating permission conflicts.",
-        "Enforces strict SSH permissions and validates key presence to secure Git access.",
-        "Generates timestamped audit logs for precise troubleshooting and operational transparency.",
-        "Auto-installs missing decryption prerequisites, ensuring the environment is ready without manual steps.",
-        "Blocks root execution to prevent accidental system-level damage during bootstrap.",
-        "Offers dual-mode operation to support both full restoration and fresh deployments."
+        "Enables instant disaster recovery by decrypting a full system archive and restoring it without manual intervention.",
+        "Auto‑maps file ownership to the current user, preventing permission clashes after restoration.",
+        "Validates and secures SSH configuration, ensuring only authorized keys and proper permissions are in place.",
+        "Prevents accidental root execution, safeguarding the system during bootstrap.",
+        "Offers dual‑mode operation: full restore or fresh deployment, giving flexibility for recovery scenarios."
       ],
       "category": "Run Once",
       "cron_ctx": "",
@@ -5599,13 +5596,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Replaces SSH access with secure, single-user Telegram command execution.",
-        "Dynamically maps environment variables to bot commands for zero-code deployment.",
-        "Isolates command execution within a virtualenv to prevent system dependency conflicts.",
-        "Prevents alert fatigue by muting successful runs via configurable flags.",
-        "Automatically converts lengthy outputs into downloadable documents for readability.",
-        "Installs as a self-healing systemd service with automatic restart capabilities.",
-        "Validates critical configuration immediately, aborting startup if credentials are missing."
+        "Single‑user Telegram bot replaces SSH, delivering secure, auditable remote command execution.",
+        "Dynamic command mapping lets operators add or change scripts without touching code.",
+        "Virtualenv isolation guarantees that command dependencies never interfere with system packages.",
+        "Successful runs are muted by default, preventing alert fatigue while still logging failures.",
+        "Outputs exceeding 4,000 characters are auto‑converted to downloadable documents for readability.",
+        "Self‑healing systemd service restarts automatically on crash, ensuring continuous availability.",
+        "Startup aborts if critical credentials are missing, preventing mis‑configured deployments."
       ],
       "category": "Tg-Vergil",
       "cron_ctx": "",
