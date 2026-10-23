@@ -33,6 +33,7 @@ jobs:
             node_modules
             .git
             _archive
+            run_once/dotfiles
 
   # ── 2. TEST PYTHON SCRIPTS ─────────────────────────────────────────────────
   python-lint:
