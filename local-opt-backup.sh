@@ -147,7 +147,7 @@ keep_kuma_alive >/dev/null 2>&1 &
 HEARTBEAT_PID=$!
 
 # Snapshot running stacks before shutdown
-> "$RUNNING_STACKS_FILE"
+: > "$RUNNING_STACKS_FILE"
 for stack_dir in "$STACKS_DIR"/*/; do
     if [ -f "$stack_dir/compose.yml" ]; then
         if docker compose -f "$stack_dir/compose.yml" ps -q --status running 2>/dev/null | grep -q .; then
@@ -264,7 +264,7 @@ systemctl unmask docker.socket
 systemctl start containerd docker.socket docker.service
 
 echo "Waiting for Docker socket..."
-for i in $(seq 1 30); do
+for _ in $(seq 1 30); do
     if docker info &>/dev/null; then break; fi
     sleep 2
 done

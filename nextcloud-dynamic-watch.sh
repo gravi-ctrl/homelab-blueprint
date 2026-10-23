@@ -68,7 +68,7 @@ CONTAINER_NAME="${NEXTCLOUD_CONTAINER}"
 QUEUE_DIR="/tmp/nextcloud_queue"
 mkdir -p "$QUEUE_DIR"
 
-trap "pkill -P $$; exit" SIGINT SIGTERM
+trap 'pkill -P $$; exit' SIGINT SIGTERM
 
 echo "Starting Nextcloud Docker Watcher..."
 
