@@ -3,8 +3,7 @@ name: Code Quality & Linting
 on:
   push:
     branches:
-      - '**'
-      - '!pages'
+      - 'main'
     paths:
       - '**.sh'
       - '**.py'
@@ -12,10 +11,6 @@ on:
   pull_request:
     branches:
       - 'main'
-    paths:
-      - '**.sh'
-      - '**.py'
-      - '.github/workflows/**'
 
 jobs:
   # ── 1. TEST BASH SCRIPTS ───────────────────────────────────────────────────
