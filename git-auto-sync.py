@@ -36,16 +36,16 @@
 #     deleted by the commit (override once with AUTOSYNC_ALLOW_DELETIONS=1)
 # ==============================================================================
 
-import sys
-import os
-import subprocess
-import time
-import socket
-import random  # Added for randomized network jitter
 import hashlib
 import json
+import os
+import random  # Added for randomized network jitter
 import shutil
+import socket
+import subprocess
+import sys
 import tempfile
+import time
 from datetime import datetime
 
 # ── Force UTF-8 console output

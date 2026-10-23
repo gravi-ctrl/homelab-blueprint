@@ -9,21 +9,22 @@
 #   • Limits metadata parsing to the first 60 lines to prevent slow or broken scans.
 #   • Exits with a clear message if the cron-descriptor library is missing, avoiding silent failures.
 
+import getpass
+import json
 import os
 import re
-import json
-import getpass
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 try:
-    from cron_descriptor import get_description, Options
+    from cron_descriptor import Options, get_description
     cron_opts = Options()
     cron_opts.use_24hour_time_format = True
 except ImportError:
     print("Missing dependency: cron_descriptor\nInstall: pip install cron-descriptor")
-    exit(1)
+    sys.exit(1)
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 CRON_SOURCE_DIR = os.path.join(SCRIPT_DIR, "run_once", "system_configs")
@@ -37,7 +38,7 @@ FREQUENCY_TIERS = [
     ("⚡ Every few minutes", lambda e: bool(re.match(r'\*/\d+\s', e)) and int(re.match(r'\*/(\d+)', e).group(1)) < 60),
     ("🕐 Hourly",             lambda e: bool(re.match(r'\d+\s\*\s', e))),
     ("🌙 Daily",              lambda e: bool(re.match(r'[\d,]+\s[\d,]+\s\*\s\*\s\*', e)) or e.startswith('@daily') or e.startswith('@midnight')),
-    ("📅 Weekly",             lambda e: (not re.match(r'.+\*$', e) and bool(re.match(r'[\d,]+\s[\d,]+\s\*\s\*\s[\d,a-z]+', e, re.I))) or e.startswith('@weekly')),
+    ("📅 Weekly",             lambda e: (not re.match(r'.+\*$', e) and bool(re.match(r'[\d,]+\s[\d,]+\s\*\s\*\s[\d,a-z]+', e, re.IGNORECASE))) or e.startswith('@weekly')),
     ("🗓️ Monthly",            lambda e: re.match(r'[\d,]+\s[\d,]+\s[\d,]+\s\*\s\*', e) or e.startswith('@monthly')),
     ("📆 Yearly",             lambda e: e.startswith('@yearly') or e.startswith('@annually')),
     ("🔁 On Reboot",          lambda e: e.startswith('@reboot')),

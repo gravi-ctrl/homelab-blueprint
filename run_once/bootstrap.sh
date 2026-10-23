@@ -17,8 +17,7 @@ umask 0022
 # ==============================================================================
 # ⚙️ CONFIGURATION
 # ==============================================================================
-GIT_HOST="codeberg.org"
-GIT_HOST_FALLBACK="github.com"
+GIT_HOST="github.com"
 GIT_USER="gravi-ctrl"
 REPO_SCRIPTS="homelab-blueprint"
 REPO_CTRL="ctrl-s-master"
@@ -95,7 +94,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
 
     task "Verify decryption key and archive"
     sudo [ -f "$AGE_KEYFILE" ] || { echo -e "\n${RED}❌ ERROR: Decryption key not found at $AGE_KEYFILE${NC}"; exit 1; }
-    
+
     BACKUP=$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)
     [[ -z "$BACKUP" ]] && { echo -e "\n${RED}❌ ERROR: No backup archive found in $HOME${NC}"; exit 1; }
     pass "$(basename "$BACKUP")"
@@ -106,6 +105,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
     pass
 
     task "Decrypt and extract system archive"
+    # shellcheck disable=SC2024  # log file is user-owned
     sudo age -d -i "$AGE_KEYFILE" "$BACKUP" 2>>"$LOGFILE" | \
     sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]\+,${HOME#/}," -xf - -C / >>"$LOGFILE" 2>&1
     pass
@@ -132,7 +132,7 @@ elif [[ "$MODE" == "FRESH" ]]; then
 
     echo -e "${YELLOW}${BOLD}📋 FRESH START SSH CHECKLIST (Required in ~/.ssh):${NC}"
     echo -e "   1. ${BOLD}authorized_keys${NC} : Your laptop/workstation public key (prevents lockout)"
-    echo -e "   2. ${BOLD}Git Private Key${NC} : Key(s) for ${GIT_HOST} / ${GIT_HOST_FALLBACK}"
+    echo -e "   2. ${BOLD}Git Private Key${NC} : Key for ${GIT_HOST}"
     echo -e "   3. ${BOLD}config${NC}          : Host mappings (if using custom key names)\n"
 
     read -r -p "Have you placed your keys in ~/.ssh? [y/N]: " ready < /dev/tty
@@ -163,7 +163,6 @@ pass
 task "Pre-seed known_hosts (${GIT_HOST})"
 quietly touch "$HOME/.ssh/known_hosts"
 ssh-keyscan -H "$GIT_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
-ssh-keyscan -H "$GIT_HOST_FALLBACK" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
 pass
 
 task "Test Git authentication"
@@ -171,14 +170,9 @@ GIT_TEST=$(ssh -T -o BatchMode=yes -o ConnectTimeout=5 "git@${GIT_HOST}" 2>&1 ||
 if echo "$GIT_TEST" | grep -qiE "(successfully authenticated|hi there|welcome)"; then
     pass "$GIT_HOST"
 else
-    GIT_FALLBACK_TEST=$(ssh -T -o BatchMode=yes -o ConnectTimeout=5 "git@${GIT_HOST_FALLBACK}" 2>&1 || true)
-    if echo "$GIT_FALLBACK_TEST" | grep -qiE "(successfully authenticated|hi there|welcome)"; then
-        pass "fallback ($GIT_HOST_FALLBACK)"
-    else
-        echo -e "\n${RED}❌ ERROR: SSH authentication failed for both Git hosts.${NC}" >&2
-        echo -e "   Check your private key or ~/.ssh/config mapping." >&2
-        exit 1
-    fi
+    echo -e "\n${RED}❌ ERROR: SSH authentication failed for ${GIT_HOST}.${NC}" >&2
+    echo -e "   Check your private key or ~/.ssh/config mapping." >&2
+    exit 1
 fi
 
 task "Remove cloud-init"
@@ -217,8 +211,6 @@ LINK_SUCCESS=true
 task "Sync $REPO_SCRIPTS"
 if quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST}:${GIT_USER}/${REPO_SCRIPTS}.git"; then
     pass
-elif quietly setup_repo "$DIR_SCRIPTS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_SCRIPTS}.git"; then
-    pass "fallback to $GIT_HOST_FALLBACK"
 else
     LINK_SUCCESS=false; skip "failed"
 fi
@@ -226,8 +218,6 @@ fi
 task "Sync $REPO_CTRL"
 if quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST}:${GIT_USER}/${REPO_CTRL}.git"; then
     pass
-elif quietly setup_repo "$DIR_CTRL" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_CTRL}.git"; then
-    pass "fallback to $GIT_HOST_FALLBACK"
 else
     LINK_SUCCESS=false; skip "failed"
 fi
@@ -235,8 +225,6 @@ fi
 task "Sync $REPO_STACKS"
 if quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST}:${GIT_USER}/${REPO_STACKS}.git"; then
     pass
-elif quietly setup_repo "$DIR_STACKS" "git@${GIT_HOST_FALLBACK}:${GIT_USER}/${REPO_STACKS}.git"; then
-    pass "fallback to $GIT_HOST_FALLBACK"
 else
     LINK_SUCCESS=false; skip "failed"
 fi

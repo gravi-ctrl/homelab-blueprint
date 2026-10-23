@@ -33,19 +33,29 @@ Options:
     --verbose       Print extra debug info
 """
 
-import sys, json, argparse, re, os
-from pathlib import Path
+import argparse
+import json
+import os
+import re
+import sys
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 # ── Dependency check ──────────────────────────────────────────────
 missing = []
-try:    import yaml
-except: missing.append("pyyaml")
-try:    import requests
-except: missing.append("requests")
-try:    from dotenv import load_dotenv
-except: missing.append("python-dotenv")
+try:
+    import yaml
+except ImportError:
+    missing.append("pyyaml")
+try:
+    import requests
+except ImportError:
+    missing.append("requests")
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    missing.append("python-dotenv")
 if missing:
     print(f"Missing: {', '.join(missing)}\nInstall: pip install {' '.join(missing)}")
     sys.exit(1)
@@ -732,7 +742,7 @@ def main():
 
     all_paths = [f["path"] for f in tree if f["type"]=="blob"]
     compose_paths = sorted([p for p in all_paths
-        if re.search(r'(?:^|/)(docker-compose|compose)\.ya?ml$',p,re.I)
+        if re.search(r'(?:^|/)(docker-compose|compose)\.ya?ml$',p,re.IGNORECASE)
         and not any(p.startswith(ex) for ex in exclude)])
     env_ex_set = {p for p in all_paths
         if p.endswith(".env.example")
