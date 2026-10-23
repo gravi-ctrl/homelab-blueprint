@@ -9,13 +9,14 @@
 #   • Handles binary or corrupted log streams gracefully, preventing crashes from non‑UTF8 input.
 #   • Supports multi-turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting.
 
-import os
-import sys
-import re
 import json
+import os
+import re
+import sys
 import time
-import requests
 from pathlib import Path
+
+import requests
 
 ENV_PATH = Path("/opt/rabbit-hole/.env")
 

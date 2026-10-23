@@ -33,21 +33,22 @@
 # - mute mode additionally writes status/<job>.json (last run time, exit code, duration, timed_out) — a local heartbeat for manual checks only; never sent or read by anything else
 # - Per-job log/status filenames include a short hash of the job name, so two differently-named jobs never collide on disk
 
-import sys
-import os
-import subprocess
-import urllib.request
-import urllib.parse
-import datetime
-import time
-import html
-import collections
 import argparse
-import signal
-import re
-import json
-import threading
+import collections
+import datetime
 import hashlib
+import html
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import threading
+import time
+import urllib.parse
+import urllib.request
+
 
 def kill_process_tree(proc):
     """Kill the whole process tree, not just the shell handle cron-guard holds.
@@ -162,7 +163,7 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
         if total_lines > 15:
             truncated_msg += f"\n⚠️ <i>Showing last 15 of {total_lines} lines.</i>"
         if len(log_tail) > max_log_chars:
-            truncated_msg += f"\n⚠️ <i>Output exceeded character limit.</i>"
+            truncated_msg += "\n⚠️ <i>Output exceeded character limit.</i>"
             log_tail = "...[TRUNCATED BY CHAR LIMIT]\n" + log_tail[-max_log_chars:]
 
         if truncated_msg:
@@ -399,7 +400,7 @@ def main():
         exit_code = process.wait()
     except Exception as e:
         exit_code = 1
-        log_queue.append(f"Wrapper Execution Error: {str(e)}")
+        log_queue.append(f"Wrapper Execution Error: {e!s}")
     finally:
         if timer:
             timer.cancel()

@@ -11,14 +11,15 @@
 #   • Restricts header injection to the first 40 lines, preserving existing metadata.
 #   • Ignores non-script directories and files to focus strictly on relevant code.
 
-import os
-import sys
-import re
-import json
 import hashlib
+import json
+import os
+import re
+import sys
 import time
-import requests
 from pathlib import Path
+
+import requests
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ENV_PATH = SCRIPT_DIR / ".env"

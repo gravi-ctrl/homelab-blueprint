@@ -1,6 +1,7 @@
 # sensitive files
 .env
 **/.env
+**/__pycache__/
 *.pem
 /cert-manager/certs/
 

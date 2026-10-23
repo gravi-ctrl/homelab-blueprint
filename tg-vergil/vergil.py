@@ -10,13 +10,14 @@
 #   • Installs as a self-healing systemd service with automatic restart capabilities.
 #   • Validates critical configuration immediately, aborting startup if credentials are missing.
 
-import os
-import sys
-import subprocess
-import io
-import shlex
 import html
+import io
+import os
+import shlex
+import subprocess
+import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import ParseMode
@@ -109,7 +110,7 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
             escaped_output = html.escape(output)
             await status_msg.edit_text(f"<pre>{escaped_output}</pre>", parse_mode=ParseMode.HTML)
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+        await update.message.reply_text(f"❌ Error: {e!s}")
 
 
 # ── Execution & Install Logic ─────────────────────────────────────────────────

@@ -740,7 +740,8 @@ bulk_remove() {
         return
     fi
 
-    local backup="${SERVICES_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+    local backup
+    backup="${SERVICES_FILE}.bak.$(date +%Y%m%d%H%M%S)"
     cp "$SERVICES_FILE" "$backup"
     log "Backed up services.list to ${backup}"
     echo ""

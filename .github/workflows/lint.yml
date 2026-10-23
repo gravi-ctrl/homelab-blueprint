@@ -8,6 +8,7 @@ on:
     paths:
       - '**.sh'
       - '**.py'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - 'main'
@@ -26,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@2.0.0
         with:
           severity: warning
           ignore_paths: >-
@@ -48,8 +49,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Run Ruff with auto-fix enabled so it fixes sorting and minor style issues automatically
-      - name: Run Ruff Linter & Formatter
+      # Check only. Run `ruff check . --fix` locally and commit the result.
+      - name: Run Ruff Linter
         run: |
-          pip install ruff
-          ruff check . --fix --ignore E501,BLE001,PLW1510,S110,S112,SIM115,C408,RUF010,RUF059,SIM114,SIM102,PIE810,C414,E722,PERF102,ASYNC221,UP022,S112
+          pip install ruff==0.17.2
+          ruff check . --ignore E501,BLE001,PLW1510,S110,S112,SIM115,C408,RUF010,RUF059,SIM114,SIM102,PIE810,C414,E722,PERF102,ASYNC221,UP022
