@@ -36,7 +36,7 @@ mkdir -p "/opt/rabbit-hole/run_once/dotfiles"
 cp /etc/hosts "$SNAPSHOT_DIR/hosts.txt"
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt" || true
 
-if sudo read-root-crontab > "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
+if sudo read-root-crontab | tee "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
     :
 else
     echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
