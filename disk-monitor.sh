@@ -8,9 +8,6 @@
 #   • Provides hourly visibility to prevent critical system outages.
 #   • Operates without external dependencies for lightweight, maintainable monitoring.
 
-MY_VAR="Hello World"
-echo $MY_VAR
-
 THRESHOLD=90
 ROOT_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
 DATA_USAGE=$(df /data | awk 'NR==2 {print $5}' | sed 's/%//')
