@@ -70,6 +70,7 @@ python3-venv
 rclone
 rsync
 samba
+shellcheck
 snapd
 software-properties-common
 sqlite3

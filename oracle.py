@@ -3,11 +3,11 @@
 # @FREQUENCY: On Demand
 # @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
-#   • Streams large AI responses without truncation, preserving full context.
-#   • Auto-fails over to lighter models on 503 spikes, ensuring continuous analysis.
-#   • Masks API keys, tokens, passwords, and private keys in piped logs, protecting secrets.
-#   • Handles binary or corrupted log streams gracefully, preventing crashes from non‑UTF8 input.
-#   • Supports multi-turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting.
+#   • Streams AI responses up to 200k characters, preserving full log context for deep diagnostics.
+#   • Auto‑fails over to lighter models on 503 spikes, keeping analysis uninterrupted.
+#   • Redacts API keys, tokens, passwords, and certificates from piped logs, safeguarding secrets.
+#   • Gracefully handles binary or corrupted streams, preventing crashes from non‑UTF8 input.
+#   • Supports multi‑turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting.
 
 import json
 import os

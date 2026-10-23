@@ -3,12 +3,12 @@
 # @FREQUENCY: Varies
 # @CRON: user
 # @CAPABILITIES:
-#   • Isolates branch syncs in worktrees to protect live Docker deployment directories.
-#   • Prevents concurrent execution via cross-platform file locking, eliminating race conditions.
-#   • Alarms only on unique failures, silencing repeated alerts to prevent notification fatigue.
-#   • Aborts commits if rebases, detached HEADs, or excessive file deletions are detected.
-#   • Retries network operations with randomized jitter, aborting immediately on auth failures.
-#   • Continues syncing remaining branches after individual failures, ensuring partial recovery.
+#   • Isolates branch syncs in separate worktrees, protecting live Docker deployments from accidental overwrites.
+#   • Enforces single-instance execution with cross‑platform file locking, preventing race conditions in concurrent cron runs.
+#   • Implements alarm‑once logic: first failure triggers alert; subsequent identical failures are logged silently to avoid alert fatigue.
+#   • Auto‑aborts unsafe commits—rebase in progress, detached HEAD, or excessive deletions—to maintain repository integrity.
+#   • Retries network operations with randomized jitter, aborting immediately on authentication errors to reduce unnecessary load.
+#   • Continues syncing remaining branches after individual failures, ensuring partial recovery and minimizing downtime.
 # ==============================================================================
 # GENERIC GIT AUTO-SYNC SCRIPT
 # Usage: python git_auto_sync.py "/path/to/repo" "Commit Label"

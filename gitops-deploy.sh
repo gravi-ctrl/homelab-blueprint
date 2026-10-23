@@ -4,12 +4,12 @@
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
 # @CAPABILITIES:
-#   • Auto‑syncs only the main branch, preventing accidental deployments from feature branches.
-#   • Detects and pauses on merge conflicts, notifying admins via Telegram to avoid broken stacks.
-#   • Redeploys only running stacks, keeping intentionally stopped services offline.
-#   • Uses non‑blocking flock to avoid race conditions between concurrent sync runs.
+#   • Synces only main branch, blocking feature branch changes.
+#   • Detects merge conflicts, pauses deployment, alerts admins via Telegram to avoid broken stacks.
+#   • Redeploys only stacks with running containers, keeping intentionally stopped services offline.
+#   • Uses non‑blocking flock to skip concurrent runs, preventing race conditions.
 #   • Pulls updated images before restarting, ensuring zero‑downtime updates.
-#   • Cleans stale pause flags once the repo is fully synced, restoring normal operation.
+#   • Cleans stale pause flags when repo is fully synced, restoring normal operation.
 
 set -euo pipefail
 
