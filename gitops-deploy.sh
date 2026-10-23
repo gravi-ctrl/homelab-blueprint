@@ -4,12 +4,12 @@
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
 # @CAPABILITIES:
-#   • Non-blocking flock prevents race conditions with concurrent sync processes.
-#   • Auto-pauses and alerts admins via Telegram on merge conflicts.
-#   • Redeploys only active stacks with modified compose files.
-#   • Skips stopped stacks to preserve intentional offline states.
-#   • Self-heals by clearing stale pause flags once repo syncs.
-#   • Ensures zero-downtime updates via targeted image pulls.
+#   • Auto‑syncs only the main branch, preventing accidental deployments from feature branches.
+#   • Detects and pauses on merge conflicts, notifying admins via Telegram to avoid broken stacks.
+#   • Redeploys only running stacks, keeping intentionally stopped services offline.
+#   • Uses non‑blocking flock to avoid race conditions between concurrent sync runs.
+#   • Pulls updated images before restarting, ensuring zero‑downtime updates.
+#   • Cleans stale pause flags once the repo is fully synced, restoring normal operation.
 
 set -euo pipefail
 
