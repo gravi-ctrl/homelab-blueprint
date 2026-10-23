@@ -1,0 +1,53 @@
+name: Code Quality & Linting
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!pages'
+    paths:
+      - '**.sh'
+      - '**.py'
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - '**.sh'
+      - '**.py'
+
+jobs:
+  # ── 1. TEST BASH SCRIPTS ───────────────────────────────────────────────────
+  shellcheck:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+          ignore_paths: >-
+            node_modules
+            .git
+            _archive
+
+  # ── 2. TEST PYTHON SCRIPTS ─────────────────────────────────────────────────
+  python-lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Fast industry-standard linter (checks syntax, broken imports, unquoted vars)
+      - name: Run Ruff Linter
+        run: |
+          pip install ruff
+          ruff check . --ignore E501
