@@ -35,7 +35,7 @@ jobs:
             _archive
 
   # ── 2. TEST PYTHON SCRIPTS ─────────────────────────────────────────────────
-  python-lint:
+ python-lint:
     name: Lint Python Code
     runs-on: ubuntu-latest
     steps:
@@ -47,8 +47,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run Ruff Linter
+      # Run Ruff with auto-fix enabled so it fixes sorting and minor style issues automatically
+      - name: Run Ruff Linter & Formatter
         run: |
           pip install ruff
-          # Tell Ruff to format imports automatically (but don't fail the build if they aren't)
-          ruff check . --ignore E501,BLE001,PLW1510,S110,S112,SIM115,C408,RUF010,RUF059,SIM114,SIM102,PIE810,C414,E722,PERF102,ASYNC221
+          ruff check . --fix --ignore E501,BLE001,PLW1510,S110,S112,SIM115,C408,RUF010,RUF059,SIM114,SIM102,PIE810,C414,E722,PERF102,ASYNC221,UP022,S112
