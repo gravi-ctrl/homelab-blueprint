@@ -21,7 +21,7 @@ load_dotenv(os.path.join(script_dir, '.env'))
 
 # --- CONFIGURATION ---
 # Defaults to 2 if variable is missing in .env
-FILES_TO_KEEP = int(os.environ.get("FILES_TO_KEEP", 2))
+FILES_TO_KEEP = int(os.environ.get("FILES_TO_KEEP", "2"))
 DELETE_ALL_TRIGGER = "::DELETE_ALL"
 
 # Safety toggle: set DRY_RUN=1 in shell to test without deleting

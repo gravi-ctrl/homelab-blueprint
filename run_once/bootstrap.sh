@@ -103,7 +103,7 @@ if [[ "$MODE" == "RESTORE" ]]; then
     quietly sudo apt-get update
     quietly sudo apt-get install -y zstd age
     pass
-
+    # shellcheck disable=SC2024  # log file is user-owned
     task "Decrypt and extract system archive"
     sudo age -d -i "$AGE_KEYFILE" "$BACKUP" 2>>"$LOGFILE" | \
     sudo tar --zstd --same-owner --numeric-owner --transform="s,^home/[^/]\+,${HOME#/}," -xf - -C / >>"$LOGFILE" 2>&1

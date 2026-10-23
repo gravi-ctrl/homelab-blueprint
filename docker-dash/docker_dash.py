@@ -40,12 +40,18 @@ from zoneinfo import ZoneInfo
 
 # ── Dependency check ──────────────────────────────────────────────
 missing = []
-try:    import yaml
-except: missing.append("pyyaml")
-try:    import requests
-except: missing.append("requests")
-try:    from dotenv import load_dotenv
-except: missing.append("python-dotenv")
+try:
+    import yaml
+except: ImportError:
+    missing.append("pyyaml")
+try:
+    import requests
+except: ImportError:
+    missing.append("requests")
+try:
+    from dotenv import load_dotenv
+except: ImportError:
+    missing.append("python-dotenv")
 if missing:
     print(f"Missing: {', '.join(missing)}\nInstall: pip install {' '.join(missing)}")
     sys.exit(1)
