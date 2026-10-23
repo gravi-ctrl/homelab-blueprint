@@ -5,15 +5,14 @@
 
 # 🛠️ Homelab Blueprint
 
-> **Mirror Status:** Mirrored across [Codeberg](https://codeberg.org/gravi-ctrl/homelab-blueprint) (Primary) and [GitHub](https://github.com/gravi-ctrl/homelab-blueprint).
+> [GitHub](https://github.com/gravi-ctrl/homelab-blueprint).
 
 This repository functions as the automation engine for my home server. It acts as a self-documenting "Source of Truth" handling everything from SSL/Proxy provisioning to high-resilience backups and real-time Telegram observability.
 
 **Location on Server:** `~/scripts`
 
 🖥️ **Live Interactive Dashboard:** 
-* **Primary:** [gravi-ctrl.codeberg.page/homelab-blueprint](https://gravi-ctrl.codeberg.page/homelab-blueprint/)
-* **Mirror:** [gravi-ctrl.github.io/homelab-blueprint](https://gravi-ctrl.github.io/homelab-blueprint/)
+* [gravi-ctrl.github.io/homelab-blueprint](https://gravi-ctrl.github.io/homelab-blueprint/)
 
 ---
 
@@ -66,7 +65,7 @@ A full backup archive contains everything needed to restore the exact state:
 |------|------|------------------|
 | `~/scripts` | This repository (Automation Engine) | Cloned from Git |
 | `/opt/stacks` | Docker Stacks `[Private Infrastructure]` (Compose files & `.env.example`) | Cloned from Git; permissions restored via `.git-perms` |
-| `~/ctrl_s_master` | [Credential Archival Engine](https://codeberg.org/gravi-ctrl/ctrl-s-master) | Cloned from Git |
+| `~/ctrl_s_master` | [Credential Archival Engine](https://github.com/gravi-ctrl/ctrl-s-master) | Cloned from Git |
 | `~/.ssh` | Deploy keys & authorized_keys | Restored via tarball (Full) or pre-flight checklist (Fresh) |
 | `/etc/ssh` | Host keys & custom daemon configs | Restored via tarball (Full) or `setup.sh` drop-in (Fresh) |
 | `~/.local/share/mkcert` | Local CA for SSL | Restored via tarball (Full) or recreated on Fresh |
@@ -101,7 +100,6 @@ For maximum security, verify the script's cryptographic hash before executing it
 
 1. **Download the script:**
    ```bash
-   curl -fsSL codeberg.org/gravi-ctrl/homelab-blueprint/raw/run_once/bootstrap.sh -o "$HOME/bootstrap.sh" || \
    curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
    ```
 
@@ -185,21 +183,9 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 
 ---
 
-## 🔄 Dual-push mirror setup
-
-```bash
-git remote set-url --add --push origin git@codeberg.org:gravi-ctrl/homelab-blueprint.git
-git remote set-url --add --push origin git@github.com:gravi-ctrl/homelab-blueprint.git
-git remote -v
-```
-
----
-
 <div align="center">
 
-[![Maintainer](https://img.shields.io/badge/ARCHITECT-%20gravi--ctrl-1f242b?style=flat-square&labelColor=3c5a73)](https://codeberg.org/gravi-ctrl)
-[![Codeberg](https://img.shields.io/badge/SOURCE-Codeberg-1f242b?style=flat-square&logo=codeberg&logoColor=2185d0)](https://codeberg.org/gravi-ctrl)
-[![GitHub](https://img.shields.io/badge/MIRROR-GitHub-1f242b?style=flat-square&logo=github&logoColor=white)](https://github.com/gravi-ctrl)
+[![Maintainer](https://img.shields.io/badge/ARCHITECT-%20gravi--ctrl-1f242b?style=flat-square&labelColor=3c5a73)](https://github.com/gravi-ctrl)
 
 <br>
 
