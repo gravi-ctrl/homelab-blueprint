@@ -36,8 +36,14 @@ mkdir -p "/opt/rabbit-hole/run_once/dotfiles"
 cp /etc/hosts "$SNAPSHOT_DIR/hosts.txt"
 crontab -l > "$SNAPSHOT_DIR/user_crontab.txt" || true
 
-if sudo read-root-crontab | tee "$SNAPSHOT_DIR/root_crontab.txt" 2>/dev/null; then
-    :
+# Snapshot Root Crontab via sudo tee (satisfies ShellCheck SC2024)
+if sudo read-root-crontab 2>/dev/null | sudo tee "$SNAPSHOT_DIR/root_crontab.txt" > /dev/null; then
+    # PIPESTATUS[0] checks the exit code of 'read-root-crontab' *before* tee
+    if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+        : # Success
+    else
+        echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
+    fi
 else
     echo "Root crontab skipped" > "$SNAPSHOT_DIR/root_crontab.txt"
 fi

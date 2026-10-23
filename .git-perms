@@ -20,6 +20,8 @@
 755	@USER:@GROUP	generate-dashboards.sh
 644	@USER:@GROUP	.gitattributes
 755	@USER:@GROUP	git-auto-sync.py
+755	@USER:@GROUP	.github/workflows
+644	@USER:@GROUP	.github/workflows/lint.yml
 644	@USER:@GROUP	.gitignore
 755	@USER:@GROUP	gitops-deploy.sh
 755	@USER:@GROUP	git-perms.sh
