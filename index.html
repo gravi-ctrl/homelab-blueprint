@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-24 04:50 EEST</div>
+    <div class="meta-line">Generated 2026-10-24 06:15 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5136,17 +5136,17 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   "scripts": [
     {
       "capabilities": [
-        "Captures hosts, crons, packages, and dotfiles for instant rollback and audit trails.",
-        "Preserves repository permissions before sync to prevent accidental exposure of sensitive files.",
-        "Skips dashboard pushes when alarm flags exist, avoiding repetitive failures and alert fatigue.",
-        "Mirrors .config tool folders with rsync, keeping user settings in sync across environments.",
-        "Enforces strict error handling and safe file permissions, guaranteeing reliable execution and data integrity.",
-        "Backs up APT keyrings and source lists to preserve exact repository trust configurations.",
-        "Automates multi-repository Git synchronization for scripts, security masters, and server stacks."
+        "Captures hosts, crontabs, packages, and pip lists for instant rollback and audit trails.",
+        "Backs up APT source lists and keyrings, preserving exact repository trust for reproducible builds.",
+        "Mirrors user .config tool folders via rsync, keeping settings consistent across machines.",
+        "Saves Git repository permissions before sync, preventing accidental exposure of sensitive files.",
+        "Generates dashboards and pushes to a dedicated pages branch only when no alarm flags, reducing alert fatigue.",
+        "Publishes snapshots to a separate branch, ensuring mainline stability while retaining daily state history.",
+        "Reports uncommitted changes across key repos, flagging drift for proactive remediation."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions",
+      "desc": "Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions, pushes dashboards, dotfiles and system_configs",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR",
@@ -5242,12 +5242,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Caches script hashes to skip redundant API calls, saving bandwidth and cost.",
-        "Auto-selects the best available Groq model for optimal performance and compatibility.",
-        "Parses exact rate-limit wait times to minimize downtime during high traffic.",
-        "Falls back to exponential backoff when precise retry timing is unavailable.",
-        "Restricts header injection to the first 40 lines, preserving existing metadata.",
-        "Ignores non-script directories and files to focus strictly on relevant code."
+        "Auto-generates concise feature lists for scripts, enabling quick dashboard insights without manual documentation.",
+        "Caches script hashes to avoid redundant AI calls, cutting bandwidth and cost.",
+        "Dynamically selects the most compatible Groq model, ensuring optimal performance across environments.",
+        "Parses exact rate‑limit wait times, minimizing downtime during high‑traffic API usage.",
+        "Falls back to exponential backoff when precise timing unavailable, guaranteeing reliable retries.",
+        "Limits header injection to first 40 lines, preserving existing metadata and preventing accidental overwrites."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
@@ -5370,12 +5370,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Generates a self-contained interactive HTML dashboard for instant homelab infrastructure oversight.",
-        "Classifies cron expressions into human-readable frequency tiers for effortless schedule review.",
-        "Maps environment variables to consuming scripts, exposing hidden dependencies for quick troubleshooting.",
-        "Filters out development and hidden directories to ensure only production-relevant scripts appear.",
-        "Limits metadata parsing to the first 60 lines to prevent slow or broken scans.",
-        "Exits with a clear message if the cron-descriptor library is missing, avoiding silent failures."
+        "Instantly visualizes all homelab scripts, cron schedules, and env dependencies in a single interactive HTML dashboard.",
+        "Classifies cron expressions into intuitive frequency tiers, making schedule review effortless.",
+        "Reveals hidden env variable dependencies per script, accelerating troubleshooting and configuration drift detection.",
+        "Filters out development and hidden directories, ensuring the dashboard reflects only production‑relevant assets.",
+        "Limits metadata scanning to the first 60 lines, preventing slow or broken script parses.",
+        "Gracefully aborts with a clear message if the cron‑descriptor library is missing, avoiding silent failures."
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
@@ -5485,11 +5485,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Enables instant disaster recovery by decrypting a full system archive and restoring it without manual intervention.",
-        "Auto‑maps file ownership to the current user, preventing permission clashes after restoration.",
-        "Validates and secures SSH configuration, ensuring only authorized keys and proper permissions are in place.",
+        "Enables instant disaster recovery by decrypting and restoring a full system archive without manual steps.",
+        "Auto‑maps backup file ownership to the current user, preventing permission conflicts after restoration.",
+        "Validates and secures SSH configuration, ensuring only authorized keys and correct permissions are in place.",
         "Prevents accidental root execution, safeguarding the system during bootstrap.",
-        "Offers dual‑mode operation: full restore or fresh deployment, giving flexibility for recovery scenarios."
+        "Provides dual‑mode operation: full restore or fresh deployment, giving flexibility for recovery scenarios."
       ],
       "category": "Run Once",
       "cron_ctx": "",
