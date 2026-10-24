@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions
 # @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
@@ -26,7 +26,6 @@ IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
 
 SNAPSHOT_DIR="/opt/rabbit-hole/run_once/system_configs"
-MASTER_SCRIPT="/opt/rabbit-hole/git-auto-sync.py"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
@@ -116,17 +115,6 @@ if [ -f "/opt/rabbit-hole/doc-injector.py" ]; then
     echo "🤖 Auditing script capabilities..."
     python3 "/opt/rabbit-hole/doc-injector.py" || true
 fi
-
-echo "🚀 Syncing Repositories..."
-
-# --- 2. HANDOFF TO MASTER SCRIPT ---
-"$MASTER_SCRIPT" "/opt/rabbit-hole" "Scripts & System Configs"
-
-# --- 3. Sync ctrl_s_master ---
-"$MASTER_SCRIPT" "${CTRL_DIR}" "Security Master Update"
-
-# --- 4. Sync /opt/stacks ---
-"$MASTER_SCRIPT" "${STACKS_DIR}" "Server Stacks"
 
 # --- GENERATE DASHBOARDS ---
 if [ -f "/opt/rabbit-hole/generate-dashboards.sh" ]; then

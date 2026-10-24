@@ -18,7 +18,7 @@ This repository functions as the automation engine for my home server. It acts a
 
 The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a custom Telegram wrapper, so failures are never silent. If a job crashes and dumps a massive log, the wrapper sends a summary to your phone and saves the full output locally. 
 
-The server snapshots its own state daily: scripts, crontabs, package lists, etc, and commits everything to Git. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack, ready to restore a wiped machine in under an hour.
+The server snapshots its own state daily: scripts, crontabs, package lists, etc. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack, ready to restore a wiped machine in under an hour.
 
 For on-demand triage, an integrated terminal assistant (oracle) allows piping live Docker logs, systemd traces, or full scripts for instant, stream-rendered root-cause analysis with automated secret scrubbing.
 
