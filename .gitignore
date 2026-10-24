@@ -13,3 +13,5 @@
 .ghost_watcher_state
 .miniflux_digest_state
 /status/*.json
+/run_once/system_configs/
+/run_once/dotfiles/
