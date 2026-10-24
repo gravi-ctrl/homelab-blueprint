@@ -26,7 +26,6 @@ IFS=' ' read -ra TOOLS_ARRAY <<< "${TOOLS:-}"
 IFS=$'\n\t'
 
 SNAPSHOT_DIR="/opt/rabbit-hole/run_once/system_configs"
-MASTER_SCRIPT="/opt/rabbit-hole/git-auto-sync.py"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
