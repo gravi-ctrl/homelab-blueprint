@@ -4,13 +4,14 @@
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
 # @CAPABILITIES:
-#   • Captures hosts, crontabs, packages, and pip lists for instant rollback and audit trails.
+#   • Creates a full system snapshot enabling rapid rollback and compliance auditing.
 #   • Backs up APT source lists and keyrings, preserving exact repository trust for reproducible builds.
 #   • Mirrors user .config tool folders via rsync, keeping settings consistent across machines.
 #   • Saves Git repository permissions before sync, preventing accidental exposure of sensitive files.
 #   • Generates dashboards and pushes to a dedicated pages branch only when no alarm flags, reducing alert fatigue.
 #   • Publishes snapshots to a separate branch, ensuring mainline stability while retaining daily state history.
 #   • Reports uncommitted changes across key repos, flagging drift for proactive remediation.
+#   • Skips dashboard pushes when alarm flags exist, preventing repeated failures and maintaining alarm‑once design.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================
@@ -190,7 +191,8 @@ STATE_FILE="/opt/rabbit-hole/.git/backup-drift.hash"
 if [ -n "$DRIFT" ]; then
     echo "⚠️  Uncommitted changes:"
     echo "$DRIFT"
-    new_hash="$(printf '%s' "$DRIFT" | sha256sum | cut -d' ' -f1)"
+    # repeat once a week while drift presists
+    new_hash="$(printf '%s%s' "$DRIFT" "$(date +%G-%V)" | sha256sum | cut -d' ' -f1)"
     if [ "$(cat "$STATE_FILE" 2>/dev/null || true)" != "$new_hash" ]; then
         echo "$new_hash" > "$STATE_FILE"
         exit 1    # cron-guard alerts once per distinct drift, not every morning
