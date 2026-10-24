@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-24 02:24 EEST</div>
+    <div class="meta-line">Generated 2026-10-24 04:50 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3999,7 +3999,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "command": "cron-guard --mode fail \"Scripts & System Configs Backup\" \"/opt/rabbit-hole/backup-scripts-git.sh\"",
       "day_conditional": null,
       "env": [],
-      "full_comment": "Snapshot system state, build UI dashboards, and sync repos to Git",
+      "full_comment": "Snapshot system state and build UI dashboards",
       "has_wrapper": true,
       "heat_slots": [
         [
@@ -5146,7 +5146,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions and syncs `~/scripts`, `~/ctrl_s_master` & `/opt/stacks` to Git using `git-auto-sync.sh`",
+      "desc": "Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR",
@@ -5325,12 +5325,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Synces only main branch, blocking feature branch changes.",
-        "Detects merge conflicts, pauses deployment, alerts admins via Telegram to avoid broken stacks.",
-        "Redeploys only stacks with running containers, keeping intentionally stopped services offline.",
-        "Uses non‑blocking flock to skip concurrent runs, preventing race conditions.",
-        "Pulls updated images before restarting, ensuring zero‑downtime updates.",
-        "Cleans stale pause flags when repo is fully synced, restoring normal operation."
+        "Auto‑syncs only main branch, blocking feature branches to keep production stable.",
+        "Detects merge conflicts, pauses deployment, and alerts admins via Telegram to prevent broken stacks.",
+        "Redeploys only stacks with running containers, preserving intentionally stopped services.",
+        "Uses non‑blocking lock to avoid race conditions during concurrent runs.",
+        "Pulls images sequentially with retries, ensuring zero‑downtime updates even on transient registry failures.",
+        "Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
