@@ -1,0 +1,10 @@
+/*
+!/.gitignore
+!/run_once/
+/run_once/*
+!/run_once/system_configs/
+!/run_once/dotfiles/
+.env
+**/.env
+*.pem
+*.key
