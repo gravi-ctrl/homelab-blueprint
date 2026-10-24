@@ -4,12 +4,12 @@
 # @USES_ENV: GROQ_API_KEY, GROQ_MODEL
 # @CRON: user
 # @CAPABILITIES:
-#   • Caches script hashes to skip redundant API calls, saving bandwidth and cost.
-#   • Auto-selects the best available Groq model for optimal performance and compatibility.
-#   • Parses exact rate-limit wait times to minimize downtime during high traffic.
-#   • Falls back to exponential backoff when precise retry timing is unavailable.
-#   • Restricts header injection to the first 40 lines, preserving existing metadata.
-#   • Ignores non-script directories and files to focus strictly on relevant code.
+#   • Auto-generates concise feature lists for scripts, enabling quick dashboard insights without manual documentation.
+#   • Caches script hashes to avoid redundant AI calls, cutting bandwidth and cost.
+#   • Dynamically selects the most compatible Groq model, ensuring optimal performance across environments.
+#   • Parses exact rate‑limit wait times, minimizing downtime during high‑traffic API usage.
+#   • Falls back to exponential backoff when precise timing unavailable, guaranteeing reliable retries.
+#   • Limits header injection to first 40 lines, preserving existing metadata and preventing accidental overwrites.
 
 import hashlib
 import json

@@ -2,12 +2,12 @@
 # @DESCRIPTION: Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.
 # @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
 # @CAPABILITIES:
-#   • Generates a self-contained interactive HTML dashboard for instant homelab infrastructure oversight.
-#   • Classifies cron expressions into human-readable frequency tiers for effortless schedule review.
-#   • Maps environment variables to consuming scripts, exposing hidden dependencies for quick troubleshooting.
-#   • Filters out development and hidden directories to ensure only production-relevant scripts appear.
-#   • Limits metadata parsing to the first 60 lines to prevent slow or broken scans.
-#   • Exits with a clear message if the cron-descriptor library is missing, avoiding silent failures.
+#   • Instantly visualizes all homelab scripts, cron schedules, and env dependencies in a single interactive HTML dashboard.
+#   • Classifies cron expressions into intuitive frequency tiers, making schedule review effortless.
+#   • Reveals hidden env variable dependencies per script, accelerating troubleshooting and configuration drift detection.
+#   • Filters out development and hidden directories, ensuring the dashboard reflects only production‑relevant assets.
+#   • Limits metadata scanning to the first 60 lines, preventing slow or broken script parses.
+#   • Gracefully aborts with a clear message if the cron‑descriptor library is missing, avoiding silent failures.
 
 import getpass
 import json

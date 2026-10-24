@@ -1,5 +1,5 @@
 {
-  "/home/alice/scripts/backup-scripts-git.sh": "d17e13ffd64093c3f7e3eeaf8b1214d236f41735c23220ba1320c94c719563b2",
+  "/home/alice/scripts/backup-scripts-git.sh": "efdb07f1081e94f024fe9fbf3083a50b1e204696144aef55e357469e71c2ecd2",
   "/home/alice/scripts/battery-monitor.sh": "9d79d4e88b28ddbd9136ee9b571baffbd7c201e94c1b84214d32ae04e3210dbc",
   "/home/alice/scripts/cert-manager/cert-manager.sh": "9afc47d9980bcb1ef6280f30c57881cb83b2e3f2da966a5b7ef979bba4806a01",
   "/home/alice/scripts/cleanup_script.py": "bc9c7eaebc8193ccc27cc050efa8dd8116416a05edb333f353a498811fe22e3b",
@@ -11,7 +11,7 @@
   "/home/alice/scripts/git-perms.sh": "7e53b56bbc0332769305749c5957f4f173ee5a189ef48979a54998a628626f83",
   "/home/alice/scripts/gitops-deploy.sh": "a371a92c424aac4bcaefe1bcd693013cf693d5277b8ca933aef33d05c15e3b54",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
-  "/home/alice/scripts/homelab_dash.py": "1ae18db5807084b2c0d884a480813ef7f2dc7de1b3ab4219c39785bcaa68125d",
+  "/home/alice/scripts/homelab_dash.py": "0282065b7c392476dd763f27704957ceaf952a1c82432f09266bce157b2a94fa",
   "/home/alice/scripts/local-opt-backup.sh": "00d5dc5ee49fc211f0d77001f4aa414f62a39e851a6ace7d5106327930504a0d",
   "/home/alice/scripts/nextcloud-dynamic-watch.sh": "9091501c575ecd69ecb0bec673189ba3d15847844d9aa87047385407d4fc5ca6",
   "/home/alice/scripts/tg-vergil/vergil.py": "9b5f24e4171d445ab745a7a30a525d7e1a6cb2fbbe46e80945c5fd061f81a17a",
@@ -20,6 +20,6 @@
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
   "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
-  "/home/alice/scripts/doc-injector.py": "fc469f4dc5b9834c73d81dd83b86a1bdf22c2340a8681bcabd01d00fb7fcbf07",
+  "/home/alice/scripts/doc-injector.py": "546d7153b80e0049412d55c74e5368bd4608dc48b5fb461ab4b61b960647f79d",
   "/home/alice/scripts/oracle.py": "4d0cc39aa5ad850d94d6ff2b2fa4f08b56cbe2e9da03b032c08b10250d91e98e"
 }

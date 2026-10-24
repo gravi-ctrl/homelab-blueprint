@@ -226,6 +226,15 @@ else
     LINK_SUCCESS=false; skip "failed"
 fi
 
+task "Restore system snapshots"
+if quietly git -C "$DIR_SCRIPTS" fetch -q origin snapshots && \
+   quietly git -C "$DIR_SCRIPTS" restore --source=origin/snapshots --worktree -- \
+       run_once/system_configs run_once/dotfiles; then
+    pass
+else
+    skip "no snapshots branch yet"
+fi
+
 # ══════════════════════════════════════════════════════════════
 # PHASE 4: CLEANUP
 # ══════════════════════════════════════════════════════════════

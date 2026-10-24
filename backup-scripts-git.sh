@@ -1,16 +1,16 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions, pushes dashboards, dotfiles and system_configs
 # @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
 # @CAPABILITIES:
-#   • Captures hosts, crons, packages, and dotfiles for instant rollback and audit trails.
-#   • Preserves repository permissions before sync to prevent accidental exposure of sensitive files.
-#   • Skips dashboard pushes when alarm flags exist, avoiding repetitive failures and alert fatigue.
-#   • Mirrors .config tool folders with rsync, keeping user settings in sync across environments.
-#   • Enforces strict error handling and safe file permissions, guaranteeing reliable execution and data integrity.
-#   • Backs up APT keyrings and source lists to preserve exact repository trust configurations.
-#   • Automates multi-repository Git synchronization for scripts, security masters, and server stacks.
+#   • Captures hosts, crontabs, packages, and pip lists for instant rollback and audit trails.
+#   • Backs up APT source lists and keyrings, preserving exact repository trust for reproducible builds.
+#   • Mirrors user .config tool folders via rsync, keeping settings consistent across machines.
+#   • Saves Git repository permissions before sync, preventing accidental exposure of sensitive files.
+#   • Generates dashboards and pushes to a dedicated pages branch only when no alarm flags, reducing alert fatigue.
+#   • Publishes snapshots to a separate branch, ensuring mainline stability while retaining daily state history.
+#   • Reports uncommitted changes across key repos, flagging drift for proactive remediation.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================
@@ -133,6 +133,70 @@ if [ -f "/opt/rabbit-hole/generate-dashboards.sh" ]; then
             git -C "$repo" push origin pages
         fi
     done
+fi
+
+# --- PUBLISH SNAPSHOTS (to the 'snapshots' branch; never touches main) ---
+publish_snapshots() {
+    local repo="/opt/rabbit-hole" wt="/tmp/worktree_snapshots" p
+
+    git -C "$repo" worktree remove "$wt" --force 2>/dev/null || true
+    git -C "$repo" worktree prune
+    rm -rf "$wt"
+
+    if git -C "$repo" show-ref --quiet refs/heads/snapshots; then
+        git -C "$repo" worktree add -q "$wt" snapshots
+    elif git -C "$repo" fetch -q origin snapshots 2>/dev/null; then
+        git -C "$repo" worktree add -q -b snapshots "$wt" FETCH_HEAD
+    else
+        git -C "$repo" worktree add -q --orphan -b snapshots "$wt"
+    fi
+
+    for p in run_once/system_configs run_once/dotfiles; do
+        mkdir -p "$wt/$p"
+        rsync -a --delete "$repo/$p/" "$wt/$p/"
+    done
+
+    printf '%s\n' \
+    '/*' \
+    '!/.gitignore' \
+    '!/run_once/' \
+    '/run_once/*' \
+    '!/run_once/system_configs/' \
+    '!/run_once/dotfiles/' \
+    '.env' '**/.env' '*.pem' '*.key' > "$wt/.gitignore"
+
+    git -C "$wt" add -A
+    if git -C "$wt" diff --cached --quiet; then
+        echo "   (No snapshot changes)"
+    else
+        git -C "$wt" commit -q -m "Snapshot $(date +%F)"
+        git -C "$wt" push -q -u origin snapshots
+    fi
+
+    git -C "$repo" worktree remove "$wt" --force
+}
+publish_snapshots
+
+# --- DRIFT REPORT (never commits) ---
+DRIFT=""
+for repo in "/opt/rabbit-hole" "${CTRL_DIR}" "${STACKS_DIR}"; do
+    changes="$(git -C "$repo" status --porcelain)"
+    if [ -n "$changes" ]; then
+        DRIFT+="📂 $repo"$'\n'"$changes"$'\n'
+    fi
+done
+
+STATE_FILE="/opt/rabbit-hole/.git/backup-drift.hash"
+if [ -n "$DRIFT" ]; then
+    echo "⚠️  Uncommitted changes:"
+    echo "$DRIFT"
+    new_hash="$(printf '%s' "$DRIFT" | sha256sum | cut -d' ' -f1)"
+    if [ "$(cat "$STATE_FILE" 2>/dev/null || true)" != "$new_hash" ]; then
+        echo "$new_hash" > "$STATE_FILE"
+        exit 1    # cron-guard alerts once per distinct drift, not every morning
+    fi
+else
+    rm -f "$STATE_FILE"
 fi
 
 echo "✅ Backup process completed successfully."
