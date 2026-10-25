@@ -238,6 +238,7 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${CTRL_DIR#/}/status.json" \
     --exclude="${CTRL_DIR#/}/status_dashboard.md" \
     --exclude="${CTRL_DIR#/}/vaults.hc" \
+   --exclude="${USER_HOME#/}/scripts/.ruff_cache" \
     --exclude="${USER_HOME#/}/scripts/status" \
     --exclude="${USER_HOME#/}/scripts/logs" \
     --exclude="${USER_HOME#/}/scripts/state" \
