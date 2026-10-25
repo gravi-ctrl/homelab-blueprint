@@ -1,6 +1,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green?label=License)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
-
+[![Code Quality & Linting](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/ci.yml)
+[![Security Scans](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml)
 
 
 # 🛠️ Homelab Blueprint
@@ -25,6 +26,21 @@ For on-demand triage, an integrated terminal assistant (oracle) allows piping li
 The result: the server largely runs itself, and when something does go wrong, you already know about it before you notice.
 
 > For the design reasoning behind the fixed paths, ownership rules, and cross-script dependencies, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+---
+
+## 🧪 CI/CD & Automated Quality Gates
+
+Every commit and Pull Request across the ecosystem is validated before code or container configurations touch the server:
+
+* **Static Analysis & Linting:** Automated workflows run [ShellCheck](https://www.shellcheck.net/) across all Bash scripts, [Ruff](https://docs.astral.sh/ruff/) on Python automation tools, and [Hadolint](https://github.com/hadolint/hadolint) on Dockerfiles.
+* **Stack Validation:** A custom CI runner automatically iterates through all Docker Compose stacks, instantiates mock environments from `.env.example`, and runs `docker compose config -q` to catch syntax or schema errors before deployment.
+* **Automated Testing:** Cross-platform matrix testing (`ubuntu-latest` & `windows-latest`) executes `pytest` suites on core utility modules.
+* **Supply-Chain & Security Scanning:** 
+  * [Trivy](https://github.com/aquasecurity/trivy) scans for committed credentials, API keys, and Dockerfile misconfigurations (`HIGH`, `CRITICAL`).
+  * Weekly scheduled CVE scans monitor published images (`ghcr.io/gravi-ctrl/wifi-robot:latest`) for newly reported upstream vulnerabilities.
+* **GitOps Continuous Deployment:** Merging a container update triggers an automated build and push to GitHub Container Registry (`ghcr.io`), which the server's local GitOps engine (`gitops-deploy.sh`) pulls, validates, and deploys with sequential zero-downtime restarts.
+
 ---
 
 ## 🚨 Deployment & Recovery

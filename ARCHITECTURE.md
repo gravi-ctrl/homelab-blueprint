@@ -376,6 +376,22 @@ In `backup-scripts-git.sh`, `doc-injector.py` must execute in **Step 1 (Snapshot
 
 ---
 
+## 15. CI/CD Architecture, Security & Pipeline Gotchas
+
+The three ecosystem repositories (`homelab-blueprint`, `ctrl-s-master`, and `server-docker-backup`) are guarded by automated GitHub Actions pipelines designed with strict supply-chain and branch-protection constraints.
+
+### 1. The Branch Protection "Expected" Deadlock (Why `paths` is Omitted on PRs)
+When a GitHub Ruleset / Branch Protection rule marks a check (like `pytest` or `shellcheck`) as **"Required"**, GitHub will block the PR merge button until it receives a status report with that exact name.
+* **The Gotcha:** If a workflow uses `paths: ['**.py']` and a PR only edits `README.md`, GitHub skips the workflow entirely. Because the workflow never runs, it never reports a status, leaving the PR indefinitely stuck on `Waiting for status to be reported (Expected)`.
+* **The Rule:** Workflows running required branch checks must trigger on `pull_request` **without** path filters so they always report a passing status, even on documentation-only commits.
+
+### 2. Full Commit SHA Pinning on GitHub Actions
+Third-party Actions (such as `aquasecurity/trivy-action`) are pinned to immutable **40-character commit SHAs** rather than mutable tags (e.g., `@v0.36.0`):
+```yaml
+uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+
+---
+
 ## Quick Reference: Gotchas
 
 - Docker DNS acting weird, or OIDC breaking across containers? Check `daemon.json` — `SERVER_IP`
@@ -406,3 +422,6 @@ In `backup-scripts-git.sh`, `doc-injector.py` must execute in **Step 1 (Snapshot
 - `oracle` hitting Google 503 capacity errors? It auto-fails over to `-lite` models automatically, but you can set `GEMINI_MODEL='gemini-flash-lite-latest'` in `.env` to make the high-capacity model default.
 - Adding new scripts to the automatic documentation pipeline? Never let a script modify itself while actively executing under Bash; keep caller runner scripts in `IGNORE_FILES`.
 - Wondering why `doc-injector.py` isn't re-analyzing a script? It checks code hashes excluding the `@CAPABILITIES` block — use `--force` to bypass the cache.
+- Setting up a required PR check in GitHub Actions? Never combine it with `paths` filtering, or documentation-only PRs will freeze in an endless `Expected` status check lock. See §15.1.
+- Adding third-party GitHub Actions? Pin to full 40-character commit SHAs, never mutable tags or `latest`. See §15.2.
+- Testing Compose files in CI? Ensure `.env.example` exists; the CI validator copies it temporarily so Docker Compose can resolve required variable references. See §15.3.
