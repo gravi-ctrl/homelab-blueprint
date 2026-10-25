@@ -5,11 +5,11 @@
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user, root
 # @CAPABILITIES:
-#   • Kills entire process trees on timeout, preventing orphaned jobs from draining resources.
-#   • Retries Telegram alerts three times, logging failures locally to keep audit trail when delivery fails.
-#   • Writes silent JSON heartbeats in mute mode, giving quick manual status checks without alert noise.
-#   • Auto‑adjusts file ownership for root or sudo runs, ensuring logs and status files stay accessible to the right user.
-#   • Stores full logs only when alerts fire and output exceeds thresholds, keeping disk usage lean.
+#   • Kills entire process trees on timeout, preventing orphaned child jobs from consuming resources.
+#   • Retries Telegram delivery three times, logging failures locally to maintain a reliable audit trail.
+#   • Writes local JSON heartbeats in mute mode, providing silent status snapshots for manual verification.
+#   • Auto-adjusts file ownership for root or sudo runs, ensuring correct access permissions across users.
+#   • Stores full logs only when alerts fire and output exceeds thresholds, keeping disk storage lean.
 #   • Hashes job names for unique file identifiers, preventing disk collisions between similarly named tasks.
 
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
@@ -513,16 +513,24 @@ def main():
     state_path = os.path.join(script_dir, "state", f"{safe_job_name}.json")
     tracking = args.mode in ("fail", "all") and (args.repeat_after > 0 or args.recovery)
     if tracking:
-        state = load_state(state_path)
-        if exit_code != 0:
-            fingerprint = failure_fingerprint(exit_code, timed_out_flag["value"], "\n".join(log_queue))
-            should_send, alert_note, state_update = decide_failure_alert(
-                state, fingerprint, args.repeat_after, time.time())
-        else:
-            if args.recovery and state.get("last_alert"):
-                alert_note = (f"Recovered after {state.get('failures', 1)} failed run(s) "
-                              f"since {_fmt_ts(state.get('first_failure', time.time()))}")
-                should_send = True
+        base_send = should_send
+        try:
+            state = load_state(state_path)
+            if exit_code != 0:
+                fingerprint = failure_fingerprint(exit_code, timed_out_flag["value"], "\n".join(log_queue))
+                should_send, alert_note, state_update = decide_failure_alert(
+                    state, fingerprint, args.repeat_after, time.time())
+            else:
+                if args.recovery and state.get("last_alert"):
+                    alert_note = (f"Recovered after {state.get('failures', 1)} failed run(s) "
+                                  f"since {_fmt_ts(state.get('first_failure', time.time()))}")
+                    should_send = True
+                clear_state(state_path)
+        except Exception as e:
+            # A damaged state file must never swallow an alert or change the exit code:
+            # fall back to the normal per-mode behaviour and rebuild the state next run.
+            print(f"[cron-guard] WARNING: repeat tracking failed ({e!s}); alerting normally", file=sys.stderr)
+            should_send, alert_note, state_update = base_send, "", None
             clear_state(state_path)
 
     # Check if we should keep the log file
