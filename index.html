@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-24 06:36 EEST</div>
+    <div class="meta-line">Generated 2026-10-25 22:13 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -2366,13 +2366,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 0
     },
     {
-      "command": "cron-guard --mode fail \"Obsidian Notes Sync\" \"/opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'\"",
+      "command": "cron-guard --mode fail --repeat-after 1d --recovery \"Obsidian Notes Sync\" \"/opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'\"",
       "day_conditional": null,
       "env": [
         "DATA_DIR"
       ],
       "full_comment": "Sync Personal and Work Obsidian vaults to Git",
-      "has_wrapper": true,
+      "has_wrapper": false,
       "heat_slots": [
         [
           0,
@@ -3049,7 +3049,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "human_desc": "Every 30 minutes",
       "is_root": false,
-      "label": "Obsidian Notes Sync",
+      "label": "Sync Personal and Work Obsidia...",
       "owner": "👤 User Cron (alice)",
       "raw_schedule": "*/30 * * * *",
       "tier": "⚡ Every few minutes",
@@ -5202,11 +5202,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Kills entire process trees on timeout, preventing orphaned child jobs from consuming resources.",
-        "Retries Telegram delivery three times, logging failures locally to maintain a reliable audit trail.",
-        "Writes local JSON heartbeats in mute mode, providing silent status snapshots for manual verification.",
-        "Auto-adjusts file ownership for root or sudo runs, ensuring correct access permissions across users.",
-        "Stores full logs only when alerts fire and output exceeds thresholds, keeping disk storage lean.",
+        "Kills entire process trees on timeout, preventing orphaned jobs from draining resources.",
+        "Retries Telegram alerts three times, logging failures locally to keep audit trail when delivery fails.",
+        "Writes silent JSON heartbeats in mute mode, giving quick manual status checks without alert noise.",
+        "Auto‑adjusts file ownership for root or sudo runs, ensuring logs and status files stay accessible to the right user.",
+        "Stores full logs only when alerts fire and output exceeds thresholds, keeping disk usage lean.",
         "Hashes job names for unique file identifiers, preventing disk collisions between similarly named tasks."
       ],
       "category": "Core Scripts",
