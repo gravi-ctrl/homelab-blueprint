@@ -18,7 +18,7 @@ BASH_ENV=/opt/rabbit-hole/.env
 */15 * * * * cron-guard --mode fail "GitOps Deployer" "/opt/rabbit-hole/gitops-deploy.sh"
 
 # Sync Personal and Work Obsidian vaults to Git
-*/30 * * * * cron-guard --mode fail "Obsidian Notes Sync" "/opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
+*/30 * * * * cron-guard --mode fail --repeat-after 1d --recovery "Obsidian Notes Sync" "/opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
 # Check if root (/) or /data exceeds 90%
 0 * * * * cron-guard --mode fail "Disk Monitor" "/opt/rabbit-hole/disk-monitor.sh"
