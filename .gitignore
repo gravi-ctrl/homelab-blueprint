@@ -11,7 +11,8 @@
 **/*.bak
 **/index.html
 .ghost_watcher_state
-.miniflux_digest_state
-/status/*.json
+/status/
+/logs/
+/state/
 /run_once/system_configs/
 /run_once/dotfiles/

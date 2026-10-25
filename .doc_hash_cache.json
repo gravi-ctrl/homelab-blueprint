@@ -3,7 +3,7 @@
   "/home/alice/scripts/battery-monitor.sh": "9d79d4e88b28ddbd9136ee9b571baffbd7c201e94c1b84214d32ae04e3210dbc",
   "/home/alice/scripts/cert-manager/cert-manager.sh": "9afc47d9980bcb1ef6280f30c57881cb83b2e3f2da966a5b7ef979bba4806a01",
   "/home/alice/scripts/cleanup_script.py": "bc9c7eaebc8193ccc27cc050efa8dd8116416a05edb333f353a498811fe22e3b",
-  "/home/alice/scripts/cron-guard.py": "168469ee341d143f35d4e66360c40efbfac438c8d8b7e0f7f53ac2af3ddef6c6",
+  "/home/alice/scripts/cron-guard.py": "9b59c5f72a85dc3cb97bb1f46f14798726e89dfd9b06c3a83a9b57cb938e33ef",
   "/home/alice/scripts/disk-monitor.sh": "6880024b6e5fb4381bb56c3721d4147b0b78731af22ba53851f9b5f632b70260",
   "/home/alice/scripts/docker-dash/docker_dash.py": "d590b4695297eb0b08dcb59c9b01c8b197a9adf5dd82806229f430a05cfe1e7f",
   "/home/alice/scripts/generate-dashboards.sh": "ff8a6cd8648dd39687c097d0615f97b871a3a31f8b0699add9e4fb35514d7a8e",

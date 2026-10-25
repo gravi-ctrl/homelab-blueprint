@@ -5,11 +5,11 @@
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user, root
 # @CAPABILITIES:
-#   • Kills entire process trees on timeout, preventing orphaned child jobs from consuming resources.
-#   • Retries Telegram delivery three times, logging failures locally to maintain a reliable audit trail.
-#   • Writes local JSON heartbeats in mute mode, providing silent status snapshots for manual verification.
-#   • Auto-adjusts file ownership for root or sudo runs, ensuring correct access permissions across users.
-#   • Stores full logs only when alerts fire and output exceeds thresholds, keeping disk storage lean.
+#   • Kills entire process trees on timeout, preventing orphaned jobs from draining resources.
+#   • Retries Telegram alerts three times, logging failures locally to keep audit trail when delivery fails.
+#   • Writes silent JSON heartbeats in mute mode, giving quick manual status checks without alert noise.
+#   • Auto‑adjusts file ownership for root or sudo runs, ensuring logs and status files stay accessible to the right user.
+#   • Stores full logs only when alerts fire and output exceeds thresholds, keeping disk usage lean.
 #   • Hashes job names for unique file identifiers, preventing disk collisions between similarly named tasks.
 
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
@@ -21,6 +21,8 @@
 # python cron-guard.py --mode mute "Quiet Job" "some_command"                 (Never notify; just for clean naming/logging)
 #                                                                             (Writes a local heartbeat file at ./status/*.json per job)
 # python cron-guard.py --mode fail --timeout 2700 "Backup" "bash backup.sh"   (Any mode kills it; alert only fires on fail/all, per --mode)
+# python cron-guard.py --mode fail --repeat-after 6h "Sync" "bash sync.sh"    (Same error again? silent for 6h. A DIFFERENT error alerts immediately)
+# python cron-guard.py --mode fail --repeat-after 1d --recovery "Sync" "..."  (...and sends one "recovered" message when it works again)
 #
 # WHAT IT DOES (all modes):
 # - Runs the command, streaming + capturing combined stdout/stderr
@@ -32,6 +34,11 @@
 # - Forwards SIGTERM/SIGINT to the child process tree for a clean shutdown on kill/reboot or --timeout (kills the whole tree, not just the shell, so real children like apt/rsync can't outlive the kill)
 # - mute mode additionally writes status/<job>.json (last run time, exit code, duration, timed_out) — a local heartbeat for manual checks only; never sent or read by anything else
 # - Per-job log/status filenames include a short hash of the job name, so two differently-named jobs never collide on disk
+# - --repeat-after DURATION (e.g. 90, 15m, 6h, 1d; default 0 = alert on every failure): while a job keeps failing with the SAME error
+#   (same exit code + same output once digits/timestamps/hex IDs are ignored) alerts are suppressed until DURATION has passed since
+#   the last alert, then one reminder ("Still failing: N runs since ...") is sent. A different error always alerts immediately.
+#   State lives in state/<job>.json. If delivery fails the failure is NOT counted as alerted, so a Telegram outage never hides errors.
+# - --recovery: sends one "recovered" message on the first success after a failure that was actually alerted (fail/all modes only)
 
 import argparse
 import collections
@@ -136,7 +143,80 @@ def write_heartbeat(script_dir, safe_job_name, job_name, exit_code, duration_sec
         # Best-effort only: never let a heartbeat write failure affect the job's exit code
         print(f"[cron-guard] WARNING: Could not write heartbeat file: {e}", file=sys.stderr)
 
-def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path, timed_out=False, creds_missing=False, timeout_limit=None, is_syntax_error=False, skip_missing_creds_log=False):
+def parse_duration(value):
+    """'90' / '90s' / '15m' / '6h' / '2d' -> seconds (argparse type)."""
+    m = re.fullmatch(r'(\d+)\s*([smhd]?)', str(value).strip().lower())
+    if not m:
+        raise argparse.ArgumentTypeError(f"invalid duration {value!r} (use e.g. 90, 15m, 6h, 1d)")
+    return int(m.group(1)) * {'': 1, 's': 1, 'm': 60, 'h': 3600, 'd': 86400}[m.group(2)]
+
+def failure_fingerprint(exit_code, timed_out, log_tail):
+    """Stable ID for 'the same failure'. ANSI colours, hex IDs and digits are ignored so
+    timestamps, PIDs and counters don't make an identical error look new."""
+    text = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', log_tail)
+    text = re.sub(r'\b[0-9a-f]{8,}\b', 'H', text, flags=re.IGNORECASE)
+    text = re.sub(r'\d+', '#', text)
+    key = f"{exit_code}|{int(timed_out)}|{text}"
+    return hashlib.sha1(key.encode('utf-8', 'replace')).hexdigest()[:16]
+
+def _fmt_ts(epoch):
+    return datetime.datetime.fromtimestamp(epoch).strftime('%Y-%m-%d %H:%M')
+
+def decide_failure_alert(state, fingerprint, repeat_after, now):
+    """Decide whether this failed run deserves an alert. Returns (send, note, new_state)."""
+    same = state.get("fingerprint") == fingerprint
+    failures = state.get("failures", 0) + 1 if same else 1
+    first = state.get("first_failure", now) if same else now
+    last_alert = state.get("last_alert", 0) if same else 0
+    suppressed = state.get("suppressed", 0) if same else 0
+
+    due = (not same) or last_alert == 0 or repeat_after == 0 or (now - last_alert) >= repeat_after
+    new_state = {"fingerprint": fingerprint, "failures": failures, "first_failure": first,
+                 "last_alert": last_alert, "suppressed": suppressed}
+    if not due:
+        new_state["suppressed"] = suppressed + 1
+        return False, "", new_state
+
+    note = ""
+    if state.get("fingerprint") and not same:
+        note = "Different error than the previous failure"
+    elif same and failures > 1:
+        note = f"Still failing: {failures} failed runs since {_fmt_ts(first)}"
+        if suppressed:
+            note += f" ({suppressed} alert(s) suppressed)"
+    new_state["last_alert"] = now
+    new_state["suppressed"] = 0
+    return True, note, new_state
+
+def load_state(state_path):
+    try:
+        with open(state_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+def save_state(script_dir, state_path, state):
+    # Best-effort: a state write failure must never affect the job's exit code.
+    try:
+        state_dir = os.path.dirname(state_path)
+        os.makedirs(state_dir, exist_ok=True)
+        fix_ownership(state_dir, script_dir)
+        tmp_path = state_path + ".tmp"
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            json.dump(state, f, indent=2)
+        os.replace(tmp_path, state_path)
+        fix_ownership(state_path, script_dir)
+    except Exception as e:
+        print(f"[cron-guard] WARNING: Could not write alert state: {e}", file=sys.stderr)
+
+def clear_state(state_path):
+    try:
+        os.remove(state_path)
+    except OSError:
+        pass
+
+def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration, total_lines, full_log_path, timed_out=False, creds_missing=False, timeout_limit=None, is_syntax_error=False, skip_missing_creds_log=False, note=""):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
     if timed_out:
@@ -180,6 +260,7 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
         f"📊 <b>Status:</b> {status_label}\n"
         f"⏱️ <b>Duration:</b> {duration}\n"
         f"⏰ <b>Finished:</b> {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"{f'🔁 <i>{html.escape(note)}</i>' + chr(10) if note else ''}"
         f"━━━━━━━━━━━━━━━\n"
         f"{truncated_msg}"
         f"📜 <b>Message / Logs:</b>\n<pre>{html.escape(log_tail)}</pre>"
@@ -282,6 +363,10 @@ def main():
                         help="When to send notification (default: fail)")
     parser.add_argument("--timeout", type=int, default=None,
                         help="Kill the job if it's still running after this many seconds (default: no limit)")
+    parser.add_argument("--repeat-after", type=parse_duration, default=0, metavar="DURATION",
+                        help="If the job keeps failing with the SAME error, re-alert only after this long (e.g. 90, 15m, 6h, 1d). A different error always alerts immediately. Default 0 = alert on every failure")
+    parser.add_argument("--recovery", action="store_true",
+                        help="Send one 'recovered' message on the first success after an alerted failure (fail/all modes)")
     parser.add_argument("job_name", help="Name of the job for the report")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="The command to execute")
 
@@ -422,6 +507,24 @@ def main():
     elif args.mode == "success" and exit_code == 0:
         should_send = True
 
+    # --- Repeat-failure suppression (opt-in via --repeat-after / --recovery) ---
+    alert_note = ""
+    state_update = None
+    state_path = os.path.join(script_dir, "state", f"{safe_job_name}.json")
+    tracking = args.mode in ("fail", "all") and (args.repeat_after > 0 or args.recovery)
+    if tracking:
+        state = load_state(state_path)
+        if exit_code != 0:
+            fingerprint = failure_fingerprint(exit_code, timed_out_flag["value"], "\n".join(log_queue))
+            should_send, alert_note, state_update = decide_failure_alert(
+                state, fingerprint, args.repeat_after, time.time())
+        else:
+            if args.recovery and state.get("last_alert"):
+                alert_note = (f"Recovered after {state.get('failures', 1)} failed run(s) "
+                              f"since {_fmt_ts(state.get('first_failure', time.time()))}")
+                should_send = True
+            clear_state(state_path)
+
     # Check if we should keep the log file
     log_tail = "\n".join(log_queue) or "No output."
     keep_file = False
@@ -439,13 +542,19 @@ def main():
             pass
 
     # Send the Telegram message
+    delivered = True
     if should_send:
         final_log_path = full_log_path if keep_file else None
-        send_telegram_alert(
+        delivered = send_telegram_alert(
             token, chat_id, args.job_name, exit_code, log_tail, duration_str, total_lines, final_log_path,
             timed_out=timed_out_flag["value"], creds_missing=creds_missing, timeout_limit=args.timeout,
-            skip_missing_creds_log=True
+            skip_missing_creds_log=True, note=alert_note
         )
+
+    if state_update is not None:
+        if should_send and not delivered:
+            state_update["last_alert"] = 0   # never alerted -> never suppress the next run
+        save_state(script_dir, state_path, state_update)
 
     sys.exit(exit_code)
 
