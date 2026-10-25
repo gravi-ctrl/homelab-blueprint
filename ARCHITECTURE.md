@@ -389,7 +389,7 @@ When a GitHub Ruleset / Branch Protection rule marks a check (like `pytest` or `
 Third-party Actions (such as `aquasecurity/trivy-action`) are pinned to immutable **40-character commit SHAs** rather than mutable tags (e.g., `@v0.36.0`):
 ```yaml
 uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-
+```
 ---
 
 ## Quick Reference: Gotchas
