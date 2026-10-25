@@ -2,7 +2,7 @@
 ![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
 [![Code Quality & Linting](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/yml.yml)
 [![Security Scans](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml)
-
+[![Stacks Validation & CI](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml)
 
 # 🛠️ Homelab Blueprint
 
