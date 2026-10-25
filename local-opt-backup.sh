@@ -4,9 +4,9 @@
 # @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
 # @CRON: root
 # @CAPABILITIES:
-#   • Creates a single age‑encrypted, zstd‑compressed archive of Docker stacks, SSH configs, and critical system files for secure off‑site storage.
+#   • Consolidates Docker stacks, SSH configs, and system files into a single encrypted archive for secure off‑site backup.
 #   • Prevents overlapping runs with a file lock, ensuring backups never collide and system resources remain stable.
-#   • Runs interactively via systemd-run, automatically detaching into a background unit so SSH sessions can be closed safely.
+#   • Runs interactively via systemd‑run, automatically detaching into a background unit so SSH sessions can be closed safely.
 #   • Keeps the monitoring service alive with periodic heartbeats during long operations, preventing false outage alerts.
 #   • Gracefully stops Docker stacks before backup and restores them afterward, eliminating data corruption risks.
 #   • Automatically installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup.

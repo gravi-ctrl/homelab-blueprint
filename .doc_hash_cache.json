@@ -12,7 +12,7 @@
   "/home/alice/scripts/gitops-deploy.sh": "a371a92c424aac4bcaefe1bcd693013cf693d5277b8ca933aef33d05c15e3b54",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
   "/home/alice/scripts/homelab_dash.py": "0282065b7c392476dd763f27704957ceaf952a1c82432f09266bce157b2a94fa",
-  "/home/alice/scripts/local-opt-backup.sh": "00d5dc5ee49fc211f0d77001f4aa414f62a39e851a6ace7d5106327930504a0d",
+  "/home/alice/scripts/local-opt-backup.sh": "00faa14d0085e890f264a4e1382956ec4da0036f63b4dcfd1263038e0264fd03",
   "/home/alice/scripts/nextcloud-dynamic-watch.sh": "9091501c575ecd69ecb0bec673189ba3d15847844d9aa87047385407d4fc5ca6",
   "/home/alice/scripts/tg-vergil/vergil.py": "9b5f24e4171d445ab745a7a30a525d7e1a6cb2fbbe46e80945c5fd061f81a17a",
   "/home/alice/scripts/run_once/bootstrap.sh": "f168364c38db0d395f5001819c2f99a458fbaf439178c8e17a7d73152c110ed7",
