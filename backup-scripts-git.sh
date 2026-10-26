@@ -4,14 +4,12 @@
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
 # @CAPABILITIES:
-#   • Creates a full system snapshot enabling rapid rollback and compliance auditing.
-#   • Backs up APT source lists and keyrings, preserving exact repository trust for reproducible builds.
-#   • Mirrors user .config tool folders via rsync, keeping settings consistent across machines.
-#   • Saves Git repository permissions before sync, preventing accidental exposure of sensitive files.
-#   • Generates dashboards and pushes to a dedicated pages branch only when no alarm flags, reducing alert fatigue.
-#   • Publishes snapshots to a separate branch, ensuring mainline stability while retaining daily state history.
-#   • Reports uncommitted changes across key repos, flagging drift for proactive remediation.
-#   • Skips dashboard pushes when alarm flags exist, preventing repeated failures and maintaining alarm‑once design.
+#   • Captures full system state daily, enabling instant rollback and compliance audit trails.
+#   • Safeguards APT source lists and keyrings, ensuring reproducible builds and preventing trust erosion.
+#   • Mirrors user config directories via rsync, keeping tool settings consistent across machines.
+#   • Stores Git repo permissions before sync, preventing accidental exposure of sensitive files.
+#   • Generates dashboards only when no alarm flags, reducing alert fatigue and maintaining alarm‑once design.
+#   • Publishes snapshots to a dedicated branch, preserving mainline stability while retaining daily state history.
 # ==============================================================================
 # SCRIPT BACKUP WRAPPER
 # ==============================================================================
