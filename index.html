@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-25 22:13 EEST</div>
+    <div class="meta-line">Generated 2026-10-26 22:15 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5136,14 +5136,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   "scripts": [
     {
       "capabilities": [
-        "Creates a full system snapshot enabling rapid rollback and compliance auditing.",
-        "Backs up APT source lists and keyrings, preserving exact repository trust for reproducible builds.",
-        "Mirrors user .config tool folders via rsync, keeping settings consistent across machines.",
-        "Saves Git repository permissions before sync, preventing accidental exposure of sensitive files.",
-        "Generates dashboards and pushes to a dedicated pages branch only when no alarm flags, reducing alert fatigue.",
-        "Publishes snapshots to a separate branch, ensuring mainline stability while retaining daily state history.",
-        "Reports uncommitted changes across key repos, flagging drift for proactive remediation.",
-        "Skips dashboard pushes when alarm flags exist, preventing repeated failures and maintaining alarm‑once design."
+        "Captures full system state daily, enabling instant rollback and compliance audit trails.",
+        "Safeguards APT source lists and keyrings, ensuring reproducible builds and preventing trust erosion.",
+        "Mirrors user config directories via rsync, keeping tool settings consistent across machines.",
+        "Stores Git repo permissions before sync, preventing accidental exposure of sensitive files.",
+        "Generates dashboards only when no alarm flags, reducing alert fatigue and maintaining alarm‑once design.",
+        "Publishes snapshots to a dedicated branch, preserving mainline stability while retaining daily state history."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
@@ -5202,12 +5200,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Kills entire process trees on timeout, preventing orphaned jobs from draining resources.",
-        "Retries Telegram alerts three times, logging failures locally to keep audit trail when delivery fails.",
-        "Writes silent JSON heartbeats in mute mode, giving quick manual status checks without alert noise.",
-        "Auto‑adjusts file ownership for root or sudo runs, ensuring logs and status files stay accessible to the right user.",
+        "Kills entire process trees on timeout, preventing orphaned child jobs from draining resources.",
+        "Retries Telegram delivery three times, logging failures locally to keep a reliable audit trail.",
+        "Mute mode writes silent JSON heartbeats, giving instant status snapshots without alert noise.",
+        "Auto‑adjusts file ownership for root or sudo runs, ensuring correct permissions across users.",
         "Stores full logs only when alerts fire and output exceeds thresholds, keeping disk usage lean.",
-        "Hashes job names for unique file identifiers, preventing disk collisions between similarly named tasks."
+        "Hashes job names for unique file identifiers, avoiding disk collisions between similarly named tasks.",
+        "Suppresses repeated identical failures for a configurable period, sending a single reminder instead of noise.",
+        "Sends a single recovery message after a previously alerted failure resolves, closing the alert loop."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user, root",
@@ -5331,11 +5331,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Redeploys only stacks with running containers, preserving intentionally stopped services.",
         "Uses non‑blocking lock to avoid race conditions during concurrent runs.",
         "Pulls images sequentially with retries, ensuring zero‑downtime updates even on transient registry failures.",
-        "Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically."
+        "Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically.",
+        "Verifies every deploy (compose --wait, crash-loop soak check, automatic port check, optional URL probe).",
+        "Rolls a failed stack back to its last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.",
+        "Read-only helper modes (--probe, --verify) find a health URL and test the checks on live stacks without deploying anything."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Monitors /opt/stacks for remote Github changes done by Renovate and auto-deploys updated compose stacks.",
+      "desc": "Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port check, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR",
@@ -5391,12 +5394,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Creates a single age‑encrypted, zstd‑compressed archive of Docker stacks, SSH configs, and critical system files for secure off‑site storage.",
-        "Prevents overlapping runs with a file lock, ensuring backups never collide and system resources remain stable.",
-        "Runs interactively via systemd-run, automatically detaching into a background unit so SSH sessions can be closed safely.",
-        "Keeps the monitoring service alive with periodic heartbeats during long operations, preventing false outage alerts.",
-        "Gracefully stops Docker stacks before backup and restores them afterward, eliminating data corruption risks.",
-        "Automatically installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup."
+        "Consolidates Docker stacks, SSH configs, and critical system files into a single age‑encrypted tar.zst archive for secure off‑site storage.",
+        "Uses a file lock to prevent overlapping runs, guaranteeing resource stability and avoiding duplicate backups.",
+        "Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely without interrupting the job.",
+        "Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations and preventing false outage alerts.",
+        "Gracefully stops Docker stacks before snapshotting and restores them afterward, eliminating data corruption risks.",
+        "Auto‑installs missing zstd and age tools, ensuring the script operates on fresh systems without manual setup."
       ],
       "category": "Core Scripts",
       "cron_ctx": "root",
