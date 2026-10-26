@@ -181,7 +181,7 @@ publish_snapshots
 # --- DRIFT REPORT (never commits) ---
 DRIFT=""
 for repo in "/opt/rabbit-hole" "${CTRL_DIR}" "${STACKS_DIR}"; do
-    changes="$(git -C "$repo" status --porcelain)"
+    changes="$(git -C "$repo" status --porcelain -- . ':(exclude).git-perms')"
     if [ -n "$changes" ]; then
         DRIFT+="📂 $repo"$'\n'"$changes"$'\n'
     fi
