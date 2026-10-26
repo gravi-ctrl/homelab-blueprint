@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Monitors /opt/stacks for remote Github changes done by Renovate and auto-deploys updated compose stacks.
+# @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port check, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.
 # @FREQUENCY: Every 15 minutes
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
@@ -10,6 +10,31 @@
 #   • Uses non‑blocking lock to avoid race conditions during concurrent runs.
 #   • Pulls images sequentially with retries, ensuring zero‑downtime updates even on transient registry failures.
 #   • Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically.
+#   • Verifies every deploy (compose --wait, crash-loop soak check, automatic port check, optional URL probe).
+#   • Rolls a failed stack back to its last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.
+#   • Read-only helper modes (--probe, --verify) find a health URL and test the checks on live stacks without deploying anything.
+#
+# AUTOMATIC PORT CHECK (needs no configuration, no published ports):
+#   Before each update the deployer records which TCP ports (image EXPOSE / compose expose:) of the RUNNING containers accept
+#   connections, reaching them by container IP over the docker network. After the update every one of those services must accept
+#   connections again within PROBE_TIMEOUT. Only things that were healthy BEFORE the update can fail it, so containers that don't
+#   listen (or can't be reached from the host) are simply not checked.
+#
+# OPTIONAL PER-STACK LABELS (on any service in the stack's compose.yml; one per stack is enough):
+#   deploy.rollback=false
+#       never auto-rollback this stack (databases / migrations); it is still deployed, verified, alerted on and retried.
+#   deploy.healthcheck=http://<service-or-container-name>:<port>/<path>
+#       a stronger check: this URL must answer 2xx/3xx after the update. The name is swapped for the container's IP, so nothing
+#       needs to be published. If the URL does not answer on the version running now it is ignored with a warning, so a wrong
+#       path can never cause a rollback.
+#
+# HELPER MODES (read-only: nothing is deployed, restarted, locked or written):
+#   ./gitops-deploy.sh --probe CONTAINER [PORT]
+#       Finds the container's IP and listening port(s), tries common health paths and prints a ready-to-paste
+#       deploy.healthcheck label. If nothing answers 2xx/3xx, skip the label: the automatic port check still protects it.
+#   ./gitops-deploy.sh --verify STACK
+#       Runs the post-deploy checks against the stack AS IT RUNS NOW (SOAK_SECONDS=5 ./gitops-deploy.sh --verify n8n for a
+#       quicker run). Use it to prove the checks work on this server before relying on them.
 
 set -euo pipefail
 
@@ -18,16 +43,18 @@ source "/opt/rabbit-hole/.env"
 
 cd "${STACKS_DIR}"
 PAUSE_FILE="/tmp/gitops_paused"
-# Stacks whose last deploy failed. Lives inside .git so it is never committed or synced.
-RETRY_FILE="${STACKS_DIR}/.git/gitops_retry"
+# Everything below lives inside .git, so it is never committed or synced.
+RETRY_FILE="${STACKS_DIR}/.git/gitops_retry"            # stacks to retry next cycle
+STATE_DIR="${STACKS_DIR}/.git/gitops_state"
+LASTGOOD_DIR="${STATE_DIR}/lastgood"                    # last compose.yml that deployed AND verified OK
+REASON_FILE="${STATE_DIR}/last_reason"
 
-# Prevent stepping on git-auto-sync.py or dashboard generation.
-# Non-blocking: if busy, skip this run entirely.
-exec 200>"${STACKS_DIR}/.git/sync.lock"
-flock -n 200 || { echo "⏭️  Stacks repo busy (locked by another process), skipping this cycle."; exit 0; }
+# Tunables (override from the environment if a stack needs longer)
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-120}"      # seconds `docker compose up --wait` may take
+SOAK_SECONDS="${SOAK_SECONDS:-30}"       # watch for crash-loops this long after it reports ready
+PROBE_TIMEOUT="${PROBE_TIMEOUT:-120}"    # seconds a service gets to start listening / answer its URL after an update
 
-# Best effort: pull one image at a time to avoid containerd content-store races.
-export COMPOSE_PARALLEL_LIMIT=1
+ROLLBACK_OFF_RE='deploy\.rollback["'"'"']?[=:] *["'"'"']?false'
 
 send_telegram() {
     if [ -n "${TELEGRAM_DANTE_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
@@ -52,6 +79,317 @@ pull_with_retry() {
     return 1
 }
 
+# Sum of restart counters for the given container IDs.
+restart_total() {
+    docker inspect -f '{{.RestartCount}}' "$@" | awk '{s+=$1} END {print s+0}'
+}
+
+# First IP of a container on any of its networks (empty for host-network / shared-network containers).
+container_ip() {
+    docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "$1" 2>/dev/null | awk '{print $1}'
+}
+
+# TCP ports a container declares (image EXPOSE, compose expose: / ports:).
+container_tcp_ports() {
+    docker inspect -f '{{range $p, $_ := .Config.ExposedPorts}}{{println $p}}{{end}}' "$1" 2>/dev/null \
+        | awk -F/ '$2=="tcp" {print $1}'
+}
+
+port_open() {   # $1=ip $2=port
+    timeout 3 bash -c 'exec 3<>"/dev/tcp/$0/$1"' "$1" "$2" 2>/dev/null
+}
+
+any_port_open() {   # $1=ip, remaining args = ports
+    local ip="$1" port
+    shift
+    for port in "$@"; do
+        if port_open "$ip" "$port"; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# "service port" for every running container of the stack that accepts connections on a declared TCP port right now.
+listening_ports() {
+    local id svc ip port
+    for id in $(docker compose ps -q); do
+        svc=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$id" 2>/dev/null) || continue
+        ip=$(container_ip "$id")
+        [ -n "$ip" ] || continue
+        for port in $(container_tcp_ports "$id"); do
+            if port_open "$ip" "$port"; then
+                echo "$svc $port"
+            fi
+        done
+    done
+}
+
+# Every service that was listening before the update must accept connections again (on any port it was
+# listening on before, or declares now) within PROBE_TIMEOUT. Prints the reason and returns 1 if not.
+wait_listening() {
+    local svc id ports ip waited
+    for svc in $(printf '%s\n' "$BASE_PORTS" | awk 'NF {print $1}' | sort -u); do
+        id=$(docker compose ps -a -q "$svc" | head -n1)
+        [ -n "$id" ] || continue          # service no longer exists in the new compose file
+        ports=$( { printf '%s\n' "$BASE_PORTS" | awk -v s="$svc" '$1==s {print $2}'; container_tcp_ports "$id"; } | sed '/^$/d' | sort -u)
+        waited=0
+        # shellcheck disable=SC2086
+        until ip=$(container_ip "$id"); [ -n "$ip" ] && any_port_open "$ip" $ports; do
+            waited=$((waited + 5))
+            if [ "$waited" -ge "$PROBE_TIMEOUT" ]; then
+                echo "service ${svc} is not accepting connections (it was before the update)"
+                return 1
+            fi
+            sleep 5
+        done
+    done
+    return 0
+}
+
+# Swap the container/service name in a URL for the container's IP (nothing needs to be published).
+resolve_url() {
+    local url="$1" host id ip=""
+    host=$(printf '%s' "$url" | sed -E 's#^[a-zA-Z]+://([^/:]+).*#\1#')
+    id=$(docker compose ps -a -q "$host" 2>/dev/null | head -n1)           # by service name
+    if [ -z "$id" ]; then
+        id=$(docker inspect -f '{{.Id}}' "$host" 2>/dev/null || true)       # or by container_name
+    fi
+    if [ -n "$id" ]; then
+        ip=$(container_ip "$id")
+    fi
+    if [ -n "$ip" ]; then
+        printf '%s' "${url/\/\/$host/\/\/$ip}"
+    else
+        printf '%s' "$url"
+    fi
+}
+
+# deploy.healthcheck URLs of the running stack that answer right now (the others are ignored with a warning).
+passing_urls() {
+    local id url
+    for id in $(docker compose ps -q); do
+        docker inspect -f '{{index .Config.Labels "deploy.healthcheck"}}' "$id" 2>/dev/null || true
+    done | sort -u | while read -r url; do
+        [ -n "$url" ] || continue
+        if curl -fsSk -o /dev/null --max-time 5 "$(resolve_url "$url")" 2>/dev/null; then
+            echo "$url"
+        else
+            echo "⚠️  GitOps: deploy.healthcheck ${url} does not answer on the running version; ignoring it." >&2
+        fi
+    done
+}
+
+probe_urls() {
+    local url waited
+    while read -r url; do
+        [ -n "$url" ] || continue
+        waited=0
+        until curl -fsSk -o /dev/null --max-time 5 "$(resolve_url "$url")" 2>/dev/null; do
+            waited=$((waited + 5))
+            if [ "$waited" -ge "$PROBE_TIMEOUT" ]; then
+                echo "health URL ${url} did not answer within ${PROBE_TIMEOUT}s"
+                return 1
+            fi
+            sleep 5
+        done
+    done <<< "$BASE_URLS"
+    return 0
+}
+
+# Run inside a stack dir AFTER `up --wait` succeeded. Prints the reason and returns 1 if unhealthy.
+verify_stack() {
+    local ids before after bad url waited
+    ids=$(docker compose ps -a -q)
+    if [ -z "$ids" ]; then
+        echo "no containers found after deploy"
+        return 1
+    fi
+
+    # Crash-loop detection: "running" can still be a container that keeps restarting.
+    # shellcheck disable=SC2086
+    before=$(restart_total $ids)
+    sleep "$SOAK_SECONDS"
+    # shellcheck disable=SC2086
+    after=$(restart_total $ids)
+    if [ "$after" -gt "$before" ]; then
+        echo "containers restarted during the ${SOAK_SECONDS}s soak check (crash loop)"
+        return 1
+    fi
+
+    # shellcheck disable=SC2086
+    bad=$(docker inspect -f '{{.Name}} {{.State.Status}} {{.State.ExitCode}} {{with .State.Health}}{{.Status}}{{end}}' $ids \
+        | awk '$2=="restarting" || $2=="dead" || $2=="created" || ($2=="exited" && $3!=0) || $4=="unhealthy" {printf "%s(%s) ", $1, $2}')
+    if [ -n "$bad" ]; then
+        echo "unhealthy container(s): $bad"
+        return 1
+    fi
+
+    wait_listening || return 1
+    probe_urls || return 1
+    return 0
+}
+
+# Deploy + verify one stack. Exit codes:
+#   0 deployed and verified    1 failed, left as is (retried next cycle)
+#   2 failed, rolled back OK   3 failed AND the rollback failed
+deploy_stack() (
+    dir="$1"
+    lastgood="${LASTGOOD_DIR}/${dir}.yml"
+    : > "$REASON_FILE"
+    cd "$dir" || exit 1
+
+    # First run for this stack: the previous commit's compose file is what was running.
+    if [ ! -f "$lastgood" ] && [ "$BEHIND" -gt 0 ] && git cat-file -e "${OLD_HEAD}:${dir}/compose.yml" 2>/dev/null; then
+        git show "${OLD_HEAD}:${dir}/compose.yml" > "$lastgood"
+    fi
+
+    if ! pull_with_retry; then
+        echo "image pull failed" > "$REASON_FILE"
+        exit 1
+    fi
+
+    # Baselines from the version running NOW: only checks that passed before the update can fail it.
+    BASE_PORTS=$(listening_ports) || BASE_PORTS=""
+    BASE_URLS=$(passing_urls) || BASE_URLS=""
+
+    if ! docker compose up -d --wait --wait-timeout "$WAIT_TIMEOUT"; then
+        echo "did not become ready within ${WAIT_TIMEOUT}s, or a container exited" > "$REASON_FILE"
+    elif verify_stack > "$REASON_FILE"; then
+        cp compose.yml "$lastgood"
+        exit 0
+    fi
+
+    echo "❌ GitOps: $dir failed verification: $(cat "$REASON_FILE")"
+    docker compose logs --tail=20 2>&1 || true   # ends up in the cron-guard log
+
+    if grep -Eq "$ROLLBACK_OFF_RE" compose.yml; then
+        echo "⏭️  GitOps: $dir has deploy.rollback=false; not rolling back."
+        exit 1
+    fi
+    if [ ! -f "$lastgood" ]; then
+        echo "⏭️  GitOps: no last-known-good compose file for $dir; not rolling back."
+        exit 1
+    fi
+
+    echo "↩️  GitOps: Rolling back $dir to the last known good compose file"
+    if docker compose -f "$lastgood" --project-directory "$PWD" up -d --remove-orphans --wait --wait-timeout "$WAIT_TIMEOUT"; then
+        exit 2
+    fi
+    exit 3
+)
+
+# --probe CONTAINER [PORT]: find a working health path for the optional deploy.healthcheck label.
+probe_container() {
+    local name="${1:-}" only_port="${2:-}" ip ports port scheme code path best_special best_root
+    if [ -z "$name" ]; then
+        echo "Usage: $(basename "$0") --probe CONTAINER [PORT]" >&2
+        return 2
+    fi
+    if ! docker inspect "$name" > /dev/null 2>&1; then
+        echo "No such container: $name (use the container_name, see: docker ps --format '{{.Names}}')" >&2
+        return 2
+    fi
+    ip=$(container_ip "$name")
+    if [ -z "$ip" ]; then
+        echo "$name has no container IP (host network or shared network namespace), so it can't be probed."
+        echo "It still gets the running + crash-loop checks on every deploy."
+        return 0
+    fi
+    ports="${only_port:-$(container_tcp_ports "$name" | tr '\n' ' ')}"
+    if [ -z "${ports// /}" ]; then
+        echo "$name (ip $ip) declares no TCP ports. Pass one: $(basename "$0") --probe $name PORT"
+        echo "or add expose: [\"PORT\"] to its compose file so the automatic port check can see it."
+        return 0
+    fi
+    echo "$name  ip=$ip  ports: $ports"
+    for port in $ports; do
+        if ! port_open "$ip" "$port"; then
+            echo "  port $port: closed (nothing listening)"
+            continue
+        fi
+        scheme=http
+        code=$(curl -sk -o /dev/null --max-time 5 -w '%{http_code}' "http://${ip}:${port}/" || true)
+        if [ "$code" = "000" ] || [ "$code" = "400" ]; then
+            code=$(curl -sk -o /dev/null --max-time 5 -w '%{http_code}' "https://${ip}:${port}/" || true)
+            if [ "$code" != "000" ] && [ "$code" != "400" ]; then
+                scheme=https
+            fi
+        fi
+        echo "  port $port: open (${scheme})"
+        best_special=""
+        best_root=""
+        for path in / /health /healthz /healthcheck /ping /api/health /api/v1/health /status /api/status /ready /readyz /livez /-/health /admin/; do
+            code=$(curl -sk -o /dev/null --max-time 5 -w '%{http_code}' "${scheme}://${ip}:${port}${path}" || true)
+            printf '      %-16s %s\n' "$path" "$code"
+            case "$code" in
+                2* | 3*)
+                    if [ "$path" = "/" ]; then
+                        best_root="/"
+                    elif [ -z "$best_special" ]; then
+                        best_special="$path"
+                    fi
+                    ;;
+            esac
+        done
+        path="${best_special:-$best_root}"
+        if [ -n "$path" ]; then
+            echo "      -> add to a service in the compose file:"
+            echo "           labels:"
+            echo "             - \"deploy.healthcheck=${scheme}://${name}:${port}${path}\""
+        else
+            echo "      -> nothing answered 2xx/3xx (401/403 = needs login, 404 = no such path). Skip the label;"
+            echo "         the automatic port check still protects this container."
+        fi
+    done
+}
+
+# --verify STACK: run the post-deploy checks against the stack as it runs right now (deploys nothing).
+verify_only() {
+    local dir="${1:-}" reason
+    if [ -z "$dir" ] || [ ! -f "${STACKS_DIR}/${dir}/compose.yml" ]; then
+        echo "Usage: $(basename "$0") --verify STACK   (a folder in ${STACKS_DIR} that has a compose.yml)" >&2
+        return 2
+    fi
+    cd "${STACKS_DIR}/${dir}" || return 2
+    if [ -z "$(docker compose ps --services --status=running 2>/dev/null)" ]; then
+        echo "⏭️  ${dir} has no running containers; nothing to verify."
+        return 0
+    fi
+    BASE_PORTS=$(listening_ports) || BASE_PORTS=""
+    BASE_URLS=$(passing_urls) || BASE_URLS=""
+    echo "Baseline for ${dir}:"
+    printf '%s\n' "$BASE_PORTS" | awk 'NF {print "  listening  " $1 " port " $2}'
+    printf '%s\n' "$BASE_URLS" | awk 'NF {print "  url ok     " $0}'
+    if [ -z "$BASE_PORTS$BASE_URLS" ]; then
+        echo "  (no port or URL could be checked here; only running state and the crash-loop soak apply)"
+    fi
+    echo "Running the post-deploy checks against what is running right now (nothing is deployed or restarted)..."
+    if reason=$(verify_stack); then
+        echo "✅ ${dir}: checks pass"
+    else
+        echo "❌ ${dir}: ${reason}"
+        return 1
+    fi
+}
+
+case "${1:-}" in
+    --probe)  shift; rc=0; probe_container "$@" || rc=$?; exit "$rc" ;;
+    --verify) shift; rc=0; verify_only "$@" || rc=$?; exit "$rc" ;;
+    "") ;;
+    *) echo "Usage: $(basename "$0") [--probe CONTAINER [PORT] | --verify STACK]" >&2; exit 2 ;;
+esac
+
+# Prevent stepping on git-auto-sync.py or dashboard generation.
+# Non-blocking: if busy, skip this run entirely.
+exec 200>"${STACKS_DIR}/.git/sync.lock"
+flock -n 200 || { echo "⏭️  Stacks repo busy (locked by another process), skipping this cycle."; exit 0; }
+
+mkdir -p "$LASTGOOD_DIR"
+
+# Best effort: pull one image at a time to avoid containerd content-store races.
+export COMPOSE_PARALLEL_LIMIT=1
+
 # Verify the server is on 'main' before touching live containers
 CURRENT_BRANCH=$(git symbolic-ref --short -q HEAD || echo "detached")
 
@@ -62,11 +400,14 @@ fi
 
 git fetch -q origin main
 
+OLD_HEAD=$(git rev-parse HEAD)
 # Count how many remote commits we are missing
 BEHIND=$(git rev-list HEAD..origin/main | wc -l)
 CHANGED_DIRS=""
 NEW_FAILED=""
 PREV_FAILED=""
+ROLLED_BACK=""
+ROLLBACK_FAILED=""
 
 if [ "$BEHIND" -gt 0 ]; then
     echo "🔄 GitOps: Upstream changes detected on main branch."
@@ -112,12 +453,15 @@ if [ -n "$CHANGED_DIRS" ]; then
             if [ -n "$(cd "$dir" && docker compose ps --services --status=running 2>/dev/null)" ]; then
                 echo "🚀 GitOps: Redeploying active stack: $dir"
                 # A failure here must not abort the loop: the remaining stacks still get deployed.
-                if (cd "$dir" && pull_with_retry && docker compose up -d); then
-                    REDEPLOYED_STACKS+="- ${dir}"$'\n'
-                else
-                    echo "❌ GitOps: Deploy failed for stack: $dir (old containers left running)"
-                    FAILED_DIRS+="${dir}"$'\n'
-                fi
+                rc=0
+                deploy_stack "$dir" || rc=$?
+                case "$rc" in
+                    0) REDEPLOYED_STACKS+="- ${dir}"$'\n' ;;
+                    2) ROLLED_BACK+="- ${dir}: $(cat "$REASON_FILE")"$'\n' ;;
+                    3) ROLLBACK_FAILED+="- ${dir}: $(cat "$REASON_FILE")"$'\n' ;;
+                    *) echo "❌ GitOps: Deploy failed for stack: $dir"
+                       FAILED_DIRS+="${dir}"$'\n' ;;
+                esac
             else
                 echo "⏭️  GitOps: Skipping stopped stack: $dir (Files updated, but container left offline)"
             fi
@@ -138,6 +482,22 @@ if [ -n "$CHANGED_DIRS" ]; then
 The following stacks were successfully updated and restarted:
 $REDEPLOYED_STACKS"
     fi
+
+    if [ -n "$ROLLED_BACK" ]; then
+        send_telegram "↩️ GitOps: Rolled Back
+━━━━━━━━━━━━━━━
+The new version failed verification, so the previous compose file is running again:
+$ROLLED_BACK
+main still contains the bad change. Revert the merged PR on GitHub, and do not run docker compose up in these folders until you have."
+    fi
+
+    if [ -n "$ROLLBACK_FAILED" ]; then
+        send_telegram "🚨 GitOps: ROLLBACK FAILED
+━━━━━━━━━━━━━━━
+The new version failed verification and the previous one would not start either:
+$ROLLBACK_FAILED
+Manual intervention needed. These stacks are not retried automatically."
+    fi
 fi
 
 # Clear old pause file if the repository is now fully in sync
@@ -146,15 +506,20 @@ if [ "$BEHIND" -eq 0 ] && [ -f "$PAUSE_FILE" ]; then
     rm -f "$PAUSE_FILE"
 fi
 
+FINAL_RC=0
 if [ -n "$NEW_FAILED" ]; then
     echo "🚨 GitOps: Deploy failed for: $(printf '%s' "$NEW_FAILED" | tr '\n' ' ')- will retry next cycle."
     # Exit non-zero only when the failure set is new, so cron-guard alerts once instead of every 15 minutes.
     if [ "$NEW_FAILED" != "$PREV_FAILED" ]; then
-        exit 1
+        FINAL_RC=1
     fi
-    exit 0
+fi
+if [ -n "$ROLLED_BACK" ] || [ -n "$ROLLBACK_FAILED" ]; then
+    echo "🚨 GitOps: rollback happened (see above). Revert the merged PR so Git matches what is running."
+    FINAL_RC=1
 fi
 
-if [ "$BEHIND" -gt 0 ] || [ -n "$PREV_FAILED" ]; then
+if [ "$FINAL_RC" -eq 0 ] && { [ "$BEHIND" -gt 0 ] || [ -n "$PREV_FAILED" ]; }; then
     echo "✅ GitOps: Sync complete."
 fi
+exit "$FINAL_RC"

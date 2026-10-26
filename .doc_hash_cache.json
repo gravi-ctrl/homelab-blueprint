@@ -1,5 +1,5 @@
 {
-  "/home/alice/scripts/backup-scripts-git.sh": "a61d817516f4507bf5895a2789a22899c132036f18fe795796848d8029de8b1f",
+  "/home/alice/scripts/backup-scripts-git.sh": "1b88d60a447915521d881a5749f13cd6c371ac6a94752d45e923748fde59993d",
   "/home/alice/scripts/battery-monitor.sh": "9d79d4e88b28ddbd9136ee9b571baffbd7c201e94c1b84214d32ae04e3210dbc",
   "/home/alice/scripts/cert-manager/cert-manager.sh": "9afc47d9980bcb1ef6280f30c57881cb83b2e3f2da966a5b7ef979bba4806a01",
   "/home/alice/scripts/cleanup_script.py": "bc9c7eaebc8193ccc27cc050efa8dd8116416a05edb333f353a498811fe22e3b",
@@ -9,7 +9,7 @@
   "/home/alice/scripts/generate-dashboards.sh": "ff8a6cd8648dd39687c097d0615f97b871a3a31f8b0699add9e4fb35514d7a8e",
   "/home/alice/scripts/git-auto-sync.py": "4963fbc998bc4214522f2605aef074836bdbd036926973c28d3c463cabbe5ed2",
   "/home/alice/scripts/git-perms.sh": "7e53b56bbc0332769305749c5957f4f173ee5a189ef48979a54998a628626f83",
-  "/home/alice/scripts/gitops-deploy.sh": "a371a92c424aac4bcaefe1bcd693013cf693d5277b8ca933aef33d05c15e3b54",
+  "/home/alice/scripts/gitops-deploy.sh": "a702d55a28c9a3d899a0ebfe8cd86555c64c6de4a810992237c488d8457929ca",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
   "/home/alice/scripts/homelab_dash.py": "0282065b7c392476dd763f27704957ceaf952a1c82432f09266bce157b2a94fa",
   "/home/alice/scripts/local-opt-backup.sh": "ac2b0d507465cd427024b22079b25cdf00bafcc8d09fb512fd862e77fbd38002",
