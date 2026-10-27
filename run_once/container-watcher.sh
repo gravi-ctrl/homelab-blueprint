@@ -4,11 +4,11 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, WATCHER_TASKS
 # @CAPABILITIES:
-#   • Automatically configures Nextcloud, Tailscale, NPM, Pi‑hole immediately after manual container start, eliminating manual post‑restore steps.
-#   • Idempotent state tracking stops redundant runs, ensuring each task completes only once and conserves resources.
-#   • Custom readiness checks guarantee services are fully operational before running post‑restore scripts, preventing race conditions.
-#   • Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security posture.
-#   • Telegram alerts with retry logic keep operators instantly informed of successes or critical failures, enabling rapid response.
+#   • Auto‑configures services after manual container start, eliminating manual post‑restore steps.
+#   • Tracks task completion in a state file to avoid redundant runs and save resources.
+#   • Runs custom readiness checks before executing tasks, preventing race conditions.
+#   • Limits elevated privileges to specific task functions, tightening security posture.
+#   • Sends Telegram alerts with retry logic, keeping operators instantly informed of successes or failures.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env
@@ -50,8 +50,8 @@ check_tailscale() {
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/nextcloud_post-restore_fix.sh
-    /opt/stacks/nextcloud/nextcloud-dynamic-watch.sh
+    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/nextcloud_post-restore_fix.sh || return 1
+    /opt/stacks/nextcloud/nextcloud-dynamic-watch.sh || return 1
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
@@ -71,7 +71,7 @@ If missing, manually re-add:
 task_tailscale() {
 
     local ts_state
-    ts_state=$(docker exec tailscaled tailscale status --json | jq -r .BackendState 2>/dev/null)
+    ts_state=$(docker exec "$container" tailscale status --json | jq -r .BackendState 2>/dev/null)
 
     if [ "$ts_state" = "Running" ]; then
         send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
@@ -141,22 +141,26 @@ while true; do
 
         HAS_VALID_TASKS=true
         IFS="|" read -r task container <<< "$line"
-
+        task="${task// /}"
+        container="${container// /}"
         is_done "$task" && continue
 
         ALL_DONE=false
 
         if is_running "$container" && run_check "$task" "$container"; then
             if declare -f "task_${task}" > /dev/null; then
-                "task_${task}"
-                mark_done "$task"
+                if "task_${task}"; then
+                    mark_done "$task"
+                else
+                    echo "❌ Task 'task_${task}' failed. Will retry next cycle..." >&2
+                fi
             fi
         fi
     done
 
     if [ "$ALL_DONE" = true ] || [ "$HAS_VALID_TASKS" = false ]; then
         systemctl disable container-watcher.service
-        rm /etc/systemd/system/container-watcher.service
+        rm -f /etc/systemd/system/container-watcher.service
         systemctl daemon-reload
         rm "$STATE_FILE"
         break
