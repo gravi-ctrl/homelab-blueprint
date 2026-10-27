@@ -1,6 +1,6 @@
 ![License](https://img.shields.io/badge/license-MIT-green?label=License)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
-[![Code Quality & Linting](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/yml.yml)
+[![Code Quality & Linting](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml)
 [![Code Quality & Tests](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml)
 [![Security Scans](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml)
 [![Stacks Validation & CI](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml)
@@ -20,7 +20,7 @@ This repository functions as the automation engine for my home server. It acts a
 
 The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a custom Telegram wrapper, so failures are never silent. If a job crashes and dumps a massive log, the wrapper sends a summary to your phone and saves the full output locally. 
 
-The server snapshots its own state daily: scripts, crontabs, package lists, etc. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack, ready to restore a wiped machine in under an hour.
+The server snapshots its own state daily: scripts, crontabs, package lists, etc. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack, ready to rebuild a wiped machine in an under an hour (see the runbook below).
 
 For on-demand triage, an integrated terminal assistant (oracle) allows piping live Docker logs, systemd traces, or full scripts for instant, stream-rendered root-cause analysis with automated secret scrubbing.
 
@@ -40,7 +40,25 @@ Every commit and Pull Request across the ecosystem is validated before code or c
 * **Supply-Chain & Security Scanning:** 
   * [Trivy](https://github.com/aquasecurity/trivy) scans for committed credentials, API keys, and Dockerfile misconfigurations (`HIGH`, `CRITICAL`).
   * Weekly scheduled CVE scans monitor published images (`ghcr.io/gravi-ctrl/wifi-robot:latest`) for newly reported upstream vulnerabilities.
-* **GitOps Continuous Deployment:** Merging a container update triggers an automated build and push to GitHub Container Registry (`ghcr.io`), which the server's local GitOps engine (`gitops-deploy.sh`) pulls, validates, and deploys with sequential zero-downtime restarts.
+* **Container Images:** Merging a change to `wifi-robot/` builds and pushes the image to GitHub Container Registry (`ghcr.io`); the weekly scan above watches it for new vulnerabilities.
+* **GitOps Continuous Deployment:** Merging a PR (usually a Renovate dependency bump) is the whole release process. The server's pull-based engine (`gitops-deploy.sh`) picks it up within 15 minutes and redeploys only the affected running stacks, one at a time. Each stack is verified (container state, a crash-loop watch, and port and HTTP checks compared against what was healthy *before* the update) and rolled back to its last known good compose file if it fails, with a Telegram alert.
+
+---
+
+## 🔁 How a Change Reaches the Server
+
+```mermaid
+flowchart LR
+    R["Renovate"] -->|opens PR| PR["Pull request"]
+    PR --> CI{"CI checks"}
+    CI -->|pass| M["Merge to main"]
+    M --> D["GitOps deployer on the server (every 15 min)"]
+    D --> V{"Verify: state, soak, ports, HTTP"}
+    V -->|healthy| OK["Telegram: success"]
+    V -->|failed| RB["Rollback to last known good + Telegram alert"]
+```
+
+`main` is protected in every repo (PR plus required checks), and nothing automated pushes to it. Machine-generated output goes to side branches instead: dashboards to `pages`, system snapshots to `snapshots`. Anything that changes on the server outside a PR shows up in a daily drift report rather than being committed silently. The reasoning is in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §16–18.
 
 ---
 
@@ -106,7 +124,7 @@ Choose your scenario before running the script:
 *   **Option B: Fresh Start (No Backup)**
     Before executing the script, prepare `~/.ssh/` with:
     1. `authorized_keys`: Your laptop/workstation's **public key** (prevents lockout when password auth is disabled).
-    2. Git Deploy Private Key: Key(s) authorized on Codeberg / GitHub.
+    2. Git Deploy Private Key: Key(s) authorized on GitHub.
     3. `config` *(optional)*: Host mapping if using custom key names.
 
 **2. Download, Verify, and Run Bootstrap:**
@@ -204,6 +222,6 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 
 <br>
 
-<sub>Part of the **gravi-ctrl** homelab ecosystem • Built for reproducibility and zero-downtime recovery</sub>
+<sub>Part of the **gravi-ctrl** homelab ecosystem • Built for reproducibility and repeatable recovery</sub>
 
 </div>

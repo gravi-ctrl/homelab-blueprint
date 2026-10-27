@@ -183,11 +183,7 @@ git diff --cached --quiet -I "[Gg]enerated "
 Since the timestamp is the only thing that ever moves on a no-op day, this correctly detects
 "nothing of substance changed" and skips the commit.
 
-Why the explicit push at the end still works without extra wiring: `git-auto-sync.py` (the
-generic multi-repo sync engine used elsewhere) treats `pages` as just another local branch
-once it exists — `get_local_branches()` walks every `refs/heads/*` and syncs each one. So once
-`generate-dashboards.sh` has created `pages` for the first time, the regular daily sync picks
-it up automatically from then on, no special-casing needed.
+The push at the end is explicit, and deliberately so. `backup-scripts-git.sh` runs `git push origin pages` for both repos, and skips it while a `dash-alarm-*` flag exists in the repo's `.git` (a known, already-alarmed problem such as a rebase conflict), so a stuck dashboard fails loudly once instead of every morning. Nothing else in the pipeline pushes any branch: `git-auto-sync.py` is no longer part of the daily run (see §18), so `pages` only moves because this script moves it. The `snapshots` branch uses the same technique: a temporary worktree, one commit, one push.
 
 One dependency worth remembering: this only works because the worktree is always gone by the
 time anything else tries to check out `pages` in the main working tree. Git won't let the
@@ -271,6 +267,8 @@ OS-conditional process-tree kill in `cron-guard.py`. Acquired right after `chdir
 target repo, held for the whole run via `try`/`finally`, released on every exit path including
 `sys.exit()` (which raises `SystemExit`, so `finally` still runs).
 
+`git-auto-sync.py` is no longer part of the daily pipeline (see §18). It is kept for manual use, which is why the locking convention still applies to it.
+
 Why `-n` / `LOCK_NB` instead of waiting: `gitops-deploy.sh` runs again in 15 minutes
 regardless, so skipping one cycle and catching the deploy next time costs nothing. A
 multi-second wait would also eat into whatever timeout `cron-guard` has set for that job, for
@@ -298,7 +296,7 @@ Each repo maintains a lightweight, committed `.git-perms` file managed by `git-p
 * **Scoped to tracked files only:** It reads `git ls-files`, ignoring transient media, databases, and logs.
 * **Portable identity via `@USER:@GROUP`:** Files owned by the server's primary user are recorded as `@USER:@GROUP`. On restore, this dynamically resolves to whoever is running the bootstrap (e.g., `alice:alice` or `admin:admin`), preventing UID/GID mismatches across different Linux distros.
 * **Preserves explicit system identities:** Any file owned by `root:root` or container-specific service UIDs (like `33:33` or `1000:1000`) is preserved verbatim.
-* **Automated lifecycle:** `backup-scripts-git.sh` snapshots permissions at 5:00 AM daily before pushing. During Fresh Start, `bootstrap.sh` restores exact permissions right after cloning.
+* **Automated lifecycle:** `backup-scripts-git.sh` re-saves permissions at 5:00 AM daily but no longer commits anything. A changed `.git-perms` is just another uncommitted change: it appears in the drift report (§18) and goes into the repo through a normal PR. During Fresh Start, `bootstrap.sh` restores exact permissions right after cloning.
 
 ---
 
@@ -314,7 +312,7 @@ In a Full Recovery, `~/.ssh` and `/etc/ssh` are restored identically from the en
 ### 2. The Non-Interactive `known_hosts` Freeze
 On a fresh OS, `~/.ssh/known_hosts` does not exist. The first time `git clone git@github.com` runs, SSH prompts interactively: `Are you sure you want to continue connecting (yes/no)?`.
 Because `bootstrap.sh` routes output through `quietly` (`>> "$LOGFILE" 2>&1`), there is no interactive terminal. The script will freeze indefinitely waiting for input.
-* **The Fix:** Phase 2 runs `ssh-keyscan -H` for both Codeberg and GitHub to seed `known_hosts` before any Git commands execute.
+* **The Fix:** Phase 2 runs `ssh-keyscan -H` for GitHub to seed `known_hosts` before any Git commands execute.
 
 ### 3. The `pipefail` Trap on `ssh -T`
 Testing Git access via `ssh -T git@github.com` prints a success message ("*You've successfully authenticated*"), but **deliberately exits with status code `1`** because Git hosts do not provide an interactive shell.
@@ -331,6 +329,10 @@ would install a different, unwrapped line if I ran it. That's intentional, not a
 independent of the rest of the cron-guard ecosystem, so it keeps its own self-contained
 installer as a fallback for that case, even though the live deployment doesn't actually use
 it.
+
+**Rollback is a compose-file rollback, not a time machine.** It restores the last known good `compose.yml` only: not data, not other files in the stack folder, and not database migrations. Stacks where an older version could damage migrated data opt out with `deploy.rollback=false` and rely on alerting. After a rollback, Git and reality disagree (`main` still has the bad change) until the PR is reverted.
+
+**The deploy checks prove "listening" and "answers HTTP", not "works".** An app can serve a login page with a broken backend. The baseline design also means containers that can't be probed (host network, no declared ports, unreachable from the host) only get the state and crash-loop checks. The IP-based probing relies on the host routing to Docker bridge networks, which holds on Linux but not on Docker Desktop.
 
 ---
 
@@ -371,8 +373,7 @@ To prevent `doc-injector.py` from constantly triggering AI requests on scripts t
 * This ensures that updating the documentation header does not invalidate the file's code hash on subsequent runs.
 
 ### 3. Pipeline Execution Sequence
-In `backup-scripts-git.sh`, `doc-injector.py` must execute in **Step 1 (Snapshot phase)** *before* `git-auto-sync.py` runs on `/opt/rabbit-hole`. 
-* Running it after Step 2 leaves newly injected capabilities sitting uncommitted in the working tree, delaying their deployment to the `main` branch by 24 hours.
+In `backup-scripts-git.sh`, `doc-injector.py` runs in step G of the snapshot phase, before the dashboards are generated. Nothing in the pipeline commits to `main` any more, so a header it rewrites is just an uncommitted change: it shows up in the drift report (§18) and ships with the next PR. Run `python3 doc-injector.py` yourself before committing a script change, so the rewritten header lands in the same PR and the 5 AM run finds nothing left to change.
 
 ---
 
@@ -390,6 +391,60 @@ Third-party Actions (such as `aquasecurity/trivy-action`) are pinned to immutabl
 ```yaml
 uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
 ```
+
+### 3. Compose Validation Needs a Stand-in `.env`
+`docker compose config -q` refuses to render a file whose `${VAR}` references have no value, and the real `.env` files are (rightly) not in git. The CI job copies each stack's `.env.example` to `.env` for the duration of the check, validates, then deletes the copy. It proves syntax and schema only, not that images exist or the stack starts. A stack also fails validation if its `.env.example` leaves a *required* value blank: give such variables a default (`${PORT:-8080}`) or a sample value.
+
+---
+
+## 16. GitOps Deployer: Verify, Roll Back, Retry
+
+Section 8 covers what happens when the *pull* fails. This section covers what happens when the *deploy* does.
+
+**The flow, per changed stack** (only stacks that already have running containers; a stopped stack is left offline on purpose):
+1. Record a **baseline** from the version that is running right now.
+2. `docker compose pull` (3 attempts), then `up -d --wait` (default 120 s).
+3. **Soak** for 30 s: restart counters must not move, and no container may be `restarting`, `dead`, `created`, unhealthy, or exited non-zero.
+4. Compare against the baseline (below).
+5. On success, copy that `compose.yml` to `.git/gitops_state/lastgood/<stack>.yml`. On failure, start the last known good file (`-f` it, with `--project-directory` pointing at the stack), then alert.
+
+Why a *copy* of the compose file instead of `git revert`: the checkout has to stay equal to `origin/main`. Reverting locally would make the server diverge and the next pull conflict.
+
+**The baseline is the important idea.** Before touching anything, the deployer reaches every running container by its IP on the docker network (the host can route to bridge networks, so nothing has to be published) and records which declared TCP ports accept connections and which of those answer HTTP(S) on `/` with a status below 500. After the update, every service that was listening must listen again and every service that answered HTTP must answer again, within `PROBE_TIMEOUT` (120 s). Only checks that passed *before* can fail the *update*, so a container that doesn't listen, isn't HTTP, was already returning 5xx, or can't be reached from the host is simply not gated. A wrong rollback is worse than a missed one, so the design leans toward under-checking. Database, mail, SSH and DNS ports are never sent HTTP.
+
+**Optional labels** on any service in the stack's compose file: `deploy.rollback=false` for stacks with databases or migrations (still deployed, verified, alerted on and retried, never rolled back), and `deploy.healthcheck=http://<name>:<port>/<path>` for apps where `/` proves little. A health URL that doesn't answer on the running version is ignored with a warning, so a wrong path can't cause a rollback.
+
+**Retry and alerting.** A stack that failed without a rollback (opt-out, no last-good file, failed pull) is written to `.git/gitops_retry` and retried every cycle, even though git is already up to date for it. The script exits non-zero only when the failed set *changes*, so cron-guard alerts once instead of every 15 minutes. A successful rollback also exits non-zero once; its Telegram message says that `main` still contains the bad change and the PR needs reverting.
+
+**Helper modes.** `--verify STACK` runs the real checks against a live stack without deploying anything and prints its baseline. `--probe CONTAINER` finds a health path for the optional label. Neither takes the lock or writes state.
+
+**Testing.** The logic is exercised with a mocked `docker` CLI pointed at real listening sockets and a real HTTP server: healthy deploys, a crash loop, a failed start, a service that stops listening, 5xx after the update, a slow starter, an already-broken service, a non-HTTP port, a failed rollback and a failed pull. `--verify` runs the same checks against real Docker.
+
+---
+
+## 17. Alert De-duplication in `cron-guard`
+
+Jobs that run every few minutes and fail the same way every time used to send the same alert every time. `--repeat-after DURATION` stops that without hiding new problems.
+
+* **Fingerprint:** a failure is its exit code plus the last lines of output with digits, hex IDs and ANSI codes stripped, so a changing timestamp or PID doesn't make the same error look new.
+* **Same fingerprint:** silent until `DURATION` has passed since the last alert, then one reminder ("Still failing: N runs since …, M alerts suppressed"). **Different fingerprint:** alert immediately. `--recovery` adds one message on the first success after an alerted failure.
+* **Why not "alert once until it succeeds"?** A second, different failure while the job is still failing would be invisible.
+* **State** is a small JSON file per job in `state/`, written atomically. It **fails open**: an unreadable or damaged file, or a failed Telegram delivery, makes the failure count as new and alert. A suppression bug must never be able to hide an outage. (A damaged state file once crashed the wrapper before that fallback existed.)
+* Off by default: jobs without the flags behave exactly as before. Because digits are ignored, two errors that differ only by a number count as the same.
+
+---
+
+## 18. Branch Model: Humans Use PRs, Machines Use Side Branches
+
+`main` in all three repos is protected by a ruleset (PR required, required checks, no force-push). Nothing automated pushes to it. `backup-scripts-git.sh` used to run `git-auto-sync.py` over every repo each morning, which meant the server's working tree could reach `main` (and, for `/opt/stacks`, production, since the deployer pulls `main`) without review or CI.
+
+What the 5 AM job does now:
+* **Snapshots** (crontabs, package lists, dotfiles, APT sources, sshd drop-ins) are copied into a temporary worktree of the unprotected `snapshots` branch, using an allow-list `.gitignore` (only `run_once/system_configs` and `run_once/dotfiles`; `.env`, `*.pem` and `*.key` always excluded). The job commits only when something changed, then pushes. It is the same technique as the dashboards: a throwaway worktree shares the object database, so the main working tree is never disturbed. `bootstrap.sh` restores these files during Fresh Start.
+* **Dashboards** go to `pages`, as in §6.
+* **Drift report:** `git status --porcelain` on the three repos; it never commits. A new set of uncommitted changes exits non-zero once (so cron-guard alerts) and at most weekly while it persists (the hash includes the ISO week). Real changes go through a branch and a PR.
+
+Consequences: the server consumes `main` (the deployer pulls it), the only things it publishes are generated files on side branches, and no job needs a bypass for direct pushes. Anything that lands on the server without a PR appears in the drift report instead of being pushed silently.
+
 ---
 
 ## Quick Reference: Gotchas
@@ -404,8 +459,7 @@ uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36
   independently even when the UID happens to match.
 - Adding a new always-silent cron job? Use `cron-guard --mode mute` — clean dashboard label
   and a heartbeat file for free.
-- Touching `generate-dashboards.sh`'s cleanup trap? Don't remove it — the next sync cycle's
-  ability to check out `pages` depends on the worktree always being gone by then.
+- Touching `generate-dashboards.sh`'s cleanup trap? Don't remove it. Git refuses to check out a branch that is already checked out in another worktree, so a leaked worktree breaks the next run's handling of `pages` and `snapshots`.
 - Writing a cron line with both day-of-month and day-of-week restricted? Cron ORs them, not
   ANDs. Leave day-of-week as `*` and check it inside the command instead.
 - Building a new "noisy by default" job that can get stuck failing repeatedly (merge
@@ -425,3 +479,7 @@ uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36
 - Setting up a required PR check in GitHub Actions? Never combine it with `paths` filtering, or documentation-only PRs will freeze in an endless `Expected` status check lock. See §15.1.
 - Adding third-party GitHub Actions? Pin to full 40-character commit SHAs, never mutable tags or `latest`. See §15.2.
 - Testing Compose files in CI? Ensure `.env.example` exists; the CI validator copies it temporarily so Docker Compose can resolve required variable references. See §15.3.
+- Adding a stack with a database or one-way migrations? Add `deploy.rollback=false` to any service in its compose file, or a failed update will be rolled back to an older app version on a newer schema. See §16.
+- Wondering what the deployer actually checks for a stack? Run `gitops-deploy.sh --verify <stack>`: it prints the baseline (ports and HTTP endpoints) and runs the checks without deploying. See §16.
+- A cron job failing the same way every few minutes? Add `--repeat-after 6h` (and `--recovery`) to its cron-guard line instead of muting it. See §17.
+- Need to publish a generated file from the server? Don't push `main`. Use a temporary worktree on a side branch like `pages` and `snapshots`. See §18.
