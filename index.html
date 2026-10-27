@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-26 22:15 EEST</div>
+    <div class="meta-line">Generated 2026-10-27 03:25 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5326,19 +5326,18 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Auto‑syncs only main branch, blocking feature branches to keep production stable.",
+        "Synchronizes only main branch, blocking feature branches to maintain production stability.",
         "Detects merge conflicts, pauses deployment, and alerts admins via Telegram to prevent broken stacks.",
         "Redeploys only stacks with running containers, preserving intentionally stopped services.",
         "Uses non‑blocking lock to avoid race conditions during concurrent runs.",
         "Pulls images sequentially with retries, ensuring zero‑downtime updates even on transient registry failures.",
         "Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically.",
-        "Verifies every deploy (compose --wait, crash-loop soak check, automatic port check, optional URL probe).",
-        "Rolls a failed stack back to its last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.",
-        "Read-only helper modes (--probe, --verify) find a health URL and test the checks on live stacks without deploying anything."
+        "Verifies every deploy with compose wait, crash‑loop soak, port and HTTP checks, and optional URL probe.",
+        "Rolls back failed stack to last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.#       Only needed when you want the optional deploy.healthcheck label: tries common health paths and prints a"
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port check, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.",
+      "desc": "Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR",
