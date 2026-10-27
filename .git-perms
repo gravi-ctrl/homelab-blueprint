@@ -16,6 +16,9 @@
 755	@USER:@GROUP	docker-dash/docker_dash.py
 644	@USER:@GROUP	docker-dash/.env.example
 644	@USER:@GROUP	docker-dash/README.md
+755	@USER:@GROUP	docs/incidents
+644	@USER:@GROUP	docs/incidents/2026-10-renovate-aborts-on-403.md
+644	@USER:@GROUP	docs/incidents/TEMPLATE.md
 644	@USER:@GROUP	.env.example
 755	@USER:@GROUP	generate-dashboards.sh
 644	@USER:@GROUP	.gitattributes
