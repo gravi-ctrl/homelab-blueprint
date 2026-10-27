@@ -16,7 +16,7 @@
   "/home/alice/scripts/nextcloud-dynamic-watch.sh": "9091501c575ecd69ecb0bec673189ba3d15847844d9aa87047385407d4fc5ca6",
   "/home/alice/scripts/tg-vergil/vergil.py": "9b5f24e4171d445ab745a7a30a525d7e1a6cb2fbbe46e80945c5fd061f81a17a",
   "/home/alice/scripts/run_once/bootstrap.sh": "f168364c38db0d395f5001819c2f99a458fbaf439178c8e17a7d73152c110ed7",
-  "/home/alice/scripts/run_once/container-watcher.sh": "06980abcb2764f0cfcffd22352ccbb89ea49e7fecb8c948a736dcb9c2da9183f",
+  "/home/alice/scripts/run_once/container-watcher.sh": "be691ae60238b19e2163b0d5f72420e10df7e38e5106168c52709b00de5a3063",
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
   "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
