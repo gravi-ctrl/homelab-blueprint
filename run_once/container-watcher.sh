@@ -4,11 +4,11 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, WATCHER_TASKS
 # @CAPABILITIES:
-#   • Idempotent state tracking disables watcher after all tasks complete, preventing redundant runs.
-#   • Custom readiness checks allow fine‑grained verification before executing service‑specific post‑restore scripts.
-#   • Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security.
-#   • Telegram alerts with retry logic keep operators informed of successful setups or critical failures.
-#   • Automates immediate configuration for Nextcloud, Tailscale, NPM, and Pi‑hole after manual container start.
+#   • Automatically configures Nextcloud, Tailscale, NPM, Pi‑hole immediately after manual container start, eliminating manual post‑restore steps.
+#   • Idempotent state tracking stops redundant runs, ensuring each task completes only once and conserves resources.
+#   • Custom readiness checks guarantee services are fully operational before running post‑restore scripts, preventing race conditions.
+#   • Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security posture.
+#   • Telegram alerts with retry logic keep operators instantly informed of successes or critical failures, enabling rapid response.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env
@@ -50,8 +50,8 @@ check_tailscale() {
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/rabbit-hole/run_once/nextcloud_post-restore_fix.sh
-    /opt/rabbit-hole/nextcloud-dynamic-watch.sh
+    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/nextcloud_post-restore_fix.sh
+    /opt/stacks/nextcloud/nextcloud-dynamic-watch.sh
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━

@@ -29,14 +29,12 @@
 755	@USER:@GROUP	homelab_dash.py
 644	@USER:@GROUP	LICENSE
 755	@USER:@GROUP	local-opt-backup.sh
-755	@USER:@GROUP	nextcloud-dynamic-watch.sh
 755	@USER:@GROUP	oracle.py
 644	@USER:@GROUP	README.md
 755	@USER:@GROUP	run_once
 755	@USER:@GROUP	run_once/bootstrap.sh
 755	@USER:@GROUP	run_once/container-watcher.sh
 755	@USER:@GROUP	run_once/firewall-rules.sh
-755	@USER:@GROUP	run_once/nextcloud_post-restore_fix.sh
 755	@USER:@GROUP	run_once/setup.sh
 755	@USER:@GROUP	tg-vergil
 644	@USER:@GROUP	tg-vergil/.env.example
