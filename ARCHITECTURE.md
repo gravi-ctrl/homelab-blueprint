@@ -6,6 +6,9 @@ depend on each other in a way that isn't visible from either file alone. The
 [README](./README.md) is the runbook: what to run, in what order. This is the "why does this
 actually work, and what breaks if I touch it" doc.
 
+> ### Note on Implementation & AI Pairing
+> The automation here prioritizes operational reliability over reinventing boilerplate. I leveraged AI pairing as an engineering accelerator to implement the Python utility daemons (e.g., `cron-guard.py` process tree handling and state hashing) and to tighten Bash error trapping, while driving the architectural constraints, process semantics, and failure boundaries myself.
+
 ---
 
 ## 1. The Fixed Anchors
