@@ -50,8 +50,8 @@ check_tailscale() {
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/nextcloud_post-restore_fix.sh
-    /opt/stacks/nextcloud/nextcloud-dynamic-watch.sh
+    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/nextcloud_post-restore_fix.sh || return 1
+    /opt/stacks/nextcloud/nextcloud-dynamic-watch.sh || return 1
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
@@ -71,7 +71,7 @@ If missing, manually re-add:
 task_tailscale() {
 
     local ts_state
-    ts_state=$(docker exec tailscaled tailscale status --json | jq -r .BackendState 2>/dev/null)
+    ts_state=$(docker exec "$container" tailscale status --json | jq -r .BackendState 2>/dev/null)
 
     if [ "$ts_state" = "Running" ]; then
         send_telegram "🔧 setup.sh's Post-Restore Watcher: Tailscale
@@ -141,22 +141,26 @@ while true; do
 
         HAS_VALID_TASKS=true
         IFS="|" read -r task container <<< "$line"
-
+        task="${task// /}"
+        container="${container// /}"
         is_done "$task" && continue
 
         ALL_DONE=false
 
         if is_running "$container" && run_check "$task" "$container"; then
             if declare -f "task_${task}" > /dev/null; then
-                "task_${task}"
-                mark_done "$task"
+                if "task_${task}"; then
+                    mark_done "$task"
+                else
+                    echo "❌ Task 'task_${task}' failed. Will retry next cycle..." >&2
+                fi
             fi
         fi
     done
 
     if [ "$ALL_DONE" = true ] || [ "$HAS_VALID_TASKS" = false ]; then
         systemctl disable container-watcher.service
-        rm /etc/systemd/system/container-watcher.service
+        rm -f /etc/systemd/system/container-watcher.service
         systemctl daemon-reload
         rm "$STATE_FILE"
         break
