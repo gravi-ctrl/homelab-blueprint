@@ -42,7 +42,7 @@ Both list (`- "key=value"`) and dict (`key: value`) label formats are supported.
 ```ini
    GITHUB_REPO="https://github.com/your-username/your-repo"
    GITHUB_BRANCH="main"
-   GITHUB_TOKEN="ghp_your_token_here"   # Required if repo is private, optional if public
+   GITHUB_TOKEN="ghp_your_token_here"   # Needed to avoid being rate limited by GitHub
    EXCLUDE_DIRS="_archive"
    OUTPUT_FILE="index.html"
 
