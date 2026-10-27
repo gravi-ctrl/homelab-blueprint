@@ -4,11 +4,11 @@
 # @FREQUENCY: Run Once
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, WATCHER_TASKS
 # @CAPABILITIES:
-#   • Automatically configures Nextcloud, Tailscale, NPM, Pi‑hole immediately after manual container start, eliminating manual post‑restore steps.
-#   • Idempotent state tracking stops redundant runs, ensuring each task completes only once and conserves resources.
-#   • Custom readiness checks guarantee services are fully operational before running post‑restore scripts, preventing race conditions.
-#   • Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security posture.
-#   • Telegram alerts with retry logic keep operators instantly informed of successes or critical failures, enabling rapid response.
+#   • Auto‑configures services after manual container start, eliminating manual post‑restore steps.
+#   • Tracks task completion in a state file to avoid redundant runs and save resources.
+#   • Runs custom readiness checks before executing tasks, preventing race conditions.
+#   • Limits elevated privileges to specific task functions, tightening security posture.
+#   • Sends Telegram alerts with retry logic, keeping operators instantly informed of successes or failures.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env
