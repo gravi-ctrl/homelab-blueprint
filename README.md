@@ -5,6 +5,11 @@
 [![Security Scans](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml)
 [![Stacks Validation & CI](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml)
 
+> ### 💡 How This Was Built
+> * **Design & Logic:** All the workflows, recovery plans, and architecture were designed by me to solve real homelab headaches.
+> * **Code & AI Pairing:** I wrote the primary Bash automations by hand, and paired with LLMs to scaffold the Python utility scripts, refine syntax, and catch edge cases.
+> * **Sanity Checks:** All code is vetted through GitHub Actions pipelines (ShellCheck, Ruff, Trivy) before it ever touches production.
+
 # 🛠️ Homelab Blueprint
 
 This repository functions as the automation engine for my home server. It acts as a self-documenting "Source of Truth" handling everything from SSL/Proxy provisioning to high-resilience backups and real-time Telegram observability.
@@ -20,7 +25,7 @@ This repository functions as the automation engine for my home server. It acts a
 
 The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a custom Telegram wrapper, so failures are never silent. If a job crashes and dumps a massive log, the wrapper sends a summary to your phone and saves the full output locally. 
 
-The server snapshots its own state daily: scripts, crontabs, package lists, etc. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack, ready to rebuild a wiped machine in an under an hour (see the runbook below).
+The server snapshots its own state daily: scripts, crontabs, package lists, etc. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack. Tested from bare metal on a VM: a wiped machine is back online in **25 minutes** (15 minutes for the OS install, and ~10 minutes for the stack restore; see the runbook below).
 
 For on-demand triage, an integrated terminal assistant (oracle) allows piping live Docker logs, systemd traces, or full scripts for instant, stream-rendered root-cause analysis with automated secret scrubbing.
 
