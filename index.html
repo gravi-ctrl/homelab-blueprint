@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-27 05:52 EEST</div>
+    <div class="meta-line">Generated 2026-10-27 23:13 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3906,7 +3906,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 2
     },
     {
-      "command": "cron-guard --mode fail \"Pi-hole Gravity & Regex\" \"docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'\"",
+      "command": "cron-guard --mode fail \"Pi-hole Gravity & Regex\" \"/opt/stacks/pihole/update-pihole-regex.sh\"",
       "day_conditional": null,
       "env": [],
       "full_comment": "Update Pi-hole Gravity and apply mmotti regex rules",
@@ -4851,13 +4851,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     {
       "env_used": [
         "crontab",
-        "nextcloud-dynamic-watch.sh",
         "setup.sh"
       ],
       "mismatch": false,
       "name": "DATA_DIR",
       "script_used": [
-        "nextcloud-dynamic-watch.sh",
         "setup.sh"
       ]
     },
@@ -4923,48 +4921,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "env_used": [
-        "nextcloud-dynamic-watch.sh",
-        "nextcloud_post-restore_fix.sh"
-      ],
-      "mismatch": false,
-      "name": "NEXTCLOUD_CONTAINER",
-      "script_used": [
-        "nextcloud-dynamic-watch.sh",
-        "nextcloud_post-restore_fix.sh"
-      ]
-    },
-    {
-      "env_used": [
-        "nextcloud-dynamic-watch.sh",
         "setup.sh"
       ],
       "mismatch": false,
       "name": "NEXTCLOUD_DATA_DIR",
       "script_used": [
-        "nextcloud-dynamic-watch.sh",
         "setup.sh"
-      ]
-    },
-    {
-      "env_used": [
-        "nextcloud-dynamic-watch.sh"
-      ],
-      "mismatch": false,
-      "name": "NEXTCLOUD_MOUNT_NAME",
-      "script_used": [
-        "nextcloud-dynamic-watch.sh"
-      ]
-    },
-    {
-      "env_used": [
-        "nextcloud-dynamic-watch.sh",
-        "nextcloud_post-restore_fix.sh"
-      ],
-      "mismatch": false,
-      "name": "NEXTCLOUD_USER",
-      "script_used": [
-        "nextcloud-dynamic-watch.sh",
-        "nextcloud_post-restore_fix.sh"
       ]
     },
     {
@@ -5374,32 +5336,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Installs itself as a systemd service with automatic restarts, ensuring uninterrupted monitoring of Nextcloud file changes.",
-        "Raises inotify watch limits to 524,288, preventing watcher exhaustion on large asset trees.",
-        "Deduplicates events by collapsing to parent directories, triggering a single scan per affected folder.",
-        "Maps external asset paths to internal Nextcloud mounts, allowing unified scanning of both host and container storage.",
-        "Uses atomic queue rotation to avoid race conditions during high‑volume file operations.",
-        "Traps SIGINT/SIGTERM to terminate child processes cleanly, preventing orphaned watchers and resource leaks."
-      ],
-      "category": "Core Scripts",
-      "cron_ctx": "",
-      "desc": "Watches `/data/assets` + Internal Data, scans Nextcloud via Docker",
-      "dir_path": "Core Scripts",
-      "env": [
-        "NEXTCLOUD_USER",
-        "NEXTCLOUD_DATA_DIR",
-        "NEXTCLOUD_CONTAINER",
-        "NEXTCLOUD_MOUNT_NAME",
-        "DATA_DIR"
-      ],
-      "freq": "Service (Always) (triggered by `container-watcher. sh`)",
-      "name": "nextcloud-dynamic-watch.sh",
-      "path": "nextcloud-dynamic-watch.sh",
-      "semantic_cat": "🐳 Apps & Containers",
-      "warnings": []
-    },
-    {
-      "capabilities": [
         "Streams AI responses up to 200k characters, preserving full log context for deep diagnostics.",
         "Auto‑fails over to lighter models on 503 spikes, keeping analysis uninterrupted.",
         "Redacts API keys, tokens, passwords, and certificates from piped logs, safeguarding secrets.",
@@ -5461,11 +5397,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Idempotent state tracking disables watcher after all tasks complete, preventing redundant runs.",
-        "Custom readiness checks allow fine‑grained verification before executing service‑specific post‑restore scripts.",
-        "Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security.",
-        "Telegram alerts with retry logic keep operators informed of successful setups or critical failures.",
-        "Automates immediate configuration for Nextcloud, Tailscale, NPM, and Pi‑hole after manual container start."
+        "Automatically configures Nextcloud, Tailscale, NPM, Pi‑hole immediately after manual container start, eliminating manual post‑restore steps.",
+        "Idempotent state tracking stops redundant runs, ensuring each task completes only once and conserves resources.",
+        "Custom readiness checks guarantee services are fully operational before running post‑restore scripts, preventing race conditions.",
+        "Limited sudo and docker exec usage confines elevated privileges to task functions, tightening security posture.",
+        "Telegram alerts with retry logic keep operators instantly informed of successes or critical failures, enabling rapid response."
       ],
       "category": "Run Once",
       "cron_ctx": "",
@@ -5500,29 +5436,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "firewall-rules.sh",
       "path": "run_once/firewall-rules.sh",
       "semantic_cat": "🐳 Apps & Containers",
-      "warnings": []
-    },
-    {
-      "capabilities": [
-        "Self-heals permission mismatches by conditionally resetting ownership to www-data.",
-        "Auto-creates missing .ncdata markers and user directories for clean post-restore states.",
-        "Executes all operations via docker exec to preserve container isolation and host safety.",
-        "Runs integrity scans and repairs exclusively during maintenance mode to prevent data corruption.",
-        "Gracefully exits when the container is stopped, enabling safe unattended scheduling.",
-        "Applies granular file and directory permissions to enforce strict access controls."
-      ],
-      "category": "Run Once",
-      "cron_ctx": "",
-      "desc": "Intelligently fixes permissions, missing markers, user dirs, and runs scans. Safe to run anytime.",
-      "dir_path": "run_once",
-      "env": [
-        "NEXTCLOUD_USER",
-        "NEXTCLOUD_CONTAINER"
-      ],
-      "freq": "Run Once (triggered by `container-watcher. sh`)",
-      "name": "nextcloud_post-restore_fix.sh",
-      "path": "run_once/nextcloud_post-restore_fix.sh",
-      "semantic_cat": "🧹 Maintenance",
       "warnings": []
     },
     {
