@@ -9,7 +9,7 @@
   "/home/alice/scripts/generate-dashboards.sh": "ff8a6cd8648dd39687c097d0615f97b871a3a31f8b0699add9e4fb35514d7a8e",
   "/home/alice/scripts/git-auto-sync.py": "4963fbc998bc4214522f2605aef074836bdbd036926973c28d3c463cabbe5ed2",
   "/home/alice/scripts/git-perms.sh": "7e53b56bbc0332769305749c5957f4f173ee5a189ef48979a54998a628626f83",
-  "/home/alice/scripts/gitops-deploy.sh": "a702d55a28c9a3d899a0ebfe8cd86555c64c6de4a810992237c488d8457929ca",
+  "/home/alice/scripts/gitops-deploy.sh": "6a4e69ed92c1ebd819b59036532701b184a98b0bf7a0ab6efc1e10b3ab26f994",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
   "/home/alice/scripts/homelab_dash.py": "0282065b7c392476dd763f27704957ceaf952a1c82432f09266bce157b2a94fa",
   "/home/alice/scripts/local-opt-backup.sh": "ac2b0d507465cd427024b22079b25cdf00bafcc8d09fb512fd862e77fbd38002",

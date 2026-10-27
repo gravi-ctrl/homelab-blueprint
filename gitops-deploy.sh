@@ -1,41 +1,19 @@
 #!/bin/bash
-# @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port check, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.
+# @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.
 # @FREQUENCY: Every 15 minutes
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
 # @CAPABILITIES:
-#   • Auto‑syncs only main branch, blocking feature branches to keep production stable.
+#   • Synchronizes only main branch, blocking feature branches to maintain production stability.
 #   • Detects merge conflicts, pauses deployment, and alerts admins via Telegram to prevent broken stacks.
 #   • Redeploys only stacks with running containers, preserving intentionally stopped services.
 #   • Uses non‑blocking lock to avoid race conditions during concurrent runs.
 #   • Pulls images sequentially with retries, ensuring zero‑downtime updates even on transient registry failures.
 #   • Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically.
-#   • Verifies every deploy (compose --wait, crash-loop soak check, automatic port check, optional URL probe).
-#   • Rolls a failed stack back to its last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.
-#   • Read-only helper modes (--probe, --verify) find a health URL and test the checks on live stacks without deploying anything.
+#   • Verifies every deploy with compose wait, crash‑loop soak, port and HTTP checks, and optional URL probe.
+#   • Rolls back failed stack to last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.#       Only needed when you want the optional deploy.healthcheck label: tries common health paths and prints a
+#       ready-to-paste label. If nothing but "/" answers, skip the label; the automatic checks already cover it.
 #
-# AUTOMATIC PORT CHECK (needs no configuration, no published ports):
-#   Before each update the deployer records which TCP ports (image EXPOSE / compose expose:) of the RUNNING containers accept
-#   connections, reaching them by container IP over the docker network. After the update every one of those services must accept
-#   connections again within PROBE_TIMEOUT. Only things that were healthy BEFORE the update can fail it, so containers that don't
-#   listen (or can't be reached from the host) are simply not checked.
-#
-# OPTIONAL PER-STACK LABELS (on any service in the stack's compose.yml; one per stack is enough):
-#   deploy.rollback=false
-#       never auto-rollback this stack (databases / migrations); it is still deployed, verified, alerted on and retried.
-#   deploy.healthcheck=http://<service-or-container-name>:<port>/<path>
-#       a stronger check: this URL must answer 2xx/3xx after the update. The name is swapped for the container's IP, so nothing
-#       needs to be published. If the URL does not answer on the version running now it is ignored with a warning, so a wrong
-#       path can never cause a rollback.
-#
-# HELPER MODES (read-only: nothing is deployed, restarted, locked or written):
-#   ./gitops-deploy.sh --probe CONTAINER [PORT]
-#       Finds the container's IP and listening port(s), tries common health paths and prints a ready-to-paste
-#       deploy.healthcheck label. If nothing answers 2xx/3xx, skip the label: the automatic port check still protects it.
-#   ./gitops-deploy.sh --verify STACK
-#       Runs the post-deploy checks against the stack AS IT RUNS NOW (SOAK_SECONDS=5 ./gitops-deploy.sh --verify n8n for a
-#       quicker run). Use it to prove the checks work on this server before relying on them.
-
 set -euo pipefail
 
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
@@ -52,7 +30,7 @@ REASON_FILE="${STATE_DIR}/last_reason"
 # Tunables (override from the environment if a stack needs longer)
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-120}"      # seconds `docker compose up --wait` may take
 SOAK_SECONDS="${SOAK_SECONDS:-30}"       # watch for crash-loops this long after it reports ready
-PROBE_TIMEOUT="${PROBE_TIMEOUT:-120}"    # seconds a service gets to start listening / answer its URL after an update
+PROBE_TIMEOUT="${PROBE_TIMEOUT:-120}"    # seconds a service gets to start listening / answer HTTP / answer its URL after an update
 
 ROLLBACK_OFF_RE='deploy\.rollback["'"'"']?[=:] *["'"'"']?false'
 
@@ -147,6 +125,77 @@ wait_listening() {
     return 0
 }
 
+# Never send HTTP to well-known non-web ports (databases, mail, SSH, DNS, ...).
+is_web_port() {
+    case "$1" in
+        22 | 25 | 53 | 110 | 143 | 389 | 465 | 587 | 636 | 993 | 995 | 1433 | 3306 | 5432 | 5672 | 6379 | 11211 | 27017) return 1 ;;
+    esac
+    return 0
+}
+
+# True if "/" on ip:port answers HTTP or HTTPS with a non-5xx status. $1=ip $2=port
+answers_http() {
+    local scheme code
+    for scheme in http https; do
+        code=$(curl -sk -o /dev/null --max-time 5 -w '%{http_code}' "${scheme}://${1}:${2}/" 2> /dev/null < /dev/null || true)
+        case "$code" in
+            [1-4][0-9][0-9]) return 0 ;;
+            000) ;;                 # no HTTP answer on this scheme: try the other one
+            *) return 1 ;;          # 5xx (or no status at all): unhealthy
+        esac
+    done
+    return 1
+}
+
+any_http() {   # $1=ip, remaining args = ports
+    local ip="$1" port
+    shift
+    for port in "$@"; do
+        if is_web_port "$port" && answers_http "$ip" "$port"; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# "service port" for every listening port (from BASE_PORTS) that answers HTTP right now.
+http_baseline() {
+    local svc port id ip
+    while read -r svc port; do
+        [ -n "$svc" ] || continue
+        is_web_port "$port" || continue
+        id=$(docker compose ps -q "$svc" < /dev/null | head -n1)
+        [ -n "$id" ] || continue
+        ip=$(container_ip "$id")
+        [ -n "$ip" ] || continue
+        if answers_http "$ip" "$port"; then
+            echo "$svc $port"
+        fi
+    done <<< "$BASE_PORTS"
+}
+
+# Every service that answered HTTP before the update must answer again (on any port it answered on before, or
+# declares now) within PROBE_TIMEOUT. Prints the reason and returns 1 if not.
+wait_http() {
+    local svc id ports ip waited
+    for svc in $(printf '%s\n' "$BASE_HTTP" | awk 'NF {print $1}' | sort -u); do
+        id=$(docker compose ps -a -q "$svc" | head -n1)
+        [ -n "$id" ] || continue          # service no longer exists in the new compose file
+        ports=$( { printf '%s\n' "$BASE_HTTP" | awk -v s="$svc" '$1==s {print $2}'; container_tcp_ports "$id"; } | sed '/^$/d' | sort -u)
+        waited=0
+        # shellcheck disable=SC2086
+        until ip=$(container_ip "$id"); [ -n "$ip" ] && any_http "$ip" $ports; do
+            waited=$((waited + 5))
+            if [ "$waited" -ge "$PROBE_TIMEOUT" ]; then
+                echo "service ${svc} no longer answers HTTP (it did before the update)"
+                return 1
+            fi
+            sleep 5
+        done
+    done
+    return 0
+}
+
 # Swap the container/service name in a URL for the container's IP (nothing needs to be published).
 resolve_url() {
     local url="$1" host id ip=""
@@ -226,6 +275,7 @@ verify_stack() {
     fi
 
     wait_listening || return 1
+    wait_http || return 1
     probe_urls || return 1
     return 0
 }
@@ -251,6 +301,7 @@ deploy_stack() (
 
     # Baselines from the version running NOW: only checks that passed before the update can fail it.
     BASE_PORTS=$(listening_ports) || BASE_PORTS=""
+    BASE_HTTP=$(http_baseline) || BASE_HTTP=""
     BASE_URLS=$(passing_urls) || BASE_URLS=""
 
     if ! docker compose up -d --wait --wait-timeout "$WAIT_TIMEOUT"; then
@@ -339,7 +390,7 @@ probe_container() {
             echo "             - \"deploy.healthcheck=${scheme}://${name}:${port}${path}\""
         else
             echo "      -> nothing answered 2xx/3xx (401/403 = needs login, 404 = no such path). Skip the label;"
-            echo "         the automatic port check still protects this container."
+            echo "         the automatic port and HTTP checks still protect this container."
         fi
     done
 }
@@ -357,10 +408,12 @@ verify_only() {
         return 0
     fi
     BASE_PORTS=$(listening_ports) || BASE_PORTS=""
+    BASE_HTTP=$(http_baseline) || BASE_HTTP=""
     BASE_URLS=$(passing_urls) || BASE_URLS=""
     echo "Baseline for ${dir}:"
-    printf '%s\n' "$BASE_PORTS" | awk 'NF {print "  listening  " $1 " port " $2}'
-    printf '%s\n' "$BASE_URLS" | awk 'NF {print "  url ok     " $0}'
+    printf '%s\n' "$BASE_PORTS" | awk 'NF {print "  listening     " $1 " port " $2}'
+    printf '%s\n' "$BASE_HTTP" | awk 'NF {print "  answers HTTP  " $1 " port " $2}'
+    printf '%s\n' "$BASE_URLS" | awk 'NF {print "  url ok        " $0}'
     if [ -z "$BASE_PORTS$BASE_URLS" ]; then
         echo "  (no port or URL could be checked here; only running state and the crash-loop soak apply)"
     fi
