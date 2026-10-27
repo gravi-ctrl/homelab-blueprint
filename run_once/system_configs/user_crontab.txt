@@ -27,7 +27,7 @@ BASH_ENV=/opt/rabbit-hole/.env
 0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
 
 # Update Pi-hole Gravity and apply mmotti regex rules
-5 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "docker exec pihole /bin/bash -c 'curl -sSL https://raw.githubusercontent.com/mmotti/pihole-regex/master/install.py | python3 && pihole -g'"
+5 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "/opt/stacks/pihole/update-pihole-regex.sh"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
 20 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
