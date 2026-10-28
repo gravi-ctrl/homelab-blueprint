@@ -13,12 +13,10 @@
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
   "/home/alice/scripts/homelab_dash.py": "0282065b7c392476dd763f27704957ceaf952a1c82432f09266bce157b2a94fa",
   "/home/alice/scripts/local-opt-backup.sh": "e42852d02d4add4dc2ade8601a90d40ea51e5e1d547501c574d67b786cbe9cce",
-  "/home/alice/scripts/nextcloud-dynamic-watch.sh": "9091501c575ecd69ecb0bec673189ba3d15847844d9aa87047385407d4fc5ca6",
   "/home/alice/scripts/tg-vergil/vergil.py": "9b5f24e4171d445ab745a7a30a525d7e1a6cb2fbbe46e80945c5fd061f81a17a",
   "/home/alice/scripts/run_once/bootstrap.sh": "f168364c38db0d395f5001819c2f99a458fbaf439178c8e17a7d73152c110ed7",
   "/home/alice/scripts/run_once/container-watcher.sh": "1d92e2283fda771bba62eaff5ebe7cbc61bf49990c2a2ca6f7e73d3586a22056",
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
-  "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
   "/home/alice/scripts/doc-injector.py": "4d8af6f051335d630a1b39c47b34d42369cd1a68df7d67d09d2a5238503a4449",
   "/home/alice/scripts/oracle.py": "4d0cc39aa5ad850d94d6ff2b2fa4f08b56cbe2e9da03b032c08b10250d91e98e"
