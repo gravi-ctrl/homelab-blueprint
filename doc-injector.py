@@ -2,7 +2,6 @@
 # @DESCRIPTION: Analyzes ~/scripts and automatically injects an AI-generated capabilities header block using Groq
 # @FREQUENCY: On Demand
 # @USES_ENV: GROQ_API_KEY, GROQ_MODEL
-# @CRON:
 # @CAPABILITIES:
 #   • Auto‑generates concise feature lists for scripts, enabling instant dashboard insights without manual documentation.
 #   • Caches script hashes to skip redundant AI calls, cutting bandwidth and cost.

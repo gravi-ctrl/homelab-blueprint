@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.
-# @FREQUENCY: On Demand (triggered by `backup-scripts-git.sh`)
+# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
 # @CAPABILITIES:
-#   • Instantly visualizes all homelab scripts, cron schedules, and env dependencies in a single interactive HTML dashboard.
-#   • Classifies cron expressions into intuitive frequency tiers, making schedule review effortless.
-#   • Reveals hidden env variable dependencies per script, accelerating troubleshooting and configuration drift detection.
+#   • Consolidates all homelab scripts, cron schedules, and env dependencies into a single interactive HTML dashboard.
+#   • Classifies cron expressions into intuitive frequency tiers, simplifying schedule audits and reducing misconfigurations.
+#   • Detects hidden env variable usage per script, accelerating troubleshooting and preventing configuration drift.
 #   • Filters out development and hidden directories, ensuring the dashboard reflects only production‑relevant assets.
-#   • Limits metadata scanning to the first 60 lines, preventing slow or broken script parses.
-#   • Gracefully aborts with a clear message if the cron‑descriptor library is missing, avoiding silent failures.
+#   • Limits metadata scanning to the first 60 lines, preventing slow or broken script parses and keeping updates fast.
 
 import getpass
 import json
@@ -101,7 +100,7 @@ def parse_scripts(env_used_by):
 
     for root, dirs, files in os.walk(SCRIPT_DIR):
         dirs.sort()
-        if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv', 'docker-dash']):
+        if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv']):
             continue
         for file in sorted(files):
             p = Path(root) / file
