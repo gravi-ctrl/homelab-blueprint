@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-28 21:24 EEST</div>
+    <div class="meta-line">Generated 2026-10-28 21:29 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5052,8 +5052,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
   "scripts": [
     {
       "capabilities": [
-        "Captures full system state daily, enabling instant rollback and compliance audit trails.",
-        "Safeguards APT source lists and keyrings, ensuring reproducible builds and preventing trust erosion.",
+        "Captures full system state daily for instant rollback and audit.",
+        "Safeguards APT sources and keyrings, preserving build reproducibility and preventing trust erosion.",
         "Mirrors user config directories via rsync, keeping tool settings consistent across machines.",
         "Stores Git repo permissions before sync, preventing accidental exposure of sensitive files.",
         "Generates dashboards only when no alarm flags, reducing alert fatigue and maintaining alarm‑once design.",
@@ -5061,7 +5061,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions, pushes dashboards, dotfiles and system_configs",
+      "desc": "Snapshots cron/packages/dotfiles/hosts/dashboards/permissions, pushes dashboards, dotfiles and system_configs",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR",
