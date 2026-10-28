@@ -21,5 +21,8 @@
   "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
   "/home/alice/scripts/doc-injector.py": "546d7153b80e0049412d55c74e5368bd4608dc48b5fb461ab4b61b960647f79d",
-  "/home/alice/scripts/oracle.py": "4d0cc39aa5ad850d94d6ff2b2fa4f08b56cbe2e9da03b032c08b10250d91e98e"
+  "/home/alice/scripts/oracle.py": "4d0cc39aa5ad850d94d6ff2b2fa4f08b56cbe2e9da03b032c08b10250d91e98e",
+  "backup-scripts-git.sh": "c4aadde1c98f2ee2fb3ac3317c4fac810012d6dc1dcdc8242f05101b0a6fae46",
+  "doc-injector.py": "fa0a3c0b9833c2edc465920c418374191de31851e83fbb73c9f94868e3320811",
+  "git-perms.sh": "8d6bd4f3135c530291c30564133a35609e6884826ecef19f123e65614bca75c2"
 }

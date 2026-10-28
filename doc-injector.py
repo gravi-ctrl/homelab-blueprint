@@ -4,12 +4,12 @@
 # @USES_ENV: GROQ_API_KEY, GROQ_MODEL
 # @CRON: user
 # @CAPABILITIES:
-#   • Auto-generates concise feature lists for scripts, enabling quick dashboard insights without manual documentation.
-#   • Caches script hashes to avoid redundant AI calls, cutting bandwidth and cost.
-#   • Dynamically selects the most compatible Groq model, ensuring optimal performance across environments.
+#   • Auto‑generates concise feature lists for scripts, enabling instant dashboard insights without manual documentation.
+#   • Caches script hashes to skip redundant AI calls, cutting bandwidth and cost.
+#   • Dynamically selects the best available Groq model, ensuring optimal performance across environments.
 #   • Parses exact rate‑limit wait times, minimizing downtime during high‑traffic API usage.
-#   • Falls back to exponential backoff when precise timing unavailable, guaranteeing reliable retries.
-#   • Limits header injection to first 40 lines, preserving existing metadata and preventing accidental overwrites.
+#   • Falls back to exponential backoff when timing is unknown, guaranteeing reliable retries.
+#   • Limits header injection to the first 40 lines, preserving existing metadata and preventing accidental overwrites.
 
 import hashlib
 import json
@@ -27,7 +27,7 @@ CACHE_FILE = SCRIPT_DIR / ".doc_hash_cache.json"
 
 # Exclusions
 IGNORE_DIRS = {".git", "venv", "node_modules", "_archive"}
-IGNORE_FILES = {Path(__file__).name, "backup-scripts-git.sh", "homelab_dash.py"}
+IGNORE_FILES = {Path(__file__).name}
 
 PREFERRED_MODELS = [
     "openai/gpt-oss-20b",
@@ -200,15 +200,21 @@ def main():
         file_hash = get_file_hash(content)
         has_block = "# @CAPABILITIES:" in content
 
-        if not force and has_block and cache.get(str(p)) == file_hash:
+        # Use relative path so the cache works across any machine/laptop
+        try:
+            rel_path = str(p.relative_to(SCRIPT_DIR))
+        except ValueError:
+            rel_path = str(p)
+
+        if not force and has_block and cache.get(rel_path) == file_hash:
             continue
 
-        print(f"  → Analyzing: {p.relative_to(SCRIPT_DIR)}")
+        print(f"  → Analyzing: {rel_path}")
         bullets = query_groq_capabilities(p.name, content, active_model)
         if bullets:
             if inject_capabilities(p, bullets):
                 new_content = p.read_text(encoding="utf-8")
-                cache[str(p)] = get_file_hash(new_content)
+                cache[rel_path] = get_file_hash(new_content)
                 updated_count += 1
                 print(f"    ✓ Injected @CAPABILITIES ({len(bullets)} items)")
                 time.sleep(2)

@@ -4,11 +4,11 @@
 # @USES_ENV:
 # @CRON: user
 # @CAPABILITIES:
-#   • Snapshots POSIX ownership and permissions of all tracked files into a portable .git-perms file.
-#   • Abstracts primary user and group to @USER/@GROUP, keeping snapshots portable across deployments.
+#   • Snapshots POSIX ownership/permissions of all Git-tracked files into a portable .git-perms file.
+#   • Abstracts primary user/group to @USER/@GROUP, ensuring snapshots work across deployments.
 #   • Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.
-#   • Safely handles symlinks by chowning the link itself and avoiding chmod on link targets.
-#   • Commits changes only when permissions differ, preventing noise and unnecessary git diffs.
+#   • Safely handles symlinks by chowning the link itself and skipping chmod on targets.
+#   • Commits changes only when permissions differ, preventing noisy git diffs.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================
@@ -70,6 +70,12 @@ case "$ACTION" in
             fi
             if [ "$group" = "$PRIMARY_USER" ] || [ "$g_id" -eq "$PRIMARY_GID" ]; then
                 group="@GROUP"
+            fi
+
+            if [ "$owner" = "@USER" ] && [ "$group" = "@GROUP" ]; then
+                if [ "$mode" = "644" ] || [ "$mode" = "755" ]; then
+                    continue
+                fi
             fi
 
             printf "%s\t%s:%s\t%s\n" "$mode" "$owner" "$group" "$path"
