@@ -4,12 +4,12 @@
 # @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
 # @CRON: root
 # @CAPABILITIES:
-#   • Consolidates Docker stacks, SSH configs, and critical system files into a single age‑encrypted tar.zst archive for secure off‑site storage.
-#   • Uses a file lock to prevent overlapping runs, guaranteeing resource stability and avoiding duplicate backups.
-#   • Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely without interrupting the job.
-#   • Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations and preventing false outage alerts.
+#   • Creates a single, encrypted archive of Docker stacks and system configs for secure off‑site backup.
+#   • Prevents overlapping runs with a lockfile, guaranteeing one backup instance at a time.
+#   • Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely.
+#   • Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations.
 #   • Gracefully stops Docker stacks before snapshotting and restores them afterward, eliminating data corruption risks.
-#   • Auto‑installs missing zstd and age tools, ensuring the script operates on fresh systems without manual setup.
+#   • Auto‑installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
