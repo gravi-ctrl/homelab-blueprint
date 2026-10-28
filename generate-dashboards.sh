@@ -1,14 +1,14 @@
 #!/bin/bash
 # @DESCRIPTION: Runs both dashboard generators and safely commits the output to their respective pages branches.
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
-# @CRON: User
 # @USES_ENV: STACKS_DIR
 # @CAPABILITIES:
-#   • Deploys dashboards to isolated pages branches, keeping production code untouched.
-#   • Automatically cleans stale worktrees on exit, preventing orphan temp directories.
-#   • Suppresses repeated alerts with alarm_once flags, reducing noise until issues resolve.
-#   • Aborts rebase conflicts, resets pages to origin, and re-arms alarms for quick recovery.
-#   • Creates orphan pages branch if missing, ensuring dashboards never contaminate code branch.
+#   • Deploys dashboards to isolated pages branches, preserving production code integrity.
+#   • Auto‑creates an orphan pages branch if missing, preventing accidental code contamination.
+#   • Cleans temporary worktrees on exit, eliminating orphan temp directories and stale state.
+#   • Uses alarm‑once flags to suppress repeated alerts, reducing noise until issues resolve.
+#   • Detects and aborts rebase conflicts, resetting pages to origin and re‑arming alarms for quick recovery.
+#   • Runs daily at 5 am via cron, ensuring dashboards stay current without manual intervention.
 
 set -e
 

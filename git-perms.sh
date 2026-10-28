@@ -2,14 +2,12 @@
 # @DESCRIPTION: Snapshots non-standard POSIX ownership and permissions (exceptions) to `.git-perms`, or applies them during bootstrap
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)
 # @USES_ENV:
-# @CRON: user
 # @CAPABILITIES:
-#   • Snapshots every tracked file’s mode and ownership into a portable .git-perms, preserving repository state across deployments.
+#   • Captures every tracked file’s mode and ownership into a portable .git-perms, preserving repo state across deployments.
 #   • Abstracts primary user/group to @USER/@GROUP, keeping snapshots valid even when UIDs change on fresh installs.
 #   • Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.
 #   • Safely handles symlinks by chowning the link itself and skipping chmod on targets, preventing broken links.
 #   • Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits.
-#   • Runs automatically at 5 am via backup-scripts-git.sh, ensuring permissions stay in sync without manual intervention.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================
