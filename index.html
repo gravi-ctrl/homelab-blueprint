@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-28 21:29 EEST</div>
+    <div class="meta-line">Generated 2026-10-28 21:47 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5181,14 +5181,15 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Deploys dashboards to isolated pages branches, keeping production code untouched.",
-        "Automatically cleans stale worktrees on exit, preventing orphan temp directories.",
-        "Suppresses repeated alerts with alarm_once flags, reducing noise until issues resolve.",
-        "Aborts rebase conflicts, resets pages to origin, and re-arms alarms for quick recovery.",
-        "Creates orphan pages branch if missing, ensuring dashboards never contaminate code branch."
+        "Deploys dashboards to isolated pages branches, preserving production code integrity.",
+        "Auto‑creates an orphan pages branch if missing, preventing accidental code contamination.",
+        "Cleans temporary worktrees on exit, eliminating orphan temp directories and stale state.",
+        "Uses alarm‑once flags to suppress repeated alerts, reducing noise until issues resolve.",
+        "Detects and aborts rebase conflicts, resetting pages to origin and re‑arming alarms for quick recovery.",
+        "Runs daily at 5 am via cron, ensuring dashboards stay current without manual intervention."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "User",
+      "cron_ctx": "",
       "desc": "Runs both dashboard generators and safely commits the output to their respective pages branches.",
       "dir_path": "Core Scripts",
       "env": [
@@ -5222,15 +5223,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Snapshots every tracked file’s mode and ownership into a portable .git-perms, preserving repository state across deployments.",
+        "Captures every tracked file’s mode and ownership into a portable .git-perms, preserving repo state across deployments.",
         "Abstracts primary user/group to @USER/@GROUP, keeping snapshots valid even when UIDs change on fresh installs.",
         "Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.",
         "Safely handles symlinks by chowning the link itself and skipping chmod on targets, preventing broken links.",
-        "Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits.",
-        "Runs automatically at 5 am via backup-scripts-git.sh, ensuring permissions stay in sync without manual intervention."
+        "Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "",
       "desc": "Snapshots non-standard POSIX ownership and permissions (exceptions) to `.git-perms`, or applies them during bootstrap",
       "dir_path": "Core Scripts",
       "env": [],
@@ -5289,19 +5289,18 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Instantly visualizes all homelab scripts, cron schedules, and env dependencies in a single interactive HTML dashboard.",
-        "Classifies cron expressions into intuitive frequency tiers, making schedule review effortless.",
-        "Reveals hidden env variable dependencies per script, accelerating troubleshooting and configuration drift detection.",
+        "Consolidates all homelab scripts, cron schedules, and env dependencies into a single interactive HTML dashboard.",
+        "Classifies cron expressions into intuitive frequency tiers, simplifying schedule audits and reducing misconfigurations.",
+        "Detects hidden env variable usage per script, accelerating troubleshooting and preventing configuration drift.",
         "Filters out development and hidden directories, ensuring the dashboard reflects only production‑relevant assets.",
-        "Limits metadata scanning to the first 60 lines, preventing slow or broken script parses.",
-        "Gracefully aborts with a clear message if the cron‑descriptor library is missing, avoiding silent failures."
+        "Limits metadata scanning to the first 60 lines, preventing slow or broken script parses and keeping updates fast."
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
       "desc": "Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.",
       "dir_path": "Core Scripts",
       "env": [],
-      "freq": "On Demand (triggered by `backup-scripts-git.sh`)",
+      "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
       "name": "homelab_dash.py",
       "path": "homelab_dash.py",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5374,6 +5373,25 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "cert-manager.sh",
       "path": "cert-manager/cert-manager.sh",
       "semantic_cat": "🌐 Network & Monitoring",
+      "warnings": []
+    },
+    {
+      "capabilities": [
+        "Generates a live, self‑contained HTML dashboard from GitHub Docker stacks for instant on‑demand visibility.",
+        "Cross‑references Nginx Proxy Manager hosts, injecting live URLs and SSL status to keep service links current.",
+        "Detects and flags secret keys in .env.example, enforcing secure defaults before deployment.",
+        "Auto‑prompts missing Python packages, eliminating manual dependency setup and reducing setup friction.",
+        "Implements request timeouts and retry logic, ensuring dashboard generation remains resilient under network hiccups."
+      ],
+      "category": "Docker-Dash",
+      "cron_ctx": "",
+      "desc": "Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard",
+      "dir_path": "docker-dash",
+      "env": [],
+      "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
+      "name": "docker_dash.py",
+      "path": "docker-dash/docker_dash.py",
+      "semantic_cat": "💾 Backups & Sync",
       "warnings": []
     },
     {
