@@ -299,7 +299,7 @@ Each repo maintains a lightweight, committed `.git-perms` file managed by `git-p
 * **Scoped to tracked files only:** It reads `git ls-files`, ignoring transient media, databases, and logs.
 * **Portable identity via `@USER:@GROUP`:** Files owned by the server's primary user are recorded as `@USER:@GROUP`. On restore, this dynamically resolves to whoever is running the bootstrap (e.g., `alice:alice` or `admin:admin`), preventing UID/GID mismatches across different Linux distros.
 * **Preserves explicit system identities:** Any file owned by `root:root` or container-specific service UIDs (like `33:33` or `1000:1000`) is preserved verbatim.
-* **Automated lifecycle:** `backup-scripts-git.sh` re-saves permissions at 5:00 AM daily but no longer commits anything. A changed `.git-perms` is just another uncommitted change: it appears in the drift report (§18) and goes into the repo through a normal PR. During Fresh Start, `bootstrap.sh` restores exact permissions right after cloning.
+* **Automated lifecycle (Exceptions Only):** `backup-scripts-git.sh` runs `git-perms.sh save` at 5:00 AM daily, but it only records genuine anomalies: files owned by `root:root` (or container service UIDs) and restricted permission modes (`600`, `700`, `750`). Standard files (`644` and `755` owned by `@USER:@GROUP`) are handled natively by Git and skipped. This guarantees that routine PRs adding or deleting normal files never dirty `.git-perms` on the server. During Fresh Start, `bootstrap.sh` restores exact permissions right after cloning.
 
 ---
 
@@ -364,19 +364,19 @@ On Google AI Studio's free tier, standard flagship models (`gemini-3.5-flash`) f
 
 To keep the live dashboard accurate without manual documentation overhead, `doc-injector.py` analyzes modified scripts and injects structured `# @CAPABILITIES:` blocks directly into their headers before daily commits.
 
-### 1. The Self-Modifying Bash Script Crash (Why `backup-scripts-git.sh` is Ignored)
-Bash does not buffer an entire script into memory before running; it reads from disk in sequential 4KB chunks using byte offsets.
-* If `doc-injector.py` analyzes and injects capabilities into `backup-scripts-git.sh` *while `backup-scripts-git.sh` is actively executing*, the file size shifts on disk by ~250 bytes. 
-* Bash's file pointer then lands on corrupted byte offsets in the middle of downstream commands, resulting in syntax errors (e.g. `syntax error near unexpected token '('`).
-* **The Rule:** `backup-scripts-git.sh` (and `doc-injector.py` itself) must remain strictly blacklisted in `IGNORE_FILES` during automated directory walks.
+### 1. Decoupled from Production (Why It Was Removed from the 5 AM Run)
+Earlier designs ran `doc-injector.py` during step G of the 5:00 AM server backup. This created two serious issues:
+* **Byte-offset corruption:** Bash reads scripts in 4KB chunks using byte offsets. Rewriting a running script in place shifts byte boundaries mid-execution, causing syntax errors in downstream commands.
+* **Dirty Git working tree:** Rewriting headers on production leaves uncommitted changes on `main`, tripping the daily drift monitor and violating the one-way GitOps flow.
+* **The Rule:** `doc-injector.py` does not run on the production server. Documentation injection happens on the development machine before merging, or as an on-demand update. `IGNORE_FILES` permanently excludes `doc-injector.py` itself to prevent recursive self-modification.
 
 ### 2. Infinite Hash Recursion Prevention
 To prevent `doc-injector.py` from constantly triggering AI requests on scripts that haven't functionally changed:
 * `get_file_hash()` uses regex to strip out any existing `# @CAPABILITIES:` block *before* calculating the SHA-256 checksum.
-* This ensures that updating the documentation header does not invalidate the file's code hash on subsequent runs.
+* This ensures that updating the documentation header does not invalidate the file's code hash on subsequent runs. Relative paths are used in `.doc_hash_cache.json` so the cache remains portable across machines.
 
 ### 3. Pipeline Execution Sequence
-In `backup-scripts-git.sh`, `doc-injector.py` runs in step G of the snapshot phase, before the dashboards are generated. Nothing in the pipeline commits to `main` any more, so a header it rewrites is just an uncommitted change: it shows up in the drift report (§18) and ships with the next PR. Run `python3 doc-injector.py` yourself before committing a script change, so the rewritten header lands in the same PR and the 5 AM run finds nothing left to change.
+Dashboards (`generate-dashboards.sh`) read the existing `# @CAPABILITIES:` headers directly from scripts when rendering the HTML UI. Because `doc-injector.py` runs upstream during development rather than during server backups, production remains a pure consumer: it reads headers to generate the dashboard without ever modifying executable code on disk.
 
 ---
 
@@ -477,7 +477,7 @@ Consequences: the server consumes `main` (the deployer pulls it), the only thing
 - Setting up a Fresh Start? Never skip `~/.ssh/authorized_keys`; `setup.sh` disables password authentication, so missing client public keys will lock you out.
 - Piping Docker logs to `oracle`? Always use `2>&1` (e.g. `docker logs container 2>&1 | oracle`) — Docker routes runtime application logs to stderr, which will bypass a standard `|` pipe unless merged.
 - `oracle` hitting Google 503 capacity errors? It auto-fails over to `-lite` models automatically, but you can set `GEMINI_MODEL='gemini-flash-lite-latest'` in `.env` to make the high-capacity model default.
-- Adding new scripts to the automatic documentation pipeline? Never let a script modify itself while actively executing under Bash; keep caller runner scripts in `IGNORE_FILES`.
+- Running `doc-injector.py`? Run it on your development machine before committing; it was decoupled from the 5 AM server backup so production never mutates executable scripts on disk.
 - Wondering why `doc-injector.py` isn't re-analyzing a script? It checks code hashes excluding the `@CAPABILITIES` block — use `--force` to bypass the cache.
 - Setting up a required PR check in GitHub Actions? Never combine it with `paths` filtering, or documentation-only PRs will freeze in an endless `Expected` status check lock. See §15.1.
 - Adding third-party GitHub Actions? Pin to full 40-character commit SHAs, never mutable tags or `latest`. See §15.2.

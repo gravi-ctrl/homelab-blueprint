@@ -8,7 +8,7 @@
   "/home/alice/scripts/docker-dash/docker_dash.py": "d590b4695297eb0b08dcb59c9b01c8b197a9adf5dd82806229f430a05cfe1e7f",
   "/home/alice/scripts/generate-dashboards.sh": "ff8a6cd8648dd39687c097d0615f97b871a3a31f8b0699add9e4fb35514d7a8e",
   "/home/alice/scripts/git-auto-sync.py": "4963fbc998bc4214522f2605aef074836bdbd036926973c28d3c463cabbe5ed2",
-  "/home/alice/scripts/git-perms.sh": "7e53b56bbc0332769305749c5957f4f173ee5a189ef48979a54998a628626f83",
+  "/home/alice/scripts/git-perms.sh": "79b9b53d4f900d11cc75a435fbe4b0b7edc09613bcfc583a84edff23bcd38fbb",
   "/home/alice/scripts/gitops-deploy.sh": "6a4e69ed92c1ebd819b59036532701b184a98b0bf7a0ab6efc1e10b3ab26f994",
   "/home/alice/scripts/health-snapshot.sh": "8f253b120cd917bda9381925b6cfbc81dad6d9b7b808c9a72fce6220c64a61a8",
   "/home/alice/scripts/homelab_dash.py": "0282065b7c392476dd763f27704957ceaf952a1c82432f09266bce157b2a94fa",
@@ -20,6 +20,6 @@
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
   "/home/alice/scripts/run_once/nextcloud_post-restore_fix.sh": "dc45283cf86a73b06de9bdb65ec689cecf62b656570d41ae364135c24b51382b",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
-  "/home/alice/scripts/doc-injector.py": "546d7153b80e0049412d55c74e5368bd4608dc48b5fb461ab4b61b960647f79d",
+  "/home/alice/scripts/doc-injector.py": "4d8af6f051335d630a1b39c47b34d42369cd1a68df7d67d09d2a5238503a4449",
   "/home/alice/scripts/oracle.py": "4d0cc39aa5ad850d94d6ff2b2fa4f08b56cbe2e9da03b032c08b10250d91e98e"
 }
