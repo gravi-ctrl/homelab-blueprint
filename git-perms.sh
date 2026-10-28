@@ -1,14 +1,15 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots POSIX ownership and permissions of Git-tracked files to `.git-perms`, or applies them during bootstrap
+# @DESCRIPTION: Snapshots non-standard POSIX ownership and permissions (exceptions) to `.git-perms`, or applies them during bootstrap
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)
 # @USES_ENV:
 # @CRON: user
 # @CAPABILITIES:
-#   • Snapshots POSIX ownership and permissions of all tracked files into a portable .git-perms file.
-#   • Abstracts primary user and group to @USER/@GROUP, keeping snapshots portable across deployments.
+#   • Snapshots every tracked file’s mode and ownership into a portable .git-perms, preserving repository state across deployments.
+#   • Abstracts primary user/group to @USER/@GROUP, keeping snapshots valid even when UIDs change on fresh installs.
 #   • Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.
-#   • Safely handles symlinks by chowning the link itself and avoiding chmod on link targets.
-#   • Commits changes only when permissions differ, preventing noise and unnecessary git diffs.
+#   • Safely handles symlinks by chowning the link itself and skipping chmod on targets, preventing broken links.
+#   • Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits.
+#   • Runs automatically at 5 am via backup-scripts-git.sh, ensuring permissions stay in sync without manual intervention.
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================
@@ -70,6 +71,12 @@ case "$ACTION" in
             fi
             if [ "$group" = "$PRIMARY_USER" ] || [ "$g_id" -eq "$PRIMARY_GID" ]; then
                 group="@GROUP"
+            fi
+
+            if [ "$owner" = "@USER" ] && [ "$group" = "@GROUP" ]; then
+                if [ "$mode" = "644" ] || [ "$mode" = "755" ]; then
+                    continue
+                fi
             fi
 
             printf "%s\t%s:%s\t%s\n" "$mode" "$owner" "$group" "$path"

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Analyzes ~/scripts and automatically injects an AI-generated capabilities header block using Groq
-# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
+# @FREQUENCY: On Demand
 # @USES_ENV: GROQ_API_KEY, GROQ_MODEL
-# @CRON: user
+# @CRON:
 # @CAPABILITIES:
-#   • Auto-generates concise feature lists for scripts, enabling quick dashboard insights without manual documentation.
-#   • Caches script hashes to avoid redundant AI calls, cutting bandwidth and cost.
+#   • Auto‑generates concise feature lists for scripts, enabling instant dashboard insights without manual documentation.
+#   • Caches script hashes to skip redundant AI calls, cutting bandwidth and cost.
 #   • Dynamically selects the most compatible Groq model, ensuring optimal performance across environments.
-#   • Parses exact rate‑limit wait times, minimizing downtime during high‑traffic API usage.
-#   • Falls back to exponential backoff when precise timing unavailable, guaranteeing reliable retries.
-#   • Limits header injection to first 40 lines, preserving existing metadata and preventing accidental overwrites.
+#   • Parses exact rate‑limit wait times and falls back to exponential backoff, guaranteeing reliable retries.
+#   • Limits header injection to the first 40 lines, preserving existing metadata and preventing accidental overwrites.
 
 import hashlib
 import json
@@ -27,7 +26,7 @@ CACHE_FILE = SCRIPT_DIR / ".doc_hash_cache.json"
 
 # Exclusions
 IGNORE_DIRS = {".git", "venv", "node_modules", "_archive"}
-IGNORE_FILES = {Path(__file__).name, "backup-scripts-git.sh", "homelab_dash.py"}
+IGNORE_FILES = {Path(__file__).name}
 
 PREFERRED_MODELS = [
     "openai/gpt-oss-20b",
