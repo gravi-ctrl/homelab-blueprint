@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-27 23:49 EEST</div>
+    <div class="meta-line">Generated 2026-10-28 21:24 EEST</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5159,22 +5159,21 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Auto-generates concise feature lists for scripts, enabling quick dashboard insights without manual documentation.",
-        "Caches script hashes to avoid redundant AI calls, cutting bandwidth and cost.",
+        "Auto‑generates concise feature lists for scripts, enabling instant dashboard insights without manual documentation.",
+        "Caches script hashes to skip redundant AI calls, cutting bandwidth and cost.",
         "Dynamically selects the most compatible Groq model, ensuring optimal performance across environments.",
-        "Parses exact rate‑limit wait times, minimizing downtime during high‑traffic API usage.",
-        "Falls back to exponential backoff when precise timing unavailable, guaranteeing reliable retries.",
-        "Limits header injection to first 40 lines, preserving existing metadata and preventing accidental overwrites."
+        "Parses exact rate‑limit wait times and falls back to exponential backoff, guaranteeing reliable retries.",
+        "Limits header injection to the first 40 lines, preserving existing metadata and preventing accidental overwrites."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "",
       "desc": "Analyzes ~/scripts and automatically injects an AI-generated capabilities header block using Groq",
       "dir_path": "Core Scripts",
       "env": [
         "GROQ_API_KEY",
         "GROQ_MODEL"
       ],
-      "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
+      "freq": "On Demand",
       "name": "doc-injector.py",
       "path": "doc-injector.py",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5223,15 +5222,16 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Snapshots POSIX ownership and permissions of all tracked files into a portable .git-perms file.",
-        "Abstracts primary user and group to @USER/@GROUP, keeping snapshots portable across deployments.",
+        "Snapshots every tracked file’s mode and ownership into a portable .git-perms, preserving repository state across deployments.",
+        "Abstracts primary user/group to @USER/@GROUP, keeping snapshots valid even when UIDs change on fresh installs.",
         "Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.",
-        "Safely handles symlinks by chowning the link itself and avoiding chmod on link targets.",
-        "Commits changes only when permissions differ, preventing noise and unnecessary git diffs."
+        "Safely handles symlinks by chowning the link itself and skipping chmod on targets, preventing broken links.",
+        "Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits.",
+        "Runs automatically at 5 am via backup-scripts-git.sh, ensuring permissions stay in sync without manual intervention."
       ],
       "category": "Core Scripts",
       "cron_ctx": "user",
-      "desc": "Snapshots POSIX ownership and permissions of Git-tracked files to `.git-perms`, or applies them during bootstrap",
+      "desc": "Snapshots non-standard POSIX ownership and permissions (exceptions) to `.git-perms`, or applies them during bootstrap",
       "dir_path": "Core Scripts",
       "env": [],
       "freq": "Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)",
@@ -5309,12 +5309,12 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Consolidates Docker stacks, SSH configs, and critical system files into a single age‑encrypted tar.zst archive for secure off‑site storage.",
-        "Uses a file lock to prevent overlapping runs, guaranteeing resource stability and avoiding duplicate backups.",
-        "Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely without interrupting the job.",
-        "Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations and preventing false outage alerts.",
+        "Creates a single, encrypted archive of Docker stacks and system configs for secure off‑site backup.",
+        "Prevents overlapping runs with a lockfile, guaranteeing one backup instance at a time.",
+        "Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely.",
+        "Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations.",
         "Gracefully stops Docker stacks before snapshotting and restores them afterward, eliminating data corruption risks.",
-        "Auto‑installs missing zstd and age tools, ensuring the script operates on fresh systems without manual setup."
+        "Auto‑installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup."
       ],
       "category": "Core Scripts",
       "cron_ctx": "root",
