@@ -1,11 +1,11 @@
 #!/bin/bash
-# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/repos/dashboards/permissions, pushes dashboards, dotfiles and system_configs
+# @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/dashboards/permissions, pushes dashboards, dotfiles and system_configs
 # @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
 # @CRON: user
 # @CAPABILITIES:
-#   • Captures full system state daily, enabling instant rollback and compliance audit trails.
-#   • Safeguards APT source lists and keyrings, ensuring reproducible builds and preventing trust erosion.
+#   • Captures full system state daily for instant rollback and audit.
+#   • Safeguards APT sources and keyrings, preserving build reproducibility and preventing trust erosion.
 #   • Mirrors user config directories via rsync, keeping tool settings consistent across machines.
 #   • Stores Git repo permissions before sync, preventing accidental exposure of sensitive files.
 #   • Generates dashboards only when no alarm flags, reducing alert fatigue and maintaining alarm‑once design.
@@ -107,12 +107,6 @@ if [ -f "/opt/rabbit-hole/git-perms.sh" ]; then
     "/opt/rabbit-hole/git-perms.sh" save "/opt/rabbit-hole"
     "/opt/rabbit-hole/git-perms.sh" save "${CTRL_DIR}"
     "/opt/rabbit-hole/git-perms.sh" save "${STACKS_DIR}"
-fi
-
-# G. SCRIPT CAPABILITIES
-if [ -f "/opt/rabbit-hole/doc-injector.py" ]; then
-    echo "🤖 Auditing script capabilities..."
-    python3 "/opt/rabbit-hole/doc-injector.py" || true
 fi
 
 # --- GENERATE DASHBOARDS ---
