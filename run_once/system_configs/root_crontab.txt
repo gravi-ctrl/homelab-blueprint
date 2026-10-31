@@ -11,6 +11,9 @@ BASH_ENV=/opt/rabbit-hole/.env
 # Shutdown if battery is discharging and below 20%
 */5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/rabbit-hole/battery-monitor.sh"
 
+# Rotate backups (retain recent) and purge download watch folder
+0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
+
 # Cold backup of Docker Stacks, scripts, ctrl_s_master, mkcert & SSH keys
 30 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
 

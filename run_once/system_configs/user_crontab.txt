@@ -23,9 +23,6 @@ BASH_ENV=/opt/rabbit-hole/.env
 # Check if root (/) or /data exceeds 90%
 0 * * * * cron-guard --mode fail "Disk Monitor" "/opt/rabbit-hole/disk-monitor.sh"
 
-# Rotate backups (retain recent) and purge download watch folder
-0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
-
 # Update Pi-hole Gravity and apply mmotti regex rules
 5 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "/opt/stacks/pihole/update-pihole-regex.sh"
 
