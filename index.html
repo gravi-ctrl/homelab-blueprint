@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-10-28 21:47 EEST</div>
+    <div class="meta-line">Generated 2026-11-01 00:39 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3744,80 +3744,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 1
     },
     {
-      "command": "cron-guard --mode fail \"Cleanup Job\" \"/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL\"",
-      "day_conditional": null,
-      "env": [
-        "DATA_DIR"
-      ],
-      "full_comment": "Rotate backups (retain recent) and purge download watch folder",
-      "has_wrapper": true,
-      "heat_slots": [
-        [
-          0,
-          0
-        ],
-        [
-          0,
-          12
-        ],
-        [
-          1,
-          0
-        ],
-        [
-          1,
-          12
-        ],
-        [
-          2,
-          0
-        ],
-        [
-          2,
-          12
-        ],
-        [
-          3,
-          0
-        ],
-        [
-          3,
-          12
-        ],
-        [
-          4,
-          0
-        ],
-        [
-          4,
-          12
-        ],
-        [
-          5,
-          0
-        ],
-        [
-          5,
-          12
-        ],
-        [
-          6,
-          0
-        ],
-        [
-          6,
-          12
-        ]
-      ],
-      "human_desc": "At 00:00 and 12:00",
-      "is_root": false,
-      "label": "Cleanup Job",
-      "owner": "👤 User Cron (alice)",
-      "raw_schedule": "0 0,12 * * *",
-      "tier": "🌙 Daily",
-      "tier_order": 2
-    },
-    {
       "command": "cron-guard --mode fail \"Nextcloud CalCard Backup\" \"docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s\"",
       "day_conditional": null,
       "env": [],
@@ -4746,6 +4672,80 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 0
     },
     {
+      "command": "cron-guard --mode fail \"Cleanup Job\" \"/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL\"",
+      "day_conditional": null,
+      "env": [
+        "DATA_DIR"
+      ],
+      "full_comment": "Rotate backups (retain recent) and purge download watch folder",
+      "has_wrapper": true,
+      "heat_slots": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          12
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          12
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          5,
+          12
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          6,
+          12
+        ]
+      ],
+      "human_desc": "At 00:00 and 12:00",
+      "is_root": true,
+      "label": "Cleanup Job",
+      "owner": "⚡ Root Cron",
+      "raw_schedule": "0 0,12 * * *",
+      "tier": "🌙 Daily",
+      "tier_order": 2
+    },
+    {
       "command": "cron-guard --mode all \"Docker Stacks Backup\" \"/opt/rabbit-hole/local-opt-backup.sh\"",
       "day_conditional": null,
       "env": [],
@@ -5102,7 +5102,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Special purge trigger deletes entire folders, enabling rapid recovery from corrupted backup sets."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "root",
       "desc": "Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode.",
       "dir_path": "Core Scripts",
       "env": [
