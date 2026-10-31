@@ -36,6 +36,7 @@ fastfetch
 findutils
 fzf
 git
+gnupg
 grep
 grub-pc
 gzip
@@ -79,6 +80,7 @@ sudo-rs
 systemd
 systemd-resolved
 systemd-sysv
+terraform
 ubuntu-drivers-common
 ubuntu-minimal
 ubuntu-release-upgrader-core
