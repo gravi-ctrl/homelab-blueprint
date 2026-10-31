@@ -2,7 +2,7 @@
 # @DESCRIPTION: Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode.
 # @FREQUENCY: Daily 1am and 1pm
 # @USES_ENV: FILES_TO_KEEP
-# @CRON: user
+# @CRON: root
 # @CAPABILITIES:
 #   • Keeps only the newest N backups, instantly freeing disk space without manual intervention.
 #   • Dry‑run mode previews deletions, eliminating accidental data loss during testing.
