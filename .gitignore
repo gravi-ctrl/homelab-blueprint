@@ -4,6 +4,11 @@
 **/__pycache__/
 *.pem
 /cert-manager/certs/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
 
 # ephemeral, state & built files
 **/*.log
@@ -16,3 +21,4 @@
 /state/
 /run_once/system_configs/
 /run_once/dotfiles/
+.terraform/
