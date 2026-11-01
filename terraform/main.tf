@@ -6,6 +6,7 @@ module "homelab" {
   homepage_url = "https://gravi-ctrl.github.io/homelab-blueprint/"
   topics = [
     "automation",
+    "terraform",
     "bash",
     "docker",
     "homelab",
