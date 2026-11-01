@@ -1,52 +1,71 @@
 ![License](https://img.shields.io/badge/license-MIT-green?label=License)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
 [![Code Quality & Linting](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml)
+[![Terraform GitOps](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/terraform.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/terraform.yml)
 [![Code Quality & Tests](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml)
 [![Security Scans](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml)
 [![Stacks Validation & CI](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml)
 
-> ### 💡 How This Was Built
-> * **Design & Logic:** All the workflows, recovery plans, and architecture were designed by me to solve real homelab headaches.
-> * **Code & AI Pairing:** I wrote the primary Bash automations by hand, and paired with LLMs to scaffold the Python utility scripts, refine syntax, and catch edge cases.
-> * **Sanity Checks:** All code is vetted through GitHub Actions pipelines (ShellCheck, Ruff, Trivy) before it ever touches production.
-
 # 🛠️ Homelab Blueprint
 
-This repository functions as the automation engine for my home server. It acts as a self-documenting "Source of Truth" handling everything from SSL/Proxy provisioning to high-resilience backups and real-time Telegram observability.
+This is the automation engine behind my home server. It issues its own certificates, deploys its own updates, checks that they worked, rolls back when they didn't, and tells me about it on Telegram. If the machine dies, I can rebuild it from a backup in about 25 minutes.
 
 **Location on Server:** `~/scripts`
 
-🖥️ **Live Interactive Dashboard:** 
+🖥️ **Live Interactive Dashboard:**
 * [gravi-ctrl.github.io/homelab-blueprint](https://gravi-ctrl.github.io/homelab-blueprint/)
+
+### ✨ The Short Version
+
+* **Rebuilds in about 25 minutes.** I tested a full restore on a wiped VM: ~15 minutes for the OS, ~10 for the stacks.
+* **Self-checking deploys.** Merge a PR and the server picks it up within 15 minutes, updates only what changed, verifies it, and rolls back on failure (see `gitops-deploy.sh`).
+* **Nothing ships unchecked.** Every change goes through linting, tests, security scans and a Terraform plan before it can reach `main`.
+* **No silent failures.** Every scheduled job reports to Telegram, and repeated errors are grouped so my phone doesn't get spammed.
+* **Encrypted weekly backups**, plus a daily snapshot of scripts, crontabs and package lists.
+* **Self-documenting.** Scripts describe themselves, and a live dashboard is built from that.
+* **GitHub settings as code.** Repo rules and settings live in Terraform, with the state stored remotely.
 
 ---
 
 ## ⚙️ How it Works
 
-The server manages its own SSL certificates, issues them via a local CA, and deploys them to the reverse proxy automatically. Scheduled tasks run through a custom Telegram wrapper, so failures are never silent. If a job crashes and dumps a massive log, the wrapper sends a summary to your phone and saves the full output locally. 
+**Certificates.** The server runs its own certificate authority, issues its own SSL certs, and hands them to the reverse proxy without me doing anything (see `cert-manager`).
 
-The server snapshots its own state daily: scripts, crontabs, package lists, etc. Scripts automatically document their own operational capabilities into their headers via an automated analyzer (doc-injector.py), keeping the live web dashboard in sync with code logic. Once a week, a verified age-encrypted archive captures the entire stack. Tested from bare metal on a VM: a wiped machine is back online in **25 minutes** (15 minutes for the OS install, and ~10 minutes for the stack restore; see the runbook below).
+**Alerts.** Every scheduled job runs through a small wrapper I wrote, `cron-guard.py`, so I get a Telegram message for almost everything. If a job crashes and spits out a huge log, I get a short summary on my phone and the full output is saved on the server.
 
-For on-demand triage, an integrated terminal assistant (oracle) allows piping live Docker logs, systemd traces, or full scripts for instant, stream-rendered root-cause analysis with automated secret scrubbing.
+**Backups.** The server takes a snapshot of itself every day: scripts, crontabs, package lists and so on. Once a week it makes an encrypted archive (with `age`) of the whole stack and checks that it's good. I tested a full restore on a VM, and a wiped machine was back online in **25 minutes**: about 15 for the OS install and about 10 for the stack restore (see the runbook below).
 
-The result: the server largely runs itself, and when something does go wrong, you already know about it before you notice.
+**Docs that write themselves.** After I write or change a script, I run `doc-injector.py`. It asks an LLM what the script does and writes the answer into the script's header. At 5 AM the live dashboard picks those headers up, so the docs stay in sync with the code.
 
-> For the design reasoning behind the fixed paths, ownership rules, and cross-script dependencies, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+**`oracle`.** My terminal AI helper (Jarvis was overused, so `oracle` it is). I can pipe Docker logs, systemd traces or a whole script into it and get a root-cause analysis streamed back. Secrets are scrubbed from the text before anything leaves the server.
+
+The result: the server mostly runs itself, and when something does go wrong, I usually hear about it before I'd have noticed.
+
+> To see why the fixed paths, ownership rules and script dependencies are set up the way they are, read [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ---
 
 ## 🧪 CI/CD & Automated Quality Gates
 
-Every commit and Pull Request across the ecosystem is validated before code or container configurations touch the server:
+Every commit and pull request across my repos gets checked before any code or container config can reach the server:
 
-* **Static Analysis & Linting:** Automated workflows run [ShellCheck](https://www.shellcheck.net/) across all Bash scripts, [Ruff](https://docs.astral.sh/ruff/) on Python automation tools, and [Hadolint](https://github.com/hadolint/hadolint) on Dockerfiles.
-* **Stack Validation:** A custom CI runner automatically iterates through all Docker Compose stacks, instantiates mock environments from `.env.example`, and runs `docker compose config -q` to catch syntax or schema errors before deployment.
-* **Automated Testing:** Cross-platform matrix testing (`ubuntu-latest` & `windows-latest`) executes `pytest` suites on core utility modules.
-* **Supply-Chain & Security Scanning:** 
-  * [Trivy](https://github.com/aquasecurity/trivy) scans for committed credentials, API keys, and Dockerfile misconfigurations (`HIGH`, `CRITICAL`).
-  * Weekly scheduled CVE scans monitor published images (`ghcr.io/gravi-ctrl/wifi-robot:latest`) for newly reported upstream vulnerabilities.
-* **Container Images:** Merging a change to `wifi-robot/` builds and pushes the image to GitHub Container Registry (`ghcr.io`); the weekly scan above watches it for new vulnerabilities.
-* **GitOps Continuous Deployment:** Merging a PR (usually a Renovate dependency bump) is the whole release process. The server's pull-based engine (`gitops-deploy.sh`) picks it up within 15 minutes and redeploys only the affected running stacks, one at a time. Each stack is verified (container state, a crash-loop watch, and port and HTTP checks compared against what was healthy *before* the update) and rolled back to its last known good compose file if it fails, with a Telegram alert.
+* **Linting:** [ShellCheck](https://www.shellcheck.net/) for Bash, [Ruff](https://docs.astral.sh/ruff/) for Python, and [Hadolint](https://github.com/hadolint/hadolint) for Dockerfiles.
+* **Stack validation:** A custom CI job goes through every Docker Compose stack and runs `docker compose config -q` against its `.env.example`, so syntax and schema mistakes show up before deployment. (The `.env.example` is there because the real `.env` files are not in git.)
+* **Automated tests:** `pytest` runs on the core utility modules, on both `ubuntu-latest` and `windows-latest`.
+* **Security and supply chain:**
+  * [Trivy](https://github.com/aquasecurity/trivy) scans for committed credentials, API keys and Dockerfile misconfigurations (`HIGH` and `CRITICAL`).
+  * A weekly scan checks the published image (`ghcr.io/gravi-ctrl/wifi-robot:latest`) for newly reported vulnerabilities.
+* **Container images:** Merging a change to `wifi-robot/` builds the image and pushes it to GitHub Container Registry (`ghcr.io`). The weekly scan above keeps watching it.
+* **Infrastructure as Code (Terraform):** The settings of my three GitHub repos (`homelab-blueprint`, `ctrl-s-master`, `server-docker-backup`) are managed with Terraform modules, and the state is stored in Backblaze B2 (S3-compatible). When I open a PR, a bot runs `terraform plan` and posts the result as a comment. When I merge to `main`, `terraform apply` runs automatically.
+* **GitOps deployment:** Merging a PR (usually a Renovate dependency update) is the whole release process. The server pulls `main` every 15 minutes with `gitops-deploy.sh` and redeploys only the stacks that changed and are already running, one at a time. Each one is checked after the update: container state, a crash-loop watch, and port and HTTP checks compared to what was healthy *before*. If a stack fails, it's rolled back to its last known good compose file and I get a Telegram alert.
+
+---
+
+## 💡 How This Was Built
+
+* **Design & Logic:** The workflows, recovery plans, and architecture are all mine. I broke things, figured out why, and fixed them, and this repo is what's left after all of that.
+* **Code & AI Pairing:** I wrote the main Bash automations by hand. I used AI to speed up the rest, mostly the Python scripts, and to clean up syntax and catch edge cases I missed.
+* **Sanity Checks:** Every change goes through GitHub Actions (ShellCheck, Ruff, Trivy, and Terraform format/validate) before it gets anywhere near production.
 
 ---
 
@@ -63,7 +82,7 @@ flowchart LR
     V -->|failed| RB["Rollback to last known good + Telegram alert"]
 ```
 
-`main` is protected in every repo (PR plus required checks), and nothing automated pushes to it. Machine-generated output goes to side branches instead: dashboards to `pages`, system snapshots to `snapshots`. Anything that changes on the server outside a PR shows up in a daily drift report rather than being committed silently. The reasoning is in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §16–18.
+`main` is protected in every repo (a PR and passing checks are required), and no script ever pushes to it. Anything the server generates goes to its own side branch: dashboards to `pages`, system snapshots to `snapshots`. If something on the server changes without going through a PR, it shows up in a daily drift report instead of being committed quietly. The reasoning is in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §16–19.
 
 ---
 
@@ -95,9 +114,9 @@ graph TD
     style C fill:#1f242b,stroke:#3081f7
 ```
 
-The server can be provisioned in two ways: **Full Recovery** (restoring a weekly `docker-stacks-DATE.tar.zst.age` archive) or a **Fresh Start** (bootstrapping from scratch). 
+There are two ways to rebuild the server: a **Full Recovery** (restore the weekly `docker-stacks-DATE.tar.zst.age` archive) or a **Fresh Start** (build everything from scratch).
 
-A full backup archive contains everything needed to restore the exact state:
+The full backup archive has everything needed to bring back the exact state:
 
 | Path | What | Restoration Note |
 |------|------|------------------|
