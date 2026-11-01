@@ -1,119 +1,80 @@
 # Architecture & Design Notes
 
-This file is for *why* things are wired the way they are — the anchor points I don't move,
-the gotchas that aren't obvious until they bite, and the spots where two scripts quietly
-depend on each other in a way that isn't visible from either file alone. The
-[README](./README.md) is the runbook: what to run, in what order. This is the "why does this
-actually work, and what breaks if I touch it" doc.
+This file explains *why* things are set up the way they are: what I never move, what bites you if you forget it, and where two scripts quietly depend on each other.
 
-> ### Note on Implementation & AI Pairing
-> The automation here prioritizes operational reliability over reinventing boilerplate. I leveraged AI pairing as an engineering accelerator to implement the Python utility daemons (e.g., `cron-guard.py` process tree handling and state hashing) and to tighten Bash error trapping, while driving the architectural constraints, process semantics, and failure boundaries myself.
+The [README](./README.md) tells you what to run and in what order. This file tells you why it works and what breaks if you change it.
+
+> **A note on AI help**
+> I used AI as a speed-up for some of the code: the Python helper scripts (like `cron-guard.py`'s process handling and state hashing) and tighter error handling in Bash. The design decisions, the rules for how processes behave, and the choices about what's allowed to fail were mine.
 
 ---
 
-## 1. The Fixed Anchors
-
-Three paths I treat as permanent. Nothing else in the repo is sacred, but these three don't
-get renamed:
+## 1. Three Paths I Never Rename
 
 | Path | What it is | Set in |
 |---|---|---|
-| `/opt/rabbit-hole` | Symlink to the real scripts repo (`$HOME/scripts`) | `setup.sh` |
-| `/opt/venv` | The Python virtualenv all scripts run under | `setup.sh` |
+| `/opt/rabbit-hole` | Symlink to my real scripts folder (`$HOME/scripts`) | `setup.sh` |
+| `/opt/venv` | The Python virtualenv every script uses | `setup.sh` |
 | `/opt/stacks` | Docker Compose stacks (separate repo) | `setup.sh` / `bootstrap.sh` |
 
-The one thing that's actually allowed to move is `MY_SCRIPTS="$HOME/scripts"` in `setup.sh` —
-that's where the real files live, and `/opt/rabbit-hole` is just the alias every other script
-points at. If the real location ever changes (different mount, different folder name), that's
-the only line to touch. `/opt/rabbit-hole` itself is a different story — renaming it means
-sweeping every script that hardcodes it, `setup.sh` included, since it both creates the
-symlink and consumes the alias internally (cron-guard symlink, `.env` checks, systemd
-`ExecStart`, all of it).
+The only thing allowed to move is `MY_SCRIPTS="$HOME/scripts"` in `setup.sh`. That's where the real files live, and `/opt/rabbit-hole` is just a nickname for it. If the real folder ever moves, that's the one line to change.
 
-One thing to watch if I ever do that sweep: don't touch plain `$HOME` or `$HOME/scripts`
-patterns. Those show up all over the place for unrelated reasons — dotfiles, `.ssh`, mkcert —
-and a blind sed across those would break things that have nothing to do with this. Only the
-literal string `/opt/rabbit-hole` is safe to grep/sed for.
+Renaming `/opt/rabbit-hole` itself is a bigger job. Every script that hardcodes it has to change, including `setup.sh`, which both creates the symlink and uses it (cron-guard symlink, `.env` checks, systemd `ExecStart`).
+
+If I ever do that rename, only search for the exact text `/opt/rabbit-hole`. Never touch plain `$HOME` or `$HOME/scripts`. They show up everywhere for unrelated reasons (dotfiles, `.ssh`, mkcert), and a blind find-and-replace would break them.
 
 ---
 
-## 2. DNS Resolution Order: Why the Server's Own IP Comes First
+## 2. DNS: My Own Server Has to Be First
 
 ```json
 "dns": ["${SERVER_IP}", "8.8.8.8", "1.1.1.1"],
 ```
 
-That order in `daemon.json` isn't arbitrary, and it's the one line in this whole setup that
-exists because I got burned by not having it.
+This order in `daemon.json` matters, and it exists because I got burned.
 
-The domain everything runs under is a private one, issued through mkcert — it's not
-registered anywhere public, and it never will be. Google and Cloudflare have no idea it
-exists and never will. My own Unbound resolver (set up in setup.sh, step 7/10) is the only thing on the network
-that can actually answer for it.
+My domain is private. It's signed by mkcert and not registered anywhere public. Google and Cloudflare don't know it exists. Only my own Unbound resolver (`setup.sh`, step 7/10) can answer for it.
 
-That matters because containers don't just serve on that domain, they *talk to each other*
-across it. Nextcloud and n8n both authenticate through Pocket ID over OIDC, and OIDC isn't
-just "does the login page load" — the container has to resolve the issuer's hostname itself
-to hit the discovery endpoint and validate redirect URIs. If the first DNS server in that
-list can't answer for the private zone, that resolution either fails outright or falls
-through to something that isn't actually serving Pocket ID, and the whole auth flow dies with
-errors that don't obviously say "this is a DNS problem."
+Containers don't just serve that domain, they also talk to each other through it. Nextcloud and n8n log in through Pocket ID using OIDC. For that, the container has to look up the login server's hostname itself, to reach its discovery endpoint and check redirect addresses. If the first DNS server can't answer for my private domain, the lookup fails (or lands on something that isn't Pocket ID), and login breaks with errors that don't mention DNS at all.
 
-Which is exactly what happened. I rebuilt the daemon.json by hand at some point, put Google
-and Cloudflare first because that's the instinctive "safe" choice, and OIDC broke across
-every container that used it. Took a while to connect "auth is broken" back to "oh, the
-resolver order changed."
+That's what happened. I rebuilt `daemon.json` by hand, put Google and Cloudflare first because it felt like the safe choice, and OIDC broke in every container that used it. It took a while to connect "login is broken" to "the DNS order changed."
 
-This is a known pattern, it's got a name — split-horizon DNS — and it's the standard approach
-for anyone running an internal-only domain. But it's easy to "fix" by accident: reflexively
-reaching for a public resolver first while debugging something unrelated will quietly break
-every OIDC-dependent container, and the error you get won't point at DNS at all.
+This setup is called split-horizon DNS, and it's the normal way to run an internal-only domain. It's easy to break by accident, though: putting a public resolver first while debugging something else will quietly break every OIDC container.
 
-**The rule going forward:** `SERVER_IP` stays first in that list, always. If Docker DNS ever
-needs debugging, check the order before touching anything else.
+**Rule:** `SERVER_IP` stays first. If Docker DNS acts up, check the order before anything else.
 
 ---
 
-## 3. Ownership & the Symlink Dereference Trap
+## 3. The Symlink Ownership Trap
 
-`/opt/rabbit-hole` gets created with `sudo ln -sf "$MY_SCRIPTS" /opt/rabbit-hole` — which means
-the symlink itself is root-owned, even though the directory it points to is mine.
+`/opt/rabbit-hole` is made with `sudo ln -sf "$MY_SCRIPTS" /opt/rabbit-hole`, so the link itself is owned by root, even though the folder it points to is mine.
 
-That trips people up because GNU `stat` doesn't follow symlinks by default (same as `ls -l`).
-Stat the bare symlink and you get root's metadata, not the target's:
+`stat` doesn't follow symlinks by default (same as `ls -l`), so checking the bare link gives you root:
 
 ```bash
-stat -c '%U' /opt/rabbit-hole       # → root   (the link's own owner — wrong)
-stat -c '%U' /opt/rabbit-hole/.     # → you    (trailing dot forces dereference — correct)
-stat -L -c '%U' /opt/rabbit-hole    # → you    (explicit flag — correct, and clearer to read)
+stat -c '%U' /opt/rabbit-hole       # → root  (the link's own owner, wrong)
+stat -c '%U' /opt/rabbit-hole/.     # → you   (trailing dot follows the link, right)
+stat -L -c '%U' /opt/rabbit-hole    # → you   (explicit flag, clearest to read)
 ```
 
-This only bites when the symlink is the *last* component of the path. Anything reached
-*through* it — `/opt/rabbit-hole/some_file`, or `${BASH_SOURCE[0]}` when a script is invoked as
-`/opt/rabbit-hole/script.sh` — gets resolved transparently by the kernel, no flag needed.
-That's why `local-opt-backup.sh`'s `stat -c '%U' "${BASH_SOURCE[0]}"` and `vergil.py`'s
-`Path(__file__).resolve().owner()` both work fine as written: in both cases the file itself
-isn't a symlink, only a directory earlier in the path is.
+This only matters when the symlink is the *last* part of the path. Anything reached *through* it, like `/opt/rabbit-hole/some_file` or `${BASH_SOURCE[0]}` when a script is run as `/opt/rabbit-hole/script.sh`, is resolved automatically. That's why `local-opt-backup.sh` (`stat -c '%U' "${BASH_SOURCE[0]}"`) and `vergil.py` (`Path(__file__).resolve().owner()`) work fine: the file isn't a symlink, only a folder earlier in the path is.
 
-The one place this is actually load-bearing is `container-watcher.sh`'s `task_nextcloud()`,
-which uses `stat -L -c '%U' /opt/rabbit-hole` — correctly dereferenced — to find the real owner
-before a `sudo -u` call. Drop the `-L` there and it'd silently run as root.
+The one place it really matters is `task_nextcloud()` in `container-watcher.sh`. It uses `stat -L -c '%U' /opt/rabbit-hole` to find the real owner before a `sudo -u` call. Without `-L`, it would quietly run as root.
 
 ---
 
-## 4. Disaster-Recovery Ownership: UID/GID, Not Usernames
+## 4. Disaster Recovery: Numbers, Not Names
 
-The backup/restore path doesn't trust usernames at all — only numeric IDs, and it tracks UID
-and GID separately, because they don't always travel together.
+Restore doesn't trust usernames. It uses numeric IDs, and tracks UID and GID separately because they don't always match up.
 
-At backup time (`local-opt-backup.sh`):
+**At backup** (`local-opt-backup.sh`):
 ```bash
 SCRIPT_OWNER=$(stat -c '%U' "${BASH_SOURCE[0]}")
 echo "$(id -u "$SCRIPT_OWNER"):$(id -g "$SCRIPT_OWNER")" > /tmp/backup-uid.txt
 ```
-That numeric pair rides along inside the encrypted archive.
+That pair of numbers goes inside the encrypted archive.
 
-At restore time (`bootstrap.sh`):
+**At restore** (`bootstrap.sh`):
 ```bash
 IFS=: read -r B_UID B_GID < /tmp/backup-uid.txt
 sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
@@ -122,107 +83,69 @@ sudo find "$DIR_STACKS" "$DIR_SCRIPTS" "$DIR_CTRL" "$HOME/.ssh" \
     -exec chown "$(id -u):$(id -g)" {} +
 ```
 
-Why bother with both fields instead of just UID: `useradd` doesn't guarantee they land
-together on a fresh box. Regular accounts tend to start at UID 1000 on most distros, so the
-UID is likely to match across a rebuild — but the GID isn't, if some other group already
-claimed that slot on the new image. A UID-only check would miss that drift entirely. Checking
-both — flag anything still carrying *either* old number, fix it unless it's already correct
-on both — closes that gap. It's scoped tightly to a handful of private directories, so it
-can't accidentally reach into stuff that legitimately belongs to something else, like
-container UIDs (`www-data:33` and friends).
+Why both numbers: a new machine usually gives the first user UID 1000 again, but the GID can differ if another group already took that number. Checking only UID would miss that. So I look for anything still carrying *either* old number and fix it unless it's already correct on both.
+
+It only touches a few private folders, so it can't reach things that rightfully belong to someone else, like container users (`www-data:33`).
 
 ---
 
-## 5. `cron-guard --mode mute`: started cosmetic, became load-bearing
+## 5. `cron-guard --mode mute`: Started as a Label, Became Useful
 
-`mute` mode didn't set out to solve a real problem. It started as a labeling trick.
+`mute` started as a labeling trick.
 
-`homelab_dash.py` builds its UI off crontab comments and command text. Any cron line that
-doesn't go through `cron-guard` gets whatever comment sits above it, truncated, guessed at.
-Wrapping a job as `cron-guard --mode <mode> "Job Name" ...` — any mode, `mute` included — gives
-the dashboard something structured to parse instead:
+`homelab_dash.py` builds the dashboard from crontab comments and command text. A cron line that doesn't go through `cron-guard` only gets whatever comment is above it, cut short and guessed at. Wrapping a job as `cron-guard --mode <mode> "Job Name" ...` (any mode) gives the dashboard something clean to read:
 
 ```python
 cg_match = re.search(r'cron-guard(?:\.py)?\s+--mode\s+(?:fail|success|all|mute)\s+["\']([^"\']+)["\']', cmd)
 ```
 
-So originally `mute` just existed so quiet jobs (no Telegram noise wanted) could still show up
-cleanly on the dashboard without a long comment explaining themselves. On its own that would've
-made it a fairly thin wrapper — run a command, log nothing.
+So `mute` first existed so quiet jobs (no Telegram messages) could still show up properly on the dashboard.
 
-It picked up a real second reason to exist once the heartbeat file showed up: `mute` mode
-writes `status/<job>_<hash>.json` (last run time, exit code, duration, timed-out flag) on
-every run, purely local, never sent anywhere or read by the dashboard. It's the only way to
-manually confirm a permanently-silent job actually ran — since by design, nothing else is
-ever going to tell you.
+It later got a real second job. In `mute` mode, every run writes `status/<job>_<hash>.json` with the last run time, exit code, duration, and whether it timed out. This file stays local. Nothing sends it anywhere and the dashboard doesn't read it. It's the only way to check by hand that a permanently silent job really ran, since nothing else will ever tell you.
 
 ---
 
-## 6. The Dashboard Pipeline: isolated worktrees + a timestamp-blind diff
+## 6. The Dashboard Pipeline
 
-Daily at 5am, `backup-scripts-git.sh` kicks off `generate-dashboards.sh`, which has to solve a
-real problem: how do you commit freshly generated HTML to a `pages` branch without disturbing
-whatever's checked out in the main working directory — which might have real, uncommitted
-work sitting in it?
+Every day at 5am, `backup-scripts-git.sh` runs `generate-dashboards.sh`. The problem it solves: how do I commit new HTML to the `pages` branch without disturbing the main folder, which might have real unfinished work in it?
 
-The answer is a temporary git worktree, not a branch switch in place:
+The answer is a temporary git worktree instead of switching branches:
 ```bash
 git -C "$CURRENT_REPO" worktree add "$CURRENT_WORKTREE" pages
 git -C "$CURRENT_WORKTREE" pull --rebase origin pages
 cp "$temp_html" "$CURRENT_WORKTREE/index.html"
 ```
-A worktree is a separate checkout sharing the same object database, so commits made there are
-real commits on `pages`, but the main working directory's checked-out branch and any
-uncommitted state never get touched. A `trap ... EXIT INT TERM` guarantees the worktree gets
-torn down (`rm -rf` + `worktree prune`) no matter how the script exits.
+A worktree is a second checkout that shares the same git data. Commits made there are real commits on `pages`, but the main folder's branch and uncommitted changes are never touched. A `trap ... EXIT INT TERM` always removes the worktree (`rm -rf` + `worktree prune`), however the script ends.
 
-There's also a noise problem: every generated dashboard embeds a `Generated <timestamp>` line
-that changes on literally every run, whether or not anything else did. Committing that daily
-would bury real changes under timestamp-only noise, so:
+There's also a noise problem. Every dashboard has a `Generated <timestamp>` line that changes on every run. Committing that daily would bury real changes. So:
 ```bash
 git diff --cached --quiet -I "[Gg]enerated "
 ```
-`git diff -I<regex>` treats a diff hunk as unchanged if every changed line matches the regex.
-Since the timestamp is the only thing that ever moves on a no-op day, this correctly detects
-"nothing of substance changed" and skips the commit.
+`git diff -I<regex>` ignores a change if every changed line matches the pattern. On a day where only the timestamp changed, it sees "nothing real changed" and skips the commit.
 
-The push at the end is explicit, and deliberately so. `backup-scripts-git.sh` runs `git push origin pages` for both repos, and skips it while a `dash-alarm-*` flag exists in the repo's `.git` (a known, already-alarmed problem such as a rebase conflict), so a stuck dashboard fails loudly once instead of every morning. Nothing else in the pipeline pushes any branch: `git-auto-sync.py` is no longer part of the daily run (see §18), so `pages` only moves because this script moves it. The `snapshots` branch uses the same technique: a temporary worktree, one commit, one push.
+The push at the end is deliberate. `backup-scripts-git.sh` runs `git push origin pages` for both repos. It skips the push while a `dash-alarm-*` flag exists in the repo's `.git` (a known problem that already alerted, like a rebase conflict), so a stuck dashboard fails loudly once instead of every morning. Nothing else pushes any branch. `git-auto-sync.py` is no longer in the daily run (see §18), so `pages` only moves because this script moves it. The `snapshots` branch uses the same trick: temporary worktree, one commit, one push.
 
-One dependency worth remembering: this only works because the worktree is always gone by the
-time anything else tries to check out `pages` in the main working tree. Git won't let the
-same branch be checked out in two places at once. The trap-based cleanup is what makes that
-hold — if a future change ever skipped or broke the trap, the next sync cycle's attempt to
-check out `pages` directly would fail with "already checked out elsewhere."
+One thing depends on this: the worktree has to be gone before anything else tries to check out `pages` in the main folder. Git won't let one branch be checked out in two places. The trap is what guarantees that. If it were ever skipped or broken, the next attempt would fail with "already checked out elsewhere."
 
 ---
 
-## 7. The Day-of-Month / Day-of-Week OR Trap
+## 7. Cron's "Day of Month OR Day of Week" Trap
 
 ```
 0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard --mode fail "ctrl_s_master" "$CTRL_DIR/run.sh"
 ```
 
-This is meant to run on the 2nd and 4th Friday of the month. Writing it the "obvious" way —
-`0 2 8-14,22-28 * 5 ...`, restricting both day-of-month and day-of-week — doesn't work. Cron
-ORs those two fields whenever both are restricted, it doesn't AND them. That version would
-actually fire on day-of-month 8–14 or 22–28, *or* any Friday at all — every Friday of the
-month, plus eight extra days.
+This should run on the 2nd and 4th Friday of the month. The obvious way, `0 2 8-14,22-28 * 5 ...`, doesn't work. When both day-of-month and day-of-week are set, cron runs the job if *either* matches, not both. That version would fire on days 8–14 and 22–28, *plus* every Friday.
 
-The fix is to leave day-of-week as `*` at the cron level, so cron only filters by date, and do
-the actual day-of-week check inside the command with `date +%u` and `&&`. That gets real AND
-semantics by pulling the second condition out of cron's field-matching entirely.
+The fix is to leave day-of-week as `*` so cron only filters by date, then check the weekday inside the command with `date +%u` and `&&`. That gives a true "and."
 
-`homelab_dash.py` has a regex built specifically to recognize this `date +\%[uwaA] ... &&`
-pattern and render it as something readable ("2nd and 4th Friday") instead of dumping raw
-cron syntax at me. It's written generally, not hardcoded to this one line, so any future
-irregular schedule written the same way gets the same treatment automatically.
+`homelab_dash.py` has a regex that spots the `date +\%[uwaA] ... &&` pattern and shows it as something readable ("2nd and 4th Friday") instead of raw cron text. It isn't tied to this one line, so any future odd schedule written this way gets the same treatment.
 
 ---
 
-## 8. GitOps Conflict Handling: Alert Once, Then Go Quiet
+## 8. GitOps Conflicts: Alert Once, Then Go Quiet
 
-`gitops-deploy.sh` runs every 15 minutes and needed its own alert-fatigue handling, separate
-from `cron-guard --mode mute`. On a merge conflict during `git pull --rebase --autostash`:
+`gitops-deploy.sh` runs every 15 minutes and needed its own way to avoid alert spam, separate from `mute`. When a merge conflict happens during `git pull --rebase --autostash`:
 
 ```bash
 if ! git pull -q origin main --rebase --autostash; then
@@ -234,255 +157,271 @@ if ! git pull -q origin main --rebase --autostash; then
 fi
 ```
 
-If this just let `--mode fail` catch the failure normally, the same conflict would re-trigger
-a Telegram alert every 15 minutes until I manually fixed it — exactly the noise `mute` mode
-exists to prevent elsewhere, except this job isn't silent by default, it's fail-alerting by
-default, and needs to suppress *itself* only after the first hit.
+If I let `--mode fail` handle it, the same conflict would send a Telegram alert every 15 minutes until I fixed it. `mute` exists to prevent that kind of noise, but this job isn't silent by default. It alerts on failure by default and needs to quiet *itself* after the first alert.
 
-So the pattern is: send one detailed alert, drop a marker file, then deliberately exit clean
-on every run after that, so cron-guard sees "success" and stays quiet. Tell me once, with
-everything I need, then go silent until I fix it. The alert doubles as the recovery
-instructions — once I'm back at a keyboard, resolving it means either `git restore .` to
-discard the conflicting local change, or staging and committing it properly, then a normal
-push. The next clean pull clears `$PAUSE_FILE` on its own, and alerting resumes as normal.
+So: send one detailed alert, drop a marker file, then exit cleanly on every later run so cron-guard sees "success" and stays quiet. The alert also contains the recovery steps: either `git restore .` to throw away the conflicting local change, or stage and commit it properly, then do a normal push. The next clean pull clears `$PAUSE_FILE` by itself and alerting goes back to normal.
 
 ---
 
-## 9. Repo Locking Convention
+## 9. Repo Locking Rule
 
-Any script that mutates a git repo's working tree (`checkout`, `pull`, `push`) has to hold a
-non-blocking `flock` on that repo's own `.git/sync.lock` before doing anything, and release it
-on exit. This replaced an earlier approach of just staggering the schedules between
-`gitops-deploy.sh` (every 15 min) and the daily backup sync, which both touched `$STACKS_DIR`
-directly with zero coordination and, at one point, were scheduled at the literal same minute.
-Staggering reduced the odds of collision. Locking removes the race entirely.
+Any script that changes a repo's working folder (`checkout`, `pull`, `push`) must first take a non-blocking `flock` on that repo's own `.git/sync.lock`, and release it when done.
+
+This replaced my earlier approach of spacing out the schedules. `gitops-deploy.sh` (every 15 min) and the daily backup sync both touched `$STACKS_DIR` with no coordination, and once ran at the exact same minute. Spacing them out lowered the odds of a clash. Locking removes it.
 
 **Bash** (`gitops-deploy.sh`):
 ```bash
 exec 200>"${STACKS_DIR}/.git/sync.lock"
 flock -n 200 || { echo "⏭️  Stacks repo busy, skipping this cycle."; exit 0; }
 ```
-The lock releases automatically when the fd closes at script exit — nothing explicit needed.
+The lock is released automatically when the script ends.
 
-**Python** (`git-auto-sync.py`): same idea, `fcntl.flock(..., LOCK_EX | LOCK_NB)` on Linux,
-`msvcrt.locking()` on Windows, branched once on `sys.platform` — same shape as the
-OS-conditional process-tree kill in `cron-guard.py`. Acquired right after `chdir` into the
-target repo, held for the whole run via `try`/`finally`, released on every exit path including
-`sys.exit()` (which raises `SystemExit`, so `finally` still runs).
+**Python** (`git-auto-sync.py`): same idea. It uses `fcntl.flock(..., LOCK_EX | LOCK_NB)` on Linux and `msvcrt.locking()` on Windows, chosen once by `sys.platform` (same pattern as the OS-specific process kill in `cron-guard.py`). It takes the lock right after `chdir` into the repo and holds it with `try`/`finally`, so it's released on every exit, including `sys.exit()`.
 
-`git-auto-sync.py` is no longer part of the daily pipeline (see §18). It is kept for manual use, which is why the locking convention still applies to it.
+`git-auto-sync.py` is no longer part of the daily run (see §18). I keep it for manual use, so the lock rule still applies.
 
-Why `-n` / `LOCK_NB` instead of waiting: `gitops-deploy.sh` runs again in 15 minutes
-regardless, so skipping one cycle and catching the deploy next time costs nothing. A
-multi-second wait would also eat into whatever timeout `cron-guard` has set for that job, for
-no upside.
+**Why don't I wait for the lock?** `gitops-deploy.sh` runs again in 15 minutes anyway, so skipping one round costs nothing. Waiting would also eat into `cron-guard`'s timeout for that job, for no gain.
 
-Why the lock file specifically lives at `<repo>/.git/sync.lock`: it makes the convention apply
-to any future script without needing a registry to remember it. The rule is just — touching
-this repo's git state? Lock its own `.git/sync.lock` first.
+**Why `<repo>/.git/sync.lock`?** The rule then applies to any future script without needing a list to remember: touching this repo's git state? Lock its own `.git/sync.lock` first.
 
 ---
 
-## 10. GitOps Permission Tracking: Why `.git-perms` Exists
+## 10. Why `.git-perms` Exists
 
-Git was designed for source code, not infrastructure state. It only tracks executable bits (`100755` vs `100644`) — it completely discards ownership (`chown`), group assignment, and restricted modes like `600` or `700`.
+Git was built for source code. It only remembers the executable bit (`100755` vs `100644`). It forgets who owns a file, its group, and strict modes like `600` or `700`.
 
-This creates silent failures during a **Fresh Start**:
-* LinuxServer / S6-overlay containers (like Paperless-ngx) strictly require scripts in `custom-cont-init.d/` to be owned by `root:root` and executable. Git resets them to the cloning user, causing container startup routines to fail silently.
-* Secrets and private configurations (like `docker-compose.env` or `acme.json`) get cloned with default umask permissions (`644`) instead of `600`.
+That causes quiet failures on a **Fresh Start**:
+* LinuxServer / S6-overlay containers (like Paperless-ngx) require scripts in `custom-cont-init.d/` to be `root:root` and executable. After a clone they belong to whoever cloned, and the container's startup steps fail silently.
+* Secret files (`docker-compose.env`, `acme.json`) come back with normal permissions (`644`) instead of `600`.
 
-### Why Not Hardcode Exceptions in `setup.sh`?
-Hardcoding commands like `chown root:root /opt/stacks/paperless-ngx/...` into `setup.sh` creates stale technical debt. When a stack is deleted or modified, orphan fixup commands remain in the central provisioning script.
+**Why not hardcode fixes in `setup.sh`?** Lines like `chown root:root /opt/stacks/paperless-ngx/...` go stale. When a stack is removed or changed, the leftover lines stay in the main setup script.
 
-### The Solution: Self-Describing Repositories via `.git-perms`
-Each repo maintains a lightweight, committed `.git-perms` file managed by `git-perms.sh`:
-* **Scoped to tracked files only:** It reads `git ls-files`, ignoring transient media, databases, and logs.
-* **Portable identity via `@USER:@GROUP`:** Files owned by the server's primary user are recorded as `@USER:@GROUP`. On restore, this dynamically resolves to whoever is running the bootstrap (e.g., `alice:alice` or `admin:admin`), preventing UID/GID mismatches across different Linux distros.
-* **Preserves explicit system identities:** Any file owned by `root:root` or container-specific service UIDs (like `33:33` or `1000:1000`) is preserved verbatim.
-* **Automated lifecycle (Exceptions Only):** `backup-scripts-git.sh` runs `git-perms.sh save` at 5:00 AM daily, but it only records genuine anomalies: files owned by `root:root` (or container service UIDs) and restricted permission modes (`600`, `700`, `750`). Standard files (`644` and `755` owned by `@USER:@GROUP`) are handled natively by Git and skipped. This guarantees that routine PRs adding or deleting normal files never dirty `.git-perms` on the server. During Fresh Start, `bootstrap.sh` restores exact permissions right after cloning.
+**What I do instead:** each repo carries a small committed `.git-perms` file, managed by `git-perms.sh`:
+* **Tracked files only.** It reads `git ls-files`, so it ignores media, databases, and logs.
+* **Portable owner.** Files owned by the server's main user are saved as `@USER:@GROUP`. On restore this becomes whoever runs the bootstrap (e.g. `alice:alice` or `admin:admin`), so different Linux setups don't clash.
+* **System owners are kept exactly.** Files owned by `root:root` or container user IDs (like `33:33` or `1000:1000`) are saved as they are.
+* **Exceptions only.** `backup-scripts-git.sh` runs `git-perms.sh save` at 5:00 AM daily, but records only the unusual: `root:root` (or container-user) files and restricted modes (`600`, `700`, `750`). Normal files (`644` and `755`, owned by `@USER:@GROUP`) are left to Git. So ordinary PRs that add or delete files never make `.git-perms` dirty on the server. During Fresh Start, `bootstrap.sh` restores the exact permissions right after cloning.
 
 ---
 
-## 11. Fresh Start SSH Architecture & Pre-Flight Traps
+## 11. Fresh Start: SSH Traps
 
-In a Full Recovery, `~/.ssh` and `/etc/ssh` are restored identically from the encrypted tarball. In a Fresh Start, you begin with a blank slate. Three non-obvious traps govern how `bootstrap.sh` handles SSH:
+In a Full Recovery, `~/.ssh` and `/etc/ssh` come back exactly from the encrypted archive. A Fresh Start begins from nothing, and `bootstrap.sh` handles three non-obvious SSH problems.
 
-### 1. The Inbound vs. Outbound Separation
-* **Inbound Access (Your Laptop $\rightarrow$ Server):** Handled purely by `~/.ssh/authorized_keys` containing your laptop's **public key**. The server does not need, and should never hold, your personal private keys.
-* **Outbound Access (Server $\rightarrow$ Git):** Handled by a dedicated, single-purpose Git deploy private key. 
-* **The Lockout Gate:** `bootstrap.sh` explicitly halts in Phase 1B if `~/.ssh/authorized_keys` is missing or empty. Because `setup.sh` installs a hardened SSH configuration that sets `PasswordAuthentication no`, running without `authorized_keys` guarantees permanent lockout.
+### 1. Inbound and outbound access are separate
+* **Inbound (laptop → server):** only needs your laptop's **public key** in `~/.ssh/authorized_keys`. The server should never hold your personal private keys.
+* **Outbound (server → Git):** uses a separate deploy private key, used only for that.
+* **The lockout gate:** `bootstrap.sh` stops in Phase 1B if `~/.ssh/authorized_keys` is missing or empty. `setup.sh` sets `PasswordAuthentication no`, so without that file you would be locked out for good.
 
-### 2. The Non-Interactive `known_hosts` Freeze
-On a fresh OS, `~/.ssh/known_hosts` does not exist. The first time `git clone git@github.com` runs, SSH prompts interactively: `Are you sure you want to continue connecting (yes/no)?`.
-Because `bootstrap.sh` routes output through `quietly` (`>> "$LOGFILE" 2>&1`), there is no interactive terminal. The script will freeze indefinitely waiting for input.
-* **The Fix:** Phase 2 runs `ssh-keyscan -H` for GitHub to seed `known_hosts` before any Git commands execute.
+### 2. `known_hosts` freezes the script
+On a fresh OS there's no `~/.ssh/known_hosts`. The first `git clone git@github.com` asks "Are you sure you want to continue connecting (yes/no)?". `bootstrap.sh` sends its output through `quietly` (`>> "$LOGFILE" 2>&1`), so nobody can answer, and the script hangs forever.
+* **Fix:** Phase 2 runs `ssh-keyscan -H` for GitHub first, so `known_hosts` is filled in before any Git command.
 
-### 3. The `pipefail` Trap on `ssh -T`
-Testing Git access via `ssh -T git@github.com` prints a success message ("*You've successfully authenticated*"), but **deliberately exits with status code `1`** because Git hosts do not provide an interactive shell.
-Under `set -euo pipefail`, piping that directly (`ssh -T ... 2>&1 | grep ...`) causes Bash to treat the exit code `1` as a fatal pipeline failure, making the authentication test fail even when keys are completely valid.
-* **The Fix:** Capture the output into a variable using `|| true` (`GIT_TEST=$(ssh -T ... 2>&1 || true)`) before evaluating with `grep`.
+### 3. `ssh -T` fails under `pipefail`
+`ssh -T git@github.com` prints "You've successfully authenticated" but **exits with code `1` on purpose**, since Git hosts give no shell. Under `set -euo pipefail`, piping it straight (`ssh -T ... 2>&1 | grep ...`) counts that `1` as a failure, so the test fails even when your keys are fine.
+* **Fix:** save the output first with `|| true` (`GIT_TEST=$(ssh -T ... 2>&1 || true)`), then run `grep` on it.
 
 ---
 
 ## 12. Known Trade-offs
 
-`user_crontab.txt` is hand-wrapped through `cron-guard --mode fail`, but `cmd_setup_cron()`
-would install a different, unwrapped line if I ran it. That's intentional, not a bug —
-`cert-manager.sh` is the one script in the repo plausible to grab and run standalone,
-independent of the rest of the cron-guard ecosystem, so it keeps its own self-contained
-installer as a fallback for that case, even though the live deployment doesn't actually use
-it.
+**`cert-manager.sh` has its own installer.** `user_crontab.txt` is hand-wrapped with `cron-guard --mode fail`, but `cmd_setup_cron()` would install a different, unwrapped line if I ran it. That's on purpose. `cert-manager.sh` is the one script I might grab and run on its own, without the rest of cron-guard, so it keeps its own installer as a fallback, even though my real setup doesn't use it.
 
-**Rollback is a compose-file rollback, not a time machine.** It restores the last known good `compose.yml` only: not data, not other files in the stack folder, and not database migrations. Stacks where an older version could damage migrated data opt out with `deploy.rollback=false` and rely on alerting. After a rollback, Git and reality disagree (`main` still has the bad change) until the PR is reverted.
+**Rollback only restores the compose file.** It brings back the last known good `compose.yml`, and nothing else: not data, not other files in the stack folder, not database migrations. Stacks where an older version could damage migrated data opt out with `deploy.rollback=false` and rely on alerts. After a rollback, Git and reality disagree (`main` still has the bad change) until the PR is reverted.
 
-**The deploy checks prove "listening" and "answers HTTP", not "works".** An app can serve a login page with a broken backend. The baseline design also means containers that can't be probed (host network, no declared ports, unreachable from the host) only get the state and crash-loop checks. The IP-based probing relies on the host routing to Docker bridge networks, which holds on Linux but not on Docker Desktop.
+**The deploy checks prove "listening" and "answers HTTP", not "works".** An app can show a login page with a broken backend. Containers that can't be probed (host network, no declared ports, not reachable from the host) only get the state and crash-loop checks. The IP-based probing relies on the host being able to reach Docker bridge networks. That works on Linux but not on Docker Desktop.
 
 ---
 
-## 13. Terminal AI Diagnostics (`oracle`): Failover, Sanitization & Pipe Gotchas
+## 13. `oracle`: Terminal AI Help
 
-`oracle` acts as an on-demand terminal copilot for debugging container crashes, reviewing scripts, and querying system status via Google Gemini without leaving the shell.
+`oracle` is a terminal helper for debugging container crashes, reviewing scripts, and asking about system status through Google Gemini, without leaving the shell.
 
-### 1. In-Flight Secret Sanitization (Zero-Leakage Guarantee)
-Piping terminal logs or configuration files directly to a cloud API carries a risk of leaking live credentials. 
-* Before any payload is transmitted, `clean_piped_text()` executes an in-memory regex scrubbing pass that strips high-entropy tokens (`gsk_...`, `ghp_...`, `AIzaSy...`), private key blocks (`-----BEGIN PRIVATE KEY-----`), database connection URIs, and generic secret assignments (`password=`, `token=`).
-* The sanitization occurs in RAM before the HTTP request is constructed, ensuring live secrets never leave the server.
+### 1. Secrets are scrubbed before anything is sent
+Sending logs or configs to a cloud API could leak real credentials. Before any request is built, `clean_piped_text()` scrubs the text in memory. It removes high-entropy tokens (`gsk_...`, `ghp_...`, `AIzaSy...`), private key blocks (`-----BEGIN PRIVATE KEY-----`), database connection URIs, and generic secret assignments (`password=`, `token=`). This happens in RAM before the HTTP request exists, so live secrets never leave the server.
 
-### 2. The 503 High-Demand Failover Cascade
-On Google AI Studio's free tier, standard flagship models (`gemini-3.5-flash`) frequently experience transient `503 Service Unavailable` spikes during peak hours when processing multi-thousand-token prompts (such as full 400-line scripts or container log dumps).
-* To prevent terminal crashes, `stream_gemini()` implements a `MODEL_CASCADE` failover loop:
-  `gemini-3.5-flash` > `gemini-flash-lite-latest` > `gemini-3.5-flash-lite`
-* If a 503 occurs, the engine immediately switches to the high-concurrency `-lite` variant, which uses significantly less compute and almost never experiences load-shedding, streaming the answer without interrupting the user.
+### 2. Fallback when Google is overloaded (503)
+On Google AI Studio's free tier, the main models (`gemini-3.5-flash`) often return `503 Service Unavailable` at busy times, especially with big prompts (a 400-line script or a log dump). So `stream_gemini()` has a `MODEL_CASCADE` fallback:
+`gemini-3.5-flash` > `gemini-flash-lite-latest` > `gemini-3.5-flash-lite`
+On a 503 it switches straight to the lighter `-lite` model, which rarely gets turned away, and keeps streaming the answer.
 
-### 3. The Binary Pipe & Empty-Pipe Defense
-* **Corrupted Logs:** In Linux, reading raw text from a pipe (`sys.stdin.read()`) crashes with a fatal `UnicodeDecodeError` if a crashed container spits out non-UTF8 bytes or binary memory dumps. `oracle` uses `sys.stdin.buffer.read().decode('utf-8', errors='replace')` to guarantee it never fails on dirty logs.
-* **Empty Pipes:** If an inspected service has zero logs (e.g. `cat /dev/null | oracle`), standard CLI prompts hit an immediate `EOFError`. The script checks for whitespace-only input and exits cleanly with an informational notice.
+### 3. Bad input from pipes
+* **Broken logs:** a crashed container can output bytes that aren't valid UTF-8, and `sys.stdin.read()` would crash with `UnicodeDecodeError`. `oracle` reads with `sys.stdin.buffer.read().decode('utf-8', errors='replace')`, so messy logs never break it.
+* **Empty pipes:** if a service has no logs (`cat /dev/null | oracle`), a normal prompt hits `EOFError` right away. `oracle` checks for empty or whitespace-only input and exits with a short notice.
 
 ---
 
-## 14. Self-Documenting Headers: The `doc-injector` Pipeline
+## 14. `doc-injector`: Scripts That Describe Themselves
 
-To keep the live dashboard accurate without manual documentation overhead, `doc-injector.py` analyzes modified scripts and injects structured `# @CAPABILITIES:` blocks directly into their headers before daily commits.
+To keep the dashboard accurate without writing docs by hand, `doc-injector.py` looks at changed scripts and adds a `# @CAPABILITIES:` block to their headers before the daily commit.
 
-### 1. Decoupled from Production (Why It Was Removed from the 5 AM Run)
-Earlier designs ran `doc-injector.py` during step G of the 5:00 AM server backup. This created two serious issues:
-* **Byte-offset corruption:** Bash reads scripts in 4KB chunks using byte offsets. Rewriting a running script in place shifts byte boundaries mid-execution, causing syntax errors in downstream commands.
-* **Dirty Git working tree:** Rewriting headers on production leaves uncommitted changes on `main`, tripping the daily drift monitor and violating the one-way GitOps flow.
-* **The Rule:** `doc-injector.py` does not run on the production server. Documentation injection happens on the development machine before merging, or as an on-demand update. `IGNORE_FILES` permanently excludes `doc-injector.py` itself to prevent recursive self-modification.
+### 1. Why it no longer runs on the server
+It used to run in step G of the 5:00 AM backup, which caused two problems:
+* **Broken running scripts:** Bash reads scripts in 4KB chunks by byte position. Rewriting a script while it runs shifts those positions and causes syntax errors in later commands.
+* **Dirty working tree:** Changing headers on production leaves uncommitted edits on `main`. That trips the daily drift check and breaks the one-way GitOps flow.
+* **Rule:** `doc-injector.py` never runs on the production server. I run it on my dev machine before committing, or on demand. `IGNORE_FILES` always excludes `doc-injector.py` itself so it can't edit itself.
 
-### 2. Infinite Hash Recursion Prevention
-To prevent `doc-injector.py` from constantly triggering AI requests on scripts that haven't functionally changed:
-* `get_file_hash()` uses regex to strip out any existing `# @CAPABILITIES:` block *before* calculating the SHA-256 checksum.
-* This ensures that updating the documentation header does not invalidate the file's code hash on subsequent runs. Relative paths are used in `.doc_hash_cache.json` so the cache remains portable across machines.
+### 2. No endless re-checking
+So it doesn't keep calling the AI for scripts that haven't really changed:
+* `get_file_hash()` removes any existing `# @CAPABILITIES:` block with a regex *before* making the SHA-256 hash. Updating the header therefore doesn't change the file's code hash on the next run. The cache `.doc_hash_cache.json` uses relative paths so it works on any machine.
 
-### 3. Pipeline Execution Sequence
-Dashboards (`generate-dashboards.sh`) read the existing `# @CAPABILITIES:` headers directly from scripts when rendering the HTML UI. Because `doc-injector.py` runs upstream during development rather than during server backups, production remains a pure consumer: it reads headers to generate the dashboard without ever modifying executable code on disk.
+### 3. How the pieces fit
+`generate-dashboards.sh` reads the existing `# @CAPABILITIES:` headers when it builds the HTML. Since `doc-injector.py` runs earlier on my dev machine, production only reads headers and never edits scripts.
 
 ---
 
-## 15. CI/CD Architecture, Security & Pipeline Gotchas
+## 15. CI/CD: Rules and Gotchas
 
-The three ecosystem repositories (`homelab-blueprint`, `ctrl-s-master`, and `server-docker-backup`) are guarded by automated GitHub Actions pipelines designed with strict supply-chain and branch-protection constraints.
+The repos `homelab-blueprint`, `ctrl-s-master`, and `server-docker-backup` are protected by GitHub Actions, built with strict supply-chain and branch-protection rules.
 
-### 1. The Branch Protection "Expected" Deadlock (Why `paths` is Omitted on PRs)
-When a GitHub Ruleset / Branch Protection rule marks a check (like `pytest` or `shellcheck`) as **"Required"**, GitHub will block the PR merge button until it receives a status report with that exact name.
-* **The Gotcha:** If a workflow uses `paths: ['**.py']` and a PR only edits `README.md`, GitHub skips the workflow entirely. Because the workflow never runs, it never reports a status, leaving the PR indefinitely stuck on `Waiting for status to be reported (Expected)`.
-* **The Rule:** Workflows running required branch checks must trigger on `pull_request` **without** path filters so they always report a passing status, even on documentation-only commits.
+### 1. Why PR checks have no `paths` filter
+When a branch protection rule marks a check (like `pytest` or `shellcheck`) as **Required**, GitHub blocks the merge button until that exact check reports a status.
+* **The problem:** if a workflow has `paths: ['**.py']` and a PR only edits `README.md`, GitHub skips the workflow. It never reports, so the PR sits forever at `Waiting for status to be reported (Expected)`.
+* **Rule:** workflows for required checks must run on `pull_request` **without** path filters, so they always report a pass, even on docs-only changes. (Targeted workflows like `terraform.yml` do use path filters because they only care about infrastructure files.)
 
-### 2. Full Commit SHA Pinning on GitHub Actions
-Third-party Actions (such as `aquasecurity/trivy-action`) are pinned to immutable **40-character commit SHAs** rather than mutable tags (e.g., `@v0.36.0`):
+### 2. Pin third-party Actions to full commit SHAs
+Third-party Actions (like `aquasecurity/trivy-action`) use an unchangeable **40-character commit SHA**, not a tag like `@v0.36.0` that can be moved:
 ```yaml
 uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
 ```
 
-### 3. Compose Validation Needs a Stand-in `.env`
-`docker compose config -q` refuses to render a file whose `${VAR}` references have no value, and the real `.env` files are (rightly) not in git. The CI job copies each stack's `.env.example` to `.env` for the duration of the check, validates, then deletes the copy. It proves syntax and schema only, not that images exist or the stack starts. A stack also fails validation if its `.env.example` leaves a *required* value blank: give such variables a default (`${PORT:-8080}`) or a sample value.
+### 3. Compose validation needs a fake `.env`
+`docker compose config -q` refuses to render a file when a `${VAR}` has no value, and real `.env` files are (rightly) not in git. So CI copies each stack's `.env.example` to `.env`, validates, then deletes it. This proves the syntax and schema are fine. It does not prove the images exist or the stack starts. A stack also fails validation if `.env.example` leaves a *required* value blank. Give such variables a default (`${PORT:-8080}`) or a sample value.
 
 ---
 
 ## 16. GitOps Deployer: Verify, Roll Back, Retry
 
-Section 8 covers what happens when the *pull* fails. This section covers what happens when the *deploy* does.
+Section 8 covers a failed *pull*. This section covers a failed *deploy*.
 
-**The flow, per changed stack** (only stacks that already have running containers; a stopped stack is left offline on purpose):
-1. Record a **baseline** from the version that is running right now.
-2. `docker compose pull` (3 attempts), then `up -d --wait` (default 120 s).
-3. **Soak** for 30 s: restart counters must not move, and no container may be `restarting`, `dead`, `created`, unhealthy, or exited non-zero.
-4. Compare against the baseline (below).
-5. On success, copy that `compose.yml` to `.git/gitops_state/lastgood/<stack>.yml`. On failure, start the last known good file (`-f` it, with `--project-directory` pointing at the stack), then alert.
+**Steps for each changed stack** (only stacks that already have running containers; a stopped stack stays off on purpose):
+1. Record a **baseline** from the version running right now.
+2. `docker compose pull` (3 tries), then `up -d --wait` (default 120 s).
+3. **Soak** for 30 s. Restart counters must not increase, and no container may be `restarting`, `dead`, `created`, unhealthy, or exited with an error.
+4. Compare with the baseline (below).
+5. On success, copy that `compose.yml` to `.git/gitops_state/lastgood/<stack>.yml`. On failure, start the last known good file (`-f`, with `--project-directory` pointing at the stack), then send an alert.
 
-Why a *copy* of the compose file instead of `git revert`: the checkout has to stay equal to `origin/main`. Reverting locally would make the server diverge and the next pull conflict.
+**Why copy the compose file instead of `git revert`?** The checkout must stay equal to `origin/main`. A local revert would make the server drift from `main`, and the next pull would conflict.
 
-**The baseline is the important idea.** Before touching anything, the deployer reaches every running container by its IP on the docker network (the host can route to bridge networks, so nothing has to be published) and records which declared TCP ports accept connections and which of those answer HTTP(S) on `/` with a status below 500. After the update, every service that was listening must listen again and every service that answered HTTP must answer again, within `PROBE_TIMEOUT` (120 s). Only checks that passed *before* can fail the *update*, so a container that doesn't listen, isn't HTTP, was already returning 5xx, or can't be reached from the host is simply not gated. A wrong rollback is worse than a missed one, so the design leans toward under-checking. Database, mail, SSH and DNS ports are never sent HTTP.
+**The baseline is the key idea.** Before changing anything, the deployer connects to every running container by its IP on the Docker network (the host can reach bridge networks, so nothing needs to be published). It records which declared TCP ports accept connections, and which of those answer HTTP(S) on `/` with a status below 500. After the update, every service that was listening must listen again, and every service that answered HTTP must answer again, within `PROBE_TIMEOUT` (120 s).
 
-**Optional labels** on any service in the stack's compose file: `deploy.rollback=false` for stacks with databases or migrations (still deployed, verified, alerted on and retried, never rolled back), and `deploy.healthcheck=http://<name>:<port>/<path>` for apps where `/` proves little. A health URL that doesn't answer on the running version is ignored with a warning, so a wrong path can't cause a rollback.
+Only checks that passed *before* can fail the *update*. A container that wasn't listening, wasn't HTTP, was already returning 5xx, or couldn't be reached from the host is simply not checked. A wrong rollback is worse than a missed one, so I lean toward checking too little. Database, mail, SSH and DNS ports never get HTTP requests.
 
-**Retry and alerting.** A stack that failed without a rollback (opt-out, no last-good file, failed pull) is written to `.git/gitops_retry` and retried every cycle, even though git is already up to date for it. The script exits non-zero only when the failed set *changes*, so cron-guard alerts once instead of every 15 minutes. A successful rollback also exits non-zero once; its Telegram message says that `main` still contains the bad change and the PR needs reverting.
+**Optional labels** on any service in a stack's compose file:
+* `deploy.rollback=false` for stacks with databases or migrations. They are still deployed, checked, alerted on, and retried, but never rolled back.
+* `deploy.healthcheck=http://<name>:<port>/<path>` for apps where `/` proves little. If that URL doesn't answer on the running version, it's ignored with a warning, so a wrong path can't cause a rollback.
 
-**Helper modes.** `--verify STACK` runs the real checks against a live stack without deploying anything and prints its baseline. `--probe CONTAINER` finds a health path for the optional label. Neither takes the lock or writes state.
+**Retry and alerts.** A stack that failed without a rollback (opted out, no last-good file, or failed pull) is written to `.git/gitops_retry` and retried every cycle, even though git is already up to date for it. The script exits non-zero only when the set of failed stacks *changes*, so cron-guard alerts once instead of every 15 minutes. A successful rollback also exits non-zero once. Its Telegram message says `main` still has the bad change and the PR needs reverting.
 
-**Testing.** The logic is exercised with a mocked `docker` CLI pointed at real listening sockets and a real HTTP server: healthy deploys, a crash loop, a failed start, a service that stops listening, 5xx after the update, a slow starter, an already-broken service, a non-HTTP port, a failed rollback and a failed pull. `--verify` runs the same checks against real Docker.
+**Helper modes.**
+* `--verify STACK` runs the real checks on a live stack and prints its baseline, without deploying.
+* `--probe CONTAINER` finds a health path for the optional label.
+* Neither takes the lock or writes state.
 
----
-
-## 17. Alert De-duplication in `cron-guard`
-
-Jobs that run every few minutes and fail the same way every time used to send the same alert every time. `--repeat-after DURATION` stops that without hiding new problems.
-
-* **Fingerprint:** a failure is its exit code plus the last lines of output with digits, hex IDs and ANSI codes stripped, so a changing timestamp or PID doesn't make the same error look new.
-* **Same fingerprint:** silent until `DURATION` has passed since the last alert, then one reminder ("Still failing: N runs since …, M alerts suppressed"). **Different fingerprint:** alert immediately. `--recovery` adds one message on the first success after an alerted failure.
-* **Why not "alert once until it succeeds"?** A second, different failure while the job is still failing would be invisible.
-* **State** is a small JSON file per job in `state/`, written atomically. It **fails open**: an unreadable or damaged file, or a failed Telegram delivery, makes the failure count as new and alert. A suppression bug must never be able to hide an outage. (A damaged state file once crashed the wrapper before that fallback existed.)
-* Off by default: jobs without the flags behave exactly as before. Because digits are ignored, two errors that differ only by a number count as the same.
+**Testing.** The logic is tested with a fake `docker` command pointed at real listening sockets and a real HTTP server. The cases: healthy deploys, a crash loop, a failed start, a service that stops listening, 5xx after the update, a slow starter, an already-broken service, a non-HTTP port, a failed rollback, and a failed pull. `--verify` runs the same checks against real Docker.
 
 ---
 
-## 18. Branch Model: Humans Use PRs, Machines Use Side Branches
+## 17. Not Repeating the Same Alert (`cron-guard`)
 
-`main` in all three repos is protected by a ruleset (PR required, required checks, no force-push). Nothing automated pushes to it. `backup-scripts-git.sh` used to run `git-auto-sync.py` over every repo each morning, which meant the server's working tree could reach `main` (and, for `/opt/stacks`, production, since the deployer pulls `main`) without review or CI.
+Jobs that run every few minutes and fail the same way each time used to send the same alert every time. `--repeat-after DURATION` stops that without hiding new problems.
+
+* **What counts as "the same failure":** the exit code plus the last lines of output, with digits, hex IDs and ANSI color codes removed. A changing timestamp or PID doesn't make the same error look new.
+* **Same failure:** silent until `DURATION` has passed since the last alert, then one reminder ("Still failing: N runs since …, M alerts suppressed"). **Different failure:** alerts right away. `--recovery` adds one message on the first success after an alerted failure.
+* **Why not "alert once until it succeeds"?** A second, different failure while the job is still failing would go unseen.
+* **State** is a small JSON file per job in `state/`, written safely (atomically). It **fails open**: if the file is unreadable or damaged, or Telegram delivery failed, the failure counts as new and alerts. A bug in the quiet-down logic must never be able to hide an outage. (A damaged state file once crashed the wrapper before that fallback existed.)
+* It's off by default. Jobs without the flags behave exactly as before. Since digits are ignored, two errors that differ only by a number count as the same.
+
+---
+
+## 18. Branch Model: People Use PRs, Machines Use Side Branches
+
+`main` in all three repos is protected by a ruleset (PR required, required checks, no force-push). Nothing automated pushes to it.
+
+Before, `backup-scripts-git.sh` ran `git-auto-sync.py` over every repo each morning. That meant the server's working folder could reach `main` with no review or CI. For `/opt/stacks` that also meant reaching production, since the deployer pulls `main`.
 
 What the 5 AM job does now:
-* **Snapshots** (crontabs, package lists, dotfiles, APT sources, sshd drop-ins) are copied into a temporary worktree of the unprotected `snapshots` branch, using an allow-list `.gitignore` (only `run_once/system_configs` and `run_once/dotfiles`; `.env`, `*.pem` and `*.key` always excluded). The job commits only when something changed, then pushes. It is the same technique as the dashboards: a throwaway worktree shares the object database, so the main working tree is never disturbed. `bootstrap.sh` restores these files during Fresh Start.
+* **Snapshots** (crontabs, package lists, dotfiles, APT sources, sshd drop-ins) are copied into a temporary worktree of the unprotected `snapshots` branch. An allow-list `.gitignore` only lets through `run_once/system_configs` and `run_once/dotfiles`, and always excludes `.env`, `*.pem` and `*.key`. It commits only if something changed, then pushes. It's the same technique as the dashboards: a throwaway worktree shares the git data, so the main folder is never disturbed. `bootstrap.sh` restores these files during Fresh Start.
 * **Dashboards** go to `pages`, as in §6.
-* **Drift report:** `git status --porcelain` on the three repos; it never commits. A new set of uncommitted changes exits non-zero once (so cron-guard alerts) and at most weekly while it persists (the hash includes the ISO week). Real changes go through a branch and a PR.
+* **Drift report:** `git status --porcelain` on the three repos. It never commits. A new set of uncommitted changes exits non-zero once (so cron-guard alerts), then at most weekly while it lasts (the hash includes the ISO week). Real changes go through a branch and a PR.
 
-Consequences: the server consumes `main` (the deployer pulls it), the only things it publishes are generated files on side branches, and no job needs a bypass for direct pushes. Anything that lands on the server without a PR appears in the drift report instead of being pushed silently.
+Result: the server only *reads* `main` (the deployer pulls it), the only things it publishes are generated files on side branches, and no job needs a bypass to push directly. Anything that reaches the server without a PR shows up in the drift report instead of being pushed silently.
+
+---
+
+## 19. Infrastructure as Code: GitHub Settings & Remote State
+
+The settings for the three repos (`homelab-blueprint`, `ctrl-s-master`, `server-docker-backup`) are managed with Terraform/OpenTofu, so all three follow the same standards and drift gets caught.
+
+### 1. One control repo
+Instead of spreading Terraform across every repo, everything lives in `homelab-blueprint/terraform/`:
+* **Split of jobs:** each app repo holds its own code and CI. The control repo manages repo-level rules: visibility, topics, merge policy, issue tracking, security alerts.
+* **Reusable module:** repos are declared through one local module (`modules/github_repo`) with a firm baseline: `delete_branch_on_merge = true`, `allow_merge_commit = false` (squash merges only), and Dependabot vulnerability alerts on by default.
+
+### 2. State stored in Backblaze B2 (S3-compatible)
+So state isn't lost with one machine and CI runners can check changes, Terraform state lives in an encrypted Backblaze B2 bucket using the built-in `s3` backend.
+* **Chicken-and-egg rule:** Terraform can't store state in a bucket it manages. I created the state bucket (`gravi-ctrl-tf-state`) by hand once in the provider console, with default server-side encryption (`SSE-B2`) and private access.
+* **Flags needed because it isn't real AWS:**
+  * `endpoints = { s3 = "https://..." }`: must include the `https://` part.
+  * `use_path_style = true`: uses `https://endpoint/bucket` paths instead of subdomains, avoiding TLS wildcard certificate mismatches.
+  * `skip_credentials_validation`, `skip_region_validation`, `skip_metadata_api_check`, `skip_requesting_account_id`: turns off AWS STS checks, the EC2 metadata lookup (`169.254.169.254`), and AWS account ID lookups.
+  * `region = "us-east-1"`: a dummy value that satisfies the Go SDK's validation while the region checks are skipped.
+
+### 3. Protection against accidents, and the `null` trap
+* **Delete lock:** in `modules/github_repo/main.tf`, the main repo resource has `lifecycle { prevent_destroy = true }`. Even a typo or a stray run that tries to remove a repo stops before any delete call is sent.
+* **The `null` trap:** in Terraform, leaving out an optional setting or setting it to `null` means "make the remote value empty." When adopting existing repos with `terraform import`, I must pass current values (like `description` or `homepage_url`) into the module call, or Terraform will plan to wipe them (`~ attribute = "..." => null`).
+
+### 4. Terraform changes go through PRs
+Terraform is never applied from my workstation:
+1. Pushing a branch and opening a PR against `main` triggers `.github/workflows/terraform.yml`.
+2. The workflow checks formatting (`terraform fmt -check`), connects to the Backblaze state, and runs `terraform plan -no-color`.
+3. A bot posts the full plan, in an expandable comment, on the PR (via `actions/github-script`).
+4. A reviewer checks the planned changes in the PR. Merging to `main` runs `terraform apply -auto-approve` on the runner, so real infrastructure always matches git history.
 
 ---
 
 ## Quick Reference: Gotchas
 
-- Docker DNS acting weird, or OIDC breaking across containers? Check `daemon.json` — `SERVER_IP`
-  needs to be first in the list, not Google or Cloudflare. See §2.
-- Stat-ing `/opt/rabbit-hole` for ownership? Use `stat -L` or a trailing `/.` — the bare form
-  returns root.
-- Renaming `/opt/rabbit-hole`? Sweep the literal string everywhere, `setup.sh` included. Never
-  touch `$HOME`/`$HOME/scripts` patterns in the same sweep.
-- Restoring ownership after a disaster recovery? Check UID *and* GID — they can drift
-  independently even when the UID happens to match.
-- Adding a new always-silent cron job? Use `cron-guard --mode mute` — clean dashboard label
-  and a heartbeat file for free.
-- Touching `generate-dashboards.sh`'s cleanup trap? Don't remove it. Git refuses to check out a branch that is already checked out in another worktree, so a leaked worktree breaks the next run's handling of `pages` and `snapshots`.
-- Writing a cron line with both day-of-month and day-of-week restricted? Cron ORs them, not
-  ANDs. Leave day-of-week as `*` and check it inside the command instead.
-- Building a new "noisy by default" job that can get stuck failing repeatedly (merge
-  conflicts, lock contention, etc)? Look at `gitops-deploy.sh`'s pause-file pattern before
-  reaching for `--mode mute` — mute silences everything, the pause-file approach alerts once
-  and then only stays quiet for that specific stuck state.
-- Writing any new script that runs `git checkout`/`pull`/`push` against a shared repo? Take
-  the `.git/sync.lock` first — see §9. Don't fall back to schedule-staggering.
-- Adding custom container init scripts (S6-overlay)? Check their permissions in `.git-perms` — scripts in `custom-cont-init.d` must be `755 root:root`.
-- Cloning Git repos inside automated scripts? Pre-seed `known_hosts` with `ssh-keyscan` first, or the script will hang indefinitely on the host verification prompt.
-- Testing SSH authentication via `ssh -T` under `pipefail`? Always append `|| true` to the subshell command; Git hosts exit with code 1 by design, which will trip `set -o pipefail`.
-- Setting up a Fresh Start? Never skip `~/.ssh/authorized_keys`; `setup.sh` disables password authentication, so missing client public keys will lock you out.
-- Piping Docker logs to `oracle`? Always use `2>&1` (e.g. `docker logs container 2>&1 | oracle`) — Docker routes runtime application logs to stderr, which will bypass a standard `|` pipe unless merged.
-- `oracle` hitting Google 503 capacity errors? It auto-fails over to `-lite` models automatically, but you can set `GEMINI_MODEL='gemini-flash-lite-latest'` in `.env` to make the high-capacity model default.
-- Running `doc-injector.py`? Run it on your development machine before committing; it was decoupled from the 5 AM server backup so production never mutates executable scripts on disk.
-- Wondering why `doc-injector.py` isn't re-analyzing a script? It checks code hashes excluding the `@CAPABILITIES` block — use `--force` to bypass the cache.
-- Setting up a required PR check in GitHub Actions? Never combine it with `paths` filtering, or documentation-only PRs will freeze in an endless `Expected` status check lock. See §15.1.
-- Adding third-party GitHub Actions? Pin to full 40-character commit SHAs, never mutable tags or `latest`. See §15.2.
-- Testing Compose files in CI? Ensure `.env.example` exists; the CI validator copies it temporarily so Docker Compose can resolve required variable references. See §15.3.
-- Adding a stack with a database or one-way migrations? Add `deploy.rollback=false` to any service in its compose file, or a failed update will be rolled back to an older app version on a newer schema. See §16.
-- Wondering what the deployer actually checks for a stack? Run `gitops-deploy.sh --verify <stack>`: it prints the baseline (ports and HTTP endpoints) and runs the checks without deploying. See §16.
-- A cron job failing the same way every few minutes? Add `--repeat-after 6h` (and `--recovery`) to its cron-guard line instead of muting it. See §17.
-- Need to publish a generated file from the server? Don't push `main`. Use a temporary worktree on a side branch like `pages` and `snapshots`. See §18.
+**DNS and paths**
+- Docker DNS acting weird, or OIDC breaking across containers? Check `daemon.json`. `SERVER_IP` must be first, not Google or Cloudflare. (§2)
+- Checking who owns `/opt/rabbit-hole`? Use `stat -L` or a trailing `/.`. The bare form returns root. (§3)
+- Renaming `/opt/rabbit-hole`? Replace that exact text everywhere, `setup.sh` included. Never touch `$HOME` or `$HOME/scripts`. (§1)
+
+**Backup, restore, permissions**
+- Fixing ownership after a disaster recovery? Check UID *and* GID. They can drift separately. (§4)
+- Adding custom container init scripts (S6-overlay)? Check `.git-perms`. Scripts in `custom-cont-init.d` must be `755 root:root`. (§10)
+
+**Fresh Start and SSH**
+- Cloning Git repos in scripts? Seed `known_hosts` with `ssh-keyscan` first, or the script hangs on the host prompt. (§11)
+- Testing with `ssh -T` under `pipefail`? Add `|| true`. Git hosts exit with 1 on purpose. (§11)
+- Setting up a Fresh Start? Never skip `~/.ssh/authorized_keys`. `setup.sh` turns off password login, so you'd be locked out. (§11)
+
+**Cron and alerts**
+- Always-silent cron job? Use `cron-guard --mode mute`. You get a clean dashboard label and a heartbeat file. (§5)
+- Cron line with both day-of-month and day-of-week? Cron ORs them. Leave day-of-week as `*` and check it inside the command. (§7)
+- New job that's noisy by default and can get stuck failing (merge conflicts, lock contention)? Look at the pause-file pattern in `gitops-deploy.sh` before using `--mode mute`. Mute silences everything. The pause file alerts once, then only stays quiet for that one stuck state. (§8)
+- Job failing the same way every few minutes? Add `--repeat-after 6h` (and `--recovery`) instead of muting it. (§17)
+
+**Git and branches**
+- New script that runs `git checkout`/`pull`/`push` on a shared repo? Take `.git/sync.lock` first. Don't rely on staggered schedules. (§9)
+- Touching the cleanup trap in `generate-dashboards.sh`? Don't remove it. Git won't check out a branch that's already checked out in another worktree, so a leftover worktree breaks the next run's handling of `pages` and `snapshots`. (§6)
+- Need to publish a generated file from the server? Don't push `main`. Use a temporary worktree on a side branch like `pages` or `snapshots`. (§18)
+
+**Deploys**
+- Adding a stack with a database or one-way migrations? Add `deploy.rollback=false` to any service in its compose file, or a failed update will roll back to an old app version on a newer schema. (§16)
+- Wondering what the deployer checks for a stack? Run `gitops-deploy.sh --verify <stack>`. It prints the baseline (ports and HTTP endpoints) and runs the checks without deploying. (§16)
+
+**Tools**
+- Piping Docker logs to `oracle`? Use `2>&1` (e.g. `docker logs container 2>&1 | oracle`). Docker sends app logs to stderr, which a plain `|` skips. (§13)
+- `oracle` hitting Google 503 errors? It switches to `-lite` models by itself. You can also set `GEMINI_MODEL='gemini-flash-lite-latest'` in `.env` to make the lighter model the default. (§13)
+- Running `doc-injector.py`? Run it on your dev machine before committing, never on the server. (§14)
+- `doc-injector.py` not re-checking a script? It hashes the code without the `@CAPABILITIES` block. Use `--force` to skip the cache. (§14)
+
+**CI and Terraform**
+- Setting up a required PR check? Never add `paths` filtering, or docs-only PRs get stuck on `Expected`. (§15.1)
+- Adding third-party GitHub Actions? Pin to the full 40-character commit SHA, never a tag or `latest`. (§15.2)
+- Testing Compose files in CI? Make sure `.env.example` exists. CI copies it temporarily so required variables resolve. (§15.3)
+- Custom S3 endpoint giving `unsupported protocol scheme ""`? The endpoint URL must include `https://`. (§19.2)
+- `terraform import` planning to delete a repo's description or homepage? Leaving out an attribute or setting `null` means "wipe it." Pass the existing values in the module call. (§19.3)
+- Race during resource replacement (`422 Name already exists`)? Renaming an unmanaged or moved resource runs `create` and `destroy` at the same time. Run `terraform import` for existing cloud assets before applying changes. (§19.3)
+- Zsh says `no matches found` on Terraform addresses? Wrap addresses with square brackets (`module.foo.resource["key"]`) in single quotes so the shell doesn't treat them as a pattern.
