@@ -8,7 +8,7 @@ terraform {
 
   backend "s3" {
     bucket = "gravi-ctrl-tf-state"
-    key    = "github.tfstate/terraform.tfstate"  # The folder & filename in B2
+    key    = "github.tfstate/terraform.tfstate" # The folder & filename in B2
     region = "us-east-1"
 
     endpoints = {
