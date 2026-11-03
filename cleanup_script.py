@@ -4,7 +4,7 @@
 # @USES_ENV: FILES_TO_KEEP
 # @CRON: root
 # @CAPABILITIES:
-#   • Keeps only the newest N backups, instantly freeing disk space without manual intervention.
+#   • Keeps only the newest N backups, instantly freeing disk space.
 #   • Dry‑run mode previews deletions, eliminating accidental data loss during testing.
 #   • Timestamp‑based sorting works reliably on Windows and Linux, ensuring correct retention order.
 #   • Immediate abort on deletion errors prevents cascading failures and preserves remaining data.

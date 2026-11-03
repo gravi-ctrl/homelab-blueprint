@@ -4,16 +4,33 @@
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: user
 # @CAPABILITIES:
-#   • Synchronizes only main branch, blocking feature branches to maintain production stability.
-#   • Detects merge conflicts, pauses deployment, and alerts admins via Telegram to prevent broken stacks.
-#   • Redeploys only stacks with running containers, preserving intentionally stopped services.
-#   • Uses non‑blocking lock to avoid race conditions during concurrent runs.
-#   • Pulls images sequentially with retries, ensuring zero‑downtime updates even on transient registry failures.
-#   • Tracks failed stacks in a git‑local file so one bad stack never blocks others and is retried automatically.
-#   • Verifies every deploy with compose wait, crash‑loop soak, port and HTTP checks, and optional URL probe.
-#   • Rolls back failed stack to last known good compose file and alerts via Telegram; deploy.rollback=false opts a stack out.#       Only needed when you want the optional deploy.healthcheck label: tries common health paths and prints a
-#       ready-to-paste label. If nothing but "/" answers, skip the label; the automatic checks already cover it.
+#   • Auto‑synchronizes production stacks from GitHub main, preventing accidental feature‑branch deployments.
+#   • Detects merge conflicts before redeploy, halting updates and notifying admins via Telegram to avoid broken services.
+#   • Redeploys only running containers, preserving stopped services and reducing unnecessary restarts.
+#   • Implements non‑blocking lock and retry logic to avoid race conditions and transient registry failures.
+#   • Performs comprehensive post‑deploy verification: compose wait, crash‑loop soak, port/HTTP checks, optional URL probe.
+#   • Automatically rolls back to the last known good compose file on failure, keeping services online and alerting stakeholders.
+#   • Provides read‑only probe and verify modes for quick health‑check validation without affecting running services.
+
+# ================================================================================================
+
+# OPTIONAL PER-STACK LABELS (on any service in the stack's compose.yml; one per stack is enough):
+#   deploy.rollback=false
+#       never auto-rollback this stack (databases / migrations); it is still deployed, verified, alerted on and retried.
+#   deploy.healthcheck=http://<service-or-container-name>:<port>/<path>
+#       a stronger check: this URL must answer 2xx/3xx after the update. The name is swapped for the container's IP, so nothing
+#       needs to be published. If the URL does not answer on the version running now it is ignored with a warning, so a wrong
+#       path can never cause a rollback.
 #
+# HELPER MODES (read-only: nothing is deployed, restarted, locked or written):
+#   ./gitops-deploy.sh --probe CONTAINER [PORT]
+#       Finds the container's IP and listening port(s), tries common health paths and prints a ready-to-paste
+#       deploy.healthcheck label. If nothing answers 2xx/3xx, skip the label: the automatic port check still protects it.
+#   ./gitops-deploy.sh --verify STACK
+#       Runs the post-deploy checks against the stack AS IT RUNS NOW (SOAK_SECONDS=5 ./gitops-deploy.sh --verify n8n for a
+#       quicker run). Use it to prove the checks work on this server before relying on them.
+#
+
 set -euo pipefail
 
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
@@ -303,11 +320,18 @@ deploy_stack() (
     BASE_PORTS=$(listening_ports) || BASE_PORTS=""
     BASE_HTTP=$(http_baseline) || BASE_HTTP=""
     BASE_URLS=$(passing_urls) || BASE_URLS=""
+    # Images the stack uses right now; removed after the new version verifies (see below).
+    OLD_IMAGES=$(docker compose images -q 2>/dev/null | sort -u) || OLD_IMAGES=""
 
     if ! docker compose up -d --wait --wait-timeout "$WAIT_TIMEOUT"; then
         echo "did not become ready within ${WAIT_TIMEOUT}s, or a container exited" > "$REASON_FILE"
     elif verify_stack > "$REASON_FILE"; then
         cp compose.yml "$lastgood"
+        # The old version can no longer be a rollback target. `image rm` refuses images that are still
+        # in use (unchanged services, shared images), so this only drops what was actually superseded.
+        for img in $OLD_IMAGES; do
+            docker image rm "$img" > /dev/null 2>&1 || true
+        done
         exit 0
     fi
 
