@@ -35,7 +35,7 @@ Added the missing permission and re-ran. The complete permission set for Renovat
 
 ## Follow-ups
 - [x] Keep the full permission list in the Renovate setup notes.
-- [ ] Move Renovate to the hosted GitHub App, so a long-lived PAT with write access isn't kept on the server.
+- [x] Move Renovate to the hosted GitHub App, so a long-lived PAT with write access isn't kept on the server.
 
 ## Lessons
 When a tool's error doesn't match the evidence, stop theorising and turn up the logging. The first useful fact was one line at debug level.
