@@ -1,12 +1,11 @@
+ansible
 argon2-cffi
 cron_descriptor
-cryptography
 Flask
 git-filter-repo
 PySocks
 python-dotenv
 python-telegram-bot
-PyYAML
 requests
 ruff
 selenium
