@@ -2,11 +2,11 @@
 # @DESCRIPTION: Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes permissions, removes cloud-init and re-links blueprint git repos.
 # @FREQUENCY: Run Once (Disaster Recovery)
 # @CAPABILITIES:
-#   • Enables instant disaster recovery by decrypting and restoring a full system archive without manual steps.
-#   • Auto‑maps backup file ownership to the current user, preventing permission conflicts after restoration.
-#   • Validates and secures SSH configuration, ensuring only authorized keys and correct permissions are in place.
-#   • Prevents accidental root execution, safeguarding the system during bootstrap.
-#   • Provides dual‑mode operation: full restore or fresh deployment, giving flexibility for recovery scenarios.
+#   • Instant disaster recovery by decrypting a full system archive without manual intervention.
+#   • Auto‑maps backup file ownership to the current user, eliminating permission conflicts after restoration.
+#   • Validates SSH keys and permissions, preventing lockout and ensuring secure remote access.
+#   • Prevents accidental root execution, protecting the system during critical bootstrap operations.
+#   • Offers dual‑mode operation: full restore or fresh deployment, adapting to recovery scenarios.
 
 set -euo pipefail
 umask 0022
@@ -19,6 +19,7 @@ GIT_USER="gravi-ctrl"
 REPO_SCRIPTS="homelab-blueprint"
 REPO_CTRL="ctrl-s-master"
 REPO_STACKS="server-docker-backup"
+B2_TARGET="b2:gravi-ctrl-homelab-backup"
 
 DIR_SCRIPTS="$HOME/scripts"
 DIR_CTRL="$HOME/ctrl_s_master"
@@ -93,8 +94,30 @@ if [[ "$MODE" == "RESTORE" ]]; then
     sudo [ -f "$AGE_KEYFILE" ] || { echo -e "\n${RED}❌ ERROR: Decryption key not found at $AGE_KEYFILE${NC}"; exit 1; }
 
     BACKUP=$(ls -t "$HOME"/docker-stacks-*.tar.zst.age 2>/dev/null | head -1 || true)
-    [[ -z "$BACKUP" ]] && { echo -e "\n${RED}❌ ERROR: No backup archive found in $HOME${NC}"; exit 1; }
-    pass "$(basename "$BACKUP")"
+
+    if [[ -z "$BACKUP" ]]; then
+        echo -e "${YELLOW}No archive in $HOME. Fetch the latest from B2 (${B2_TARGET})?${NC}"
+        read -r -p "[y/N]: " use_b2 < /dev/tty
+        [[ "$use_b2" =~ ^[Yy]$ ]] || { echo -e "${RED}❌ ERROR: No backup archive found in $HOME${NC}"; exit 1; }
+
+        read -r -p "B2 read-only key ID: " B2_ID < /dev/tty
+        read -r -s -p "B2 read-only application key: " B2_KEY < /dev/tty; echo
+
+        task "Install rclone"
+        quietly sudo apt-get update
+        quietly sudo apt-get install -y rclone
+        pass
+
+        task "Download latest archive from B2"
+        export RCLONE_CONFIG_B2_TYPE=b2 RCLONE_CONFIG_B2_ACCOUNT="$B2_ID" RCLONE_CONFIG_B2_KEY="$B2_KEY"
+        LATEST=$(rclone lsf --files-only "${B2_TARGET%/}/" 2>>"$LOGFILE" \
+            | grep -E '^docker-stacks-.*\.tar\.zst\.age$' | sort | tail -1 || true)
+        [[ -n "$LATEST" ]] || { echo -e "\n${RED}❌ ERROR: No archive found at ${B2_TARGET}${NC}"; exit 1; }
+        quietly rclone copy "${B2_TARGET%/}/$LATEST" "$HOME/"
+        unset B2_ID B2_KEY RCLONE_CONFIG_B2_TYPE RCLONE_CONFIG_B2_ACCOUNT RCLONE_CONFIG_B2_KEY
+        BACKUP="$HOME/$LATEST"
+        pass "$LATEST"
+    fi
 
     task "Install decryption tools (age, zstd)"
     quietly sudo apt-get update

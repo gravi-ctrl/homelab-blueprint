@@ -89,6 +89,14 @@ It only touches a few private folders, so it can't reach things that rightfully 
 
 ---
 
+## 4.5 Disaster Recovery: Why two keys. The path is in the script and not the `.env`?
+
+The decision of creating a separate key (API, token, etc) for.. well, almost everything at this point, but to stay on topic which is for the backup file, came from my dabbling in security a bit. I came across the term "blast radius", and without the boredom that comes from explaining what that is, essentially having two keys handling the backup file seems like the right decision, just to limit the "blast radius" if - for instance, the read-only key got exposed, hacked, or whatever happened to it.
+
+While I prefer that everything stays in the `.env` file, but with `bootstrap.sh` it gets tricky. You see, you `curl` the script on an empty server that doesn't have a `.env` file yet, so adding the bucket name as a variable while the secrets are passed by environment variable and never written on disk, seems like the right decision here.
+
+---
+
 ## 5. `cron-guard --mode mute`: Started as a Label, Became Useful
 
 `mute` started as a labeling trick.

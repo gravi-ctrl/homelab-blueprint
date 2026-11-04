@@ -14,7 +14,7 @@
   "/home/alice/scripts/homelab_dash.py": "7f573345e56df84ab9a9dd2751f98eb9234923afa48eec3e0ecba059c93d225d",
   "/home/alice/scripts/local-opt-backup.sh": "e42852d02d4add4dc2ade8601a90d40ea51e5e1d547501c574d67b786cbe9cce",
   "/home/alice/scripts/tg-vergil/vergil.py": "9b5f24e4171d445ab745a7a30a525d7e1a6cb2fbbe46e80945c5fd061f81a17a",
-  "/home/alice/scripts/run_once/bootstrap.sh": "f168364c38db0d395f5001819c2f99a458fbaf439178c8e17a7d73152c110ed7",
+  "/home/alice/scripts/run_once/bootstrap.sh": "546e356efc9bfb00a77b0f7624989ca48df39cbf945ffa237012be5ad37ea030",
   "/home/alice/scripts/run_once/container-watcher.sh": "1d92e2283fda771bba62eaff5ebe7cbc61bf49990c2a2ca6f7e73d3586a22056",
   "/home/alice/scripts/run_once/firewall-rules.sh": "ecc27e69ce3adbe9e305e04c1a0ee33bd12ece32d521593a8bbc08fcef19aa61",
   "/home/alice/scripts/run_once/setup.sh": "420a3c71ae38c95ba8a0f598797709da3ccc9cddc672ae29a2960fb2973a90a8",
