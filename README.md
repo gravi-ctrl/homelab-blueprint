@@ -148,8 +148,7 @@ Choose your scenario before running the script:
     Then pick where the archive comes from:
     *   **A1 (local):** place `docker-stacks-*.tar.zst.age` in `$HOME`.
     *   **A2 (offsite):** leave `$HOME` empty. The script offers to fetch the latest archive
-        from Backblaze B2 and will ask for the **read-only** B2 key ID and application key
-        (password manager entry: "Backblaze B2 – backup RESTORE (read-only)").
+        from Backblaze B2 and will ask for the **read-only** B2 key ID and application key.
 
 *   **Option B: Fresh Start (No Backup)**
     Before executing the script, prepare `~/.ssh/` with:
