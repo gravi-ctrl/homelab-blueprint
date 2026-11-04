@@ -140,11 +140,17 @@ The bootstrap script is designed to handle both a **Full Recovery** (decrypts ar
 Choose your scenario before running the script:
 
 *   **Option A: Full Recovery**
-    Ensure `docker-stacks-*.tar.zst.age` is in `$HOME`. Retrieve your age decryption key and paste it:
+    Retrieve your age decryption key and paste it:
     ```bash
     sudo nano /root/.backup-key.txt
     sudo chmod 600 /root/.backup-key.txt
     ```
+    Then pick where the archive comes from:
+    *   **A1 (local):** place `docker-stacks-*.tar.zst.age` in `$HOME`.
+    *   **A2 (offsite):** leave `$HOME` empty. The script offers to fetch the latest archive
+        from Backblaze B2 and will ask for the **read-only** B2 key ID and application key
+        (password manager entry: "Backblaze B2 – backup RESTORE (read-only)").
+
 *   **Option B: Fresh Start (No Backup)**
     Before executing the script, prepare `~/.ssh/` with:
     1. `authorized_keys`: Your laptop/workstation's **public key** (prevents lockout when password auth is disabled).
@@ -157,7 +163,7 @@ For maximum security, verify the script's cryptographic hash before executing it
 
 1. **Download the script:**
    ```bash
-   curl -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
+   curl --proto '=https' -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
    ```
 
 2. **Retrieve the trusted hash:**
