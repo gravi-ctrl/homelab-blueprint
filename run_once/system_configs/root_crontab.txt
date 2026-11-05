@@ -15,7 +15,7 @@ BASH_ENV=/opt/rabbit-hole/.env
 0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
 
 # Cold backup of Docker Stacks, scripts, ctrl_s_master, mkcert & SSH keys
-30 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
+25 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
 
 # ctrl_s_master Project
 0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard --mode fail "ctrl_s_master" "$CTRL_DIR/run.sh"
