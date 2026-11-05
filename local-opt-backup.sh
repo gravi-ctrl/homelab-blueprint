@@ -1,15 +1,16 @@
 #!/bin/bash
 # @DESCRIPTION: Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive
-# @FREQUENCY: Weekly 5:30am on Thursday
-# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET
+# @FREQUENCY: Weekly 5:25am on Thursday
+# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CRON: root
 # @CAPABILITIES:
-#   • Creates a single, encrypted archive of Docker stacks and system configs for secure off‑site backup.
-#   • Prevents overlapping runs with a lockfile, guaranteeing one backup instance at a time.
-#   • Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely.
-#   • Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations.
-#   • Gracefully stops Docker stacks before snapshotting and restores them afterward, eliminating data corruption risks.
-#   • Auto‑installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup.
+#   • Creates a single, age‑encrypted archive of Docker stacks, user scripts, SSH keys, and system configs for secure off‑site storage.
+#   • Gracefully stops and masks Docker before snapshotting, then automatically restores services to avoid data corruption.
+#   • Guarantees only one backup runs at a time with a lockfile, preventing race conditions and resource contention.
+#   • Dispatches to a background systemd unit when run interactively, allowing SSH sessions to close without interrupting the backup.
+#   • Sends periodic heartbeats to a health‑check endpoint, keeping the job alive during long operations and alerting on failure.
+#   • Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.
+#   • Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
@@ -42,6 +43,7 @@ if [ -t 0 ]; then
         systemctl reset-failed "$UNIT_NAME" 2>/dev/null || true
 
         systemd-run --unit="$UNIT_NAME" \
+                    --setenv=BACKUP_MANUAL=1 \
                     --quiet \
                     --collect \
                     "$(realpath "${BASH_SOURCE[0]}")"
@@ -143,6 +145,16 @@ echo "--- [1/2] Starting Docker Stacks Backup ---"
 
 keep_kuma_alive >/dev/null 2>&1 &
 HEARTBEAT_PID=$!
+
+# --- PRE-BACKUP WARNING (scheduled runs only) ---
+if [ -z "${BACKUP_MANUAL:-}" ] && [ ! -t 0 ]; then
+    echo "Warning dispatched (best effort), waiting 5 min before taking Docker down..."
+    curl -fsS --max-time 10 \
+        -d chat_id="${TELEGRAM_CHAT_ID:-}" \
+        --data-urlencode "text=⚠️ $(hostname): weekly backup starts in 5 min. Docker will be down for the duration and restart on its own." \
+        "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN:-}/sendMessage" >/dev/null || true
+    sleep 300
+fi
 
 # Snapshot running stacks before shutdown
 : > "$RUNNING_STACKS_FILE"
