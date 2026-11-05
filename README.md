@@ -162,7 +162,7 @@ For maximum security, verify the script's cryptographic hash before executing it
 
 1. **Download the script:**
    ```bash
-   curl --proto '=https' -fsSL github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
+   curl --proto '=https' -fsSL https://github.com/gravi-ctrl/homelab-blueprint/raw/main/run_once/bootstrap.sh -o "$HOME/bootstrap.sh"
    ```
 
 2. **Retrieve the trusted hash:**
