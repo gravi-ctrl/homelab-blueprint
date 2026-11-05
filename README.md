@@ -249,12 +249,6 @@ The restore key used during bootstrap is read-only and was never saved on the se
 
 ---
 
-<div align="center">
-
-[![Maintainer](https://img.shields.io/badge/ARCHITECT-%20gravi--ctrl-1f242b?style=flat-square&labelColor=3c5a73)](https://github.com/gravi-ctrl)
-
-<br>
-
-<sub>Part of the **gravi-ctrl** homelab ecosystem • Built for reproducibility and repeatable recovery</sub>
-
-</div>
+<p align="center">
+  <sub>Part of the <a href="https://github.com/gravi-ctrl"><b>gravi-ctrl</b></a> homelab ecosystem · Built for reproducibility and repeatable recovery</sub>
+</p>
