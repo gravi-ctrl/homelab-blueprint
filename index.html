@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-05 05:00 EET</div>
+    <div class="meta-line">Generated 2026-11-05 06:08 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4757,11 +4757,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
           5
         ]
       ],
-      "human_desc": "At 05:30, only on Thursday",
+      "human_desc": "At 05:25, only on Thursday",
       "is_root": true,
       "label": "Docker Stacks Backup",
       "owner": "⚡ Root Cron",
-      "raw_schedule": "30 5 * * 4",
+      "raw_schedule": "25 5 * * 4",
       "tier": "📅 Weekly",
       "tier_order": 3
     },
@@ -4994,28 +4994,32 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "env_used": [
         "container-watcher.sh",
         "cron-guard.py",
-        "gitops-deploy.sh"
+        "gitops-deploy.sh",
+        "local-opt-backup.sh"
       ],
       "mismatch": false,
       "name": "TELEGRAM_CHAT_ID",
       "script_used": [
         "container-watcher.sh",
         "cron-guard.py",
-        "gitops-deploy.sh"
+        "gitops-deploy.sh",
+        "local-opt-backup.sh"
       ]
     },
     {
       "env_used": [
         "container-watcher.sh",
         "cron-guard.py",
-        "gitops-deploy.sh"
+        "gitops-deploy.sh",
+        "local-opt-backup.sh"
       ],
       "mismatch": false,
       "name": "TELEGRAM_DANTE_BOT_TOKEN",
       "script_used": [
         "container-watcher.sh",
         "cron-guard.py",
-        "gitops-deploy.sh"
+        "gitops-deploy.sh",
+        "local-opt-backup.sh"
       ]
     },
     {
@@ -5307,12 +5311,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Creates a single, encrypted archive of Docker stacks and system configs for secure off‑site backup.",
-        "Prevents overlapping runs with a lockfile, guaranteeing one backup instance at a time.",
-        "Runs as a detached systemd unit when invoked interactively, allowing SSH sessions to close safely.",
-        "Sends periodic heartbeats to a monitoring endpoint, keeping the service alive during long operations.",
-        "Gracefully stops Docker stacks before snapshotting and restores them afterward, eliminating data corruption risks.",
-        "Auto‑installs missing zstd and age tools, ensuring the script runs on fresh systems without manual setup."
+        "Creates a single, age‑encrypted archive of Docker stacks, user scripts, SSH keys, and system configs for secure off‑site storage.",
+        "Gracefully stops and masks Docker before snapshotting, then automatically restores services to avoid data corruption.",
+        "Guarantees only one backup runs at a time with a lockfile, preventing race conditions and resource contention.",
+        "Dispatches to a background systemd unit when run interactively, allowing SSH sessions to close without interrupting the backup.",
+        "Sends periodic heartbeats to a health‑check endpoint, keeping the job alive during long operations and alerting on failure.",
+        "Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.",
+        "Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems."
       ],
       "category": "Core Scripts",
       "cron_ctx": "root",
@@ -5324,9 +5329,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "AGE_KEYFILE",
         "KUMA_HC_URL",
         "CTRL_DIR",
-        "OFFSITE_BACKUP_TARGET"
+        "OFFSITE_BACKUP_TARGET",
+        "TELEGRAM_DANTE_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID"
       ],
-      "freq": "Weekly 5:30am on Thursday",
+      "freq": "Weekly 5:25am on Thursday",
       "name": "local-opt-backup.sh",
       "path": "local-opt-backup.sh",
       "semantic_cat": "💾 Backups & Sync",
