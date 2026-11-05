@@ -89,11 +89,19 @@ It only touches a few private folders, so it can't reach things that rightfully 
 
 ---
 
-## 4.5 Disaster Recovery: Why two keys. The path is in the script and not the `.env`?
+## 4.5 Offsite restore: two B2 keys, and why the bucket path lives in the script
 
-The decision of creating a separate key (API, token, etc) for.. well, almost everything at this point, but to stay on topic which is for the backup file, came from my dabbling in security a bit. I came across the term "blast radius", and without the boredom that comes from explaining what that is, essentially having two keys handling the backup file seems like the right decision, just to limit the "blast radius" if - for instance, the read-only key got exposed, hacked, or whatever happened to it.
+**Two keys, two jobs.** The server uses an *upload* key to copy the weekly archive to Backblaze B2. Because it lives on the server, it is the credential most likely to be exposed. Recovery uses a separate *read-only* key that is stored only in my password manager and typed in during a restore. If the restore key leaks, an attacker gets age-encrypted archives and still needs the age key, which is a separate secret. Splitting the roles means no single leaked credential gives access to both writing and reading my backups.
 
-While I prefer that everything stays in the `.env` file, but with `bootstrap.sh` it gets tricky. You see, you `curl` the script on an empty server that doesn't have a `.env` file yet, so adding the bucket name as a variable while the secrets are passed by environment variable and never written on disk, seems like the right decision here.
+**Why the bucket path is in the script and not in `.env`.** I would rather keep configuration in `.env`, but `bootstrap.sh` is downloaded with `curl` onto an empty server, and the `.env` is inside the archive it is trying to fetch. So the bucket path is a variable at the top of `bootstrap.sh` (`B2_TARGET`). It is not a secret: the bucket is private and every request needs a key.
+
+**How the secrets are handled.** The restore key ID and application key are entered at a prompt with `read -s` (nothing is echoed or saved in shell history), handed to rclone as environment variables (`RCLONE_CONFIG_B2_*`) so no `rclone.conf` is written, and unset right after the download. After recovery, the normal upload key is configured again on the rebuilt server.
+
+**Tested.** A full restore from B2 onto a wiped VM took about 27 minutes (about 14 for the OS install, about 12 for the stack restore, including the download).
+
+**Known limits.**
+- The upload key can currently delete files, because the server prunes archives older than 30 days with `rclone delete`. A compromised server could therefore remove the offsite copies. Planned fix: move retention to a B2 lifecycle rule and remove the delete permission from the upload key.
+- A failed offsite upload currently only logs a warning, so it could go unnoticed. Planned fix: alert on failure.
 
 ---
 

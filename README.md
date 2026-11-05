@@ -8,7 +8,7 @@
 
 # 🛠️ Homelab Blueprint
 
-This is the automation engine behind my home server. It issues its own certificates, deploys its own updates, checks that they worked, rolls back when they didn't, and tells me about it on Telegram. If the machine dies, I can rebuild it from a backup in about 25 minutes.
+This is the automation engine behind my home server. It issues its own certificates, deploys its own updates, checks that they worked, rolls back when they didn't, and tells me about it on Telegram. If the machine dies, I can rebuild it from an offsite backup in about 27 minutes.
 
 **Location on Server:** `~/scripts`
 
@@ -17,11 +17,11 @@ This is the automation engine behind my home server. It issues its own certifica
 
 ### ✨ The Short Version
 
-* **Rebuilds in about 25 minutes.** I tested a full restore on a wiped VM: ~15 minutes for the OS, ~10 for the stacks.
+* **Rebuilds in about 27 minutes.** I tested a full restore from my offsite backup on a wiped VM: ~14 minutes for the OS, ~12 for the stacks.
 * **Self-checking deploys.** Merge a PR and the server picks it up within 15 minutes, updates only what changed, verifies it, and rolls back on failure (see `gitops-deploy.sh`).
 * **Nothing ships unchecked.** Every change goes through linting, tests, security scans and a Terraform plan before it can reach `main`.
 * **No silent failures.** Every scheduled job reports to Telegram, and repeated errors are grouped so my phone doesn't get spammed.
-* **Encrypted weekly backups**, plus a daily snapshot of scripts, crontabs and package lists.
+* **Encrypted weekly backups, copied offsite to Backblaze B2**, plus a daily snapshot of scripts, crontabs and package lists.
 * **Self-documenting.** Scripts describe themselves, and a live dashboard is built from that.
 * **GitHub settings as code.** Repo rules and settings live in Terraform, with the state stored remotely.
 
@@ -33,7 +33,7 @@ This is the automation engine behind my home server. It issues its own certifica
 
 **Alerts.** Every scheduled job runs through a small wrapper I wrote, `cron-guard.py`, so I get a Telegram message for almost everything. If a job crashes and spits out a huge log, I get a short summary on my phone and the full output is saved on the server.
 
-**Backups.** The server takes a snapshot of itself every day: scripts, crontabs, package lists and so on. Once a week it makes an encrypted archive (with `age`) of the whole stack and checks that it's good. I tested a full restore on a VM, and a wiped machine was back online in **25 minutes**: about 15 for the OS install and about 10 for the stack restore (see the runbook below).
+**Backups.** The server takes a snapshot of itself every day: scripts, crontabs, package lists and so on. Once a week it makes an encrypted archive (with `age`) of the whole stack, checks that it's good, and copies it offsite to Backblaze B2. I tested a full restore on a wiped VM, pulling the archive from B2, and the machine was back online in about **27 minutes**: about 14 for the OS install and about 12 for the stack restore (see the runbook below).
 
 **Docs that write themselves.** After I write or change a script, I run `doc-injector.py`. It asks an LLM what the script does and writes the answer into the script's header. At 5 AM the live dashboard picks those headers up, so the docs stay in sync with the code.
 
@@ -91,7 +91,7 @@ flowchart LR
 ```mermaid
 graph TD
     %% Main Path
-    A[Encrypted Backup + Key] --> B[Phase 1: bootstrap.sh]
+    A[Encrypted backup - local or B2 - plus keys] --> B[Phase 1: bootstrap.sh]
     B --> C[Phase 2: setup.sh]
     
     %% The Spawning of the Ghost
@@ -114,7 +114,7 @@ graph TD
     style C fill:#1f242b,stroke:#3081f7
 ```
 
-There are two ways to rebuild the server: a **Full Recovery** (restore the weekly `docker-stacks-DATE.tar.zst.age` archive) or a **Fresh Start** (build everything from scratch).
+There are two ways to rebuild the server: a **Full Recovery** (restore the weekly `docker-stacks-DATE.tar.zst.age` archive, from a local copy or from Backblaze B2) or a **Fresh Start** (build everything from scratch).
 
 The full backup archive has everything needed to bring back the exact state:
 
@@ -149,6 +149,7 @@ Choose your scenario before running the script:
     *   **A1 (local):** place `docker-stacks-*.tar.zst.age` in `$HOME`.
     *   **A2 (offsite):** leave `$HOME` empty. The script offers to fetch the latest archive
         from Backblaze B2 and will ask for the **read-only** B2 key ID and application key.
+        Both are typed at a hidden prompt and never written to disk.
 
 *   **Option B: Fresh Start (No Backup)**
     Before executing the script, prepare `~/.ssh/` with:
@@ -176,7 +177,7 @@ For maximum security, verify the script's cryptographic hash before executing it
 
 > [!NOTE]
 > This script bootstraps your server by handling system configuration, SSH setup, and Git repository cloning. It offers two paths:
-> - **Full Recovery:** Decrypts and restores from an existing backup archive.
+> - **Full Recovery:** Decrypts and restores from a backup archive, either one already in `$HOME` or the latest one fetched from Backblaze B2.
 > - **Fresh Start:** Initializes clean repositories (requires your SSH private keys to be in `~/.ssh` before starting).
 
 <details>
@@ -242,6 +243,9 @@ find /opt/stacks -maxdepth 2 -name "compose.yml" -execdir docker compose up -d \
 
 > [!TIP]
 > **The Ghost Watcher in Action:** As soon as you run `docker compose up -d`, the Ghost Watcher detects containers coming online, executes their internal readiness checks, runs their post-start scripts, sends a Telegram confirmation, and silently uninstalls itself from systemd.
+
+**3. Re-link the offsite backup:**
+The restore key used during bootstrap is read-only and was never saved on the server, so the rebuilt machine can't upload yet. Run the `rclone config create` command that `setup.sh` prints at the end, using the **upload** key from your password manager. Until you do this, weekly backups will not reach B2.
 
 ---
 
