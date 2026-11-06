@@ -1,5 +1,5 @@
-[![License](https://img.shields.io/badge/license-MIT-green?label=License)
-[![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
+![License](https://img.shields.io/badge/license-MIT-green?label=License)
+![Platform](https://img.shields.io/badge/platform-Linux-blue?label=Platform)
 [![Code Quality & Linting](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/lint.yml)
 [![Terraform GitOps](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/terraform.yml/badge.svg)](https://github.com/gravi-ctrl/homelab-blueprint/actions/workflows/terraform.yml)
 [![Code Quality & Tests](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml)
