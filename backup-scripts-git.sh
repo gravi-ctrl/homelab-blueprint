@@ -1,8 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Snapshots cron/packages/dotfiles/hosts/dashboards/permissions, pushes dashboards, dotfiles and system_configs
-# @FREQUENCY: Daily 5am
 # @USES_ENV: STACKS_DIR, CTRL_DIR, TOOLS
-# @CRON: user
 # @CAPABILITIES:
 #   • Captures full system state daily for instant rollback and audit.
 #   • Safeguards APT sources and keyrings, preserving build reproducibility and preventing trust erosion.

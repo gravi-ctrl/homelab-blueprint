@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.
-# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
+# @FREQUENCY: At 05:00 (triggered by `backup-scripts-git.sh`)
 # @CAPABILITIES:
-#   • Scans repository scripts while automatically ignoring archives, virtual environments, and git metadata directories.
-#   • Extracts operational descriptions, execution frequencies, and capability bullet points from script headers.
-#   • Flags undocumented scripts lacking required description or execution frequency metadata tags.
-#   • Translates user and root crontab expressions into human-readable schedules and frequency tiers.
-#   • Detects conditional bash logic, date guards, and pipeline checks within scheduled cron commands.
-#   • Expands cron schedules into weekly time slots for interactive heatmaps, calendars, and agendas.
-#   • Generates a standalone, interactive HTML dashboard embedding all parsed inventory and schedule data.
+#   • Generates a self-contained, interactive HTML dashboard consolidating script inventory, cron schedules, and tracked configuration variables.
+#   • Correlates scripts with user and root crontabs, displaying actual schedules, ownership, human-readable descriptions, and execution frequency.
+#   • Visualizes cron workloads through weekly heatmaps, monthly calendars, and chronological agendas for today and tomorrow.
+#   • Audits configuration-variable references between scripts and `.env.example`, highlighting missing declarations, undocumented usage, and unused variables.
+#   • Detects undocumented scripts and inconsistent configuration references, surfacing actionable warnings in dashboard summaries and searchable inventories.
+#   • Categorizes scripts by operational purpose and exposes documented capabilities, safeguards, execution context, and scheduling details.
+#   • Provides interactive search, directory filters, ownership filters, warning filters, and targeted views for frequent jobs and container tasks.
+
 
 import getpass
 import json
@@ -93,7 +94,22 @@ def parse_env_example(env_path):
             if not stripped.startswith('#'): pending = None
     return env_used_by
 
-def parse_scripts(env_used_by):
+# Wrapper commands that appear on every guarded cron line; matching them would claim every cron job.
+WRAPPER_SCRIPTS = {"cron-guard.py", "cron-guard"}
+
+def match_cron_entries(name, crons):
+    """Cron entries whose command literally runs this script (by filename)."""
+    if name in WRAPPER_SCRIPTS:
+        return []
+    pat = re.compile(r'(?<![\w.-])' + re.escape(name) + r'(?![\w.-])')
+    return [c for c in crons if pat.search(c["command"])]
+
+def short_schedule(c):
+    d = re.sub(r'\s*<br>\s*', ' ', c["human_desc"]).replace("**", "").strip()
+    return d or c["raw_schedule"]
+
+def parse_scripts(env_used_by, crons=None):
+    crons = crons or []
     scripts_data = []
     env_declares_for = {}
     for var, scripts in env_used_by.items():
@@ -158,7 +174,23 @@ def parse_scripts(env_used_by):
             if cat == Path(SCRIPT_DIR).name: cat = "Core Scripts"
             
             warnings = []
-            if not desc or not freq: warnings.append("Undocumented (missing @DESCRIPTION or @FREQUENCY)")
+            if not desc: warnings.append("Undocumented (missing @DESCRIPTION)")
+
+            # Schedule: the crontab snapshots are the source of truth; the header is only a fallback.
+            header_freq = freq
+            entries = match_cron_entries(file, crons)
+            cron_entries = [{"schedule": c["raw_schedule"], "owner": "Root" if c["is_root"] else "User",
+                             "desc": short_schedule(c)} for c in entries]
+            if len(entries) == 1:
+                freq, freq_source = cron_entries[0]["desc"], "cron"
+            elif len(entries) > 1:
+                freq, freq_source = f"Varies ({len(entries)} entries)", "cron"
+            elif header_freq:
+                freq_source = "header"
+            else:
+                freq, freq_source = None, "manual"
+            if entries:
+                cron_ctx = ", ".join(sorted({e["owner"] for e in cron_entries}))
             
             declared_vars = env_declares_for.get(file, set())
             script_vars = set(uses_env)
@@ -171,7 +203,8 @@ def parse_scripts(env_used_by):
             scripts_data.append({
                 "name": file, "path": rel_str, "dir_path": dir_str,
                 "category": cat.replace('_', ' ').title(), "semantic_cat": get_semantic_category(desc, file),
-                "desc": desc, "freq": freq, "cron_ctx": cron_ctx or "",
+                "desc": desc, "freq": freq or "", "freq_source": freq_source, "header_freq": header_freq or "",
+                "cron_entries": cron_entries, "cron_ctx": cron_ctx or "",
                 "env": uses_env, "capabilities": capabilities, "warnings": warnings
             })
     return sorted(scripts_data, key=lambda x: (x["dir_path"], x["name"]))
@@ -634,6 +667,14 @@ let activeParentDir = null, activeChildDir = null;
 
 function e(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function bdg(cls, txt){ return `<span class="bdg ${cls}">${e(txt)}</span>`; }
+function srcBdg(s){
+  const m = {
+    cron:   ['b-blue', 'cron',   'Schedule read from the crontab snapshot'],
+    header: ['b-gray', 'header', 'Written by hand in the script header (not found in any crontab)'],
+    manual: ['b-gray', 'manual', 'Not in any crontab and no @FREQUENCY in the header']
+  }[s.freq_source];
+  return m ? `<span class="bdg ${m[0]}" title="${e(m[2])}">${m[1]}</span>` : '';
+}
 
 function getTierColor(tier) {
   if (!tier) return 'gray';
@@ -1003,10 +1044,11 @@ function renderStats() {
 
 function renderScripts() {
   const grouped = {};
-  D.scripts.forEach((s, idx) => { s._idx = idx; grouped[s.category] = grouped[s.category] || []; grouped[s.category].push(s); });
-  const cats = Object.keys(grouped).sort((a,b) => a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
+  const MANUAL = "Manual / not scheduled";
+  D.scripts.forEach((s, idx) => { s._idx = idx; const k = s.freq_source === 'manual' ? MANUAL : s.category; grouped[k] = grouped[k] || []; grouped[k].push(s); });
+  const cats = Object.keys(grouped).sort((a,b) => a===MANUAL?1:b===MANUAL?-1:a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
 
-  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Bullet 1</div></div></div>`;
+  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang. Schedule and User/Root come from the crontab snapshots automatically; <code>@FREQUENCY</code> is only needed for scripts that are not in a crontab (e.g. <code>Triggered by x.sh</code>).</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   Only if not in a crontab\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Bullet 1</div></div></div>`;
 
   cats.forEach((cat, c_idx) => {
     const scripts = grouped[cat], gid = `s-cat-${c_idx}`, warnsInCat = scripts.filter(s => s.warnings.length).length;
@@ -1014,17 +1056,22 @@ function renderScripts() {
     scripts.forEach(s => {
       const badges = [];
       if(s.freq) badges.push(bdg('b-green', s.freq));
+      badges.push(srcBdg(s));
       if(s.cron_ctx) { if(s.cron_ctx.toLowerCase().includes('root')) badges.push(bdg('b-root', 'Root')); if(s.cron_ctx.toLowerCase().includes('user')) badges.push(bdg('b-user', 'User')); }
       s.env.forEach(ev => badges.push(bdg('b-env', ev)));
       
       const warnHtml = s.warnings.length ? `<div class="card-desc" style="border-color:var(--danger);background:var(--danger-soft)"><ul class="warning-list">${s.warnings.map(w=>`<li>${e(w)}</li>`).join('')}</ul></div>` : '';
       
+      let cronHtml = '';
+      if (s.cron_entries && s.cron_entries.length > 1) {
+        cronHtml = `<details class="caps-details"><summary class="caps-summary"><span>🕒 Schedules (${s.cron_entries.length})</span></summary><ul class="caps-list">${s.cron_entries.map(c => `<li><code>${e(c.schedule)}</code> · ${e(c.owner)} · ${e(c.desc)}</li>`).join('')}</ul></details>`;
+      }
       let capsHtml = '';
       if (s.capabilities && s.capabilities.length > 0) {
         capsHtml = `<details class="caps-details"><summary class="caps-summary"><span>⚡ Capabilities &amp; Safeguards (${s.capabilities.length})</span></summary><ul class="caps-list">${s.capabilities.map(c => `<li>${e(c)}</li>`).join('')}</ul></details>`;
       }
 
-      html += `<div class="card item-card" data-idx="${s._idx}"><div class="card-title"><span>${e(s.name)}</span></div><div class="card-sub">${e(s.path)}</div>${s.desc?`<div class="card-desc">${e(s.desc)}</div>`:''}${capsHtml}${warnHtml}<div class="badges">${badges.join('')}</div></div>`;
+      html += `<div class="card item-card" data-idx="${s._idx}"><div class="card-title"><span>${e(s.name)}</span></div><div class="card-sub">${e(s.path)}</div>${s.desc?`<div class="card-desc">${e(s.desc)}</div>`:''}${capsHtml}${cronHtml}${warnHtml}<div class="badges">${badges.join('')}</div></div>`;
     });
     html += `</div></div>`;
   });
@@ -1161,15 +1208,17 @@ switchTab('overview');
 def main():
     print("🔍 Scanning Homelab Environment...")
     env_vars_parsed = parse_env_example(ENV_EXAMPLE_FILE)
-    scripts = parse_scripts(env_vars_parsed)
-    envs = build_envs_data(env_vars_parsed, scripts)
     crons = parse_crontabs()
+    scripts = parse_scripts(env_vars_parsed, crons)
+    envs = build_envs_data(env_vars_parsed, scripts)
     
     warn_scripts = sum(1 for s in scripts if s["warnings"])
     mismatch_envs = sum(1 for e in envs if e["mismatch"])
     caps_count = sum(len(s.get("capabilities", [])) for s in scripts)
     
     print(f"  ✓ Found {len(scripts)} Scripts ({caps_count} capabilities mapped, {warn_scripts} warnings)")
+    by_src = {k: sum(1 for s in scripts if s["freq_source"] == k) for k in ("cron", "header", "manual")}
+    print(f"  ✓ Schedules: {by_src['cron']} from crontab, {by_src['header']} from header, {by_src['manual']} manual")
     print(f"  ✓ Found {len(crons)} Cron Jobs")
     print(f"  ✓ Found {len(envs)} Tracked Variables ({mismatch_envs} env mismatches detected)")
     

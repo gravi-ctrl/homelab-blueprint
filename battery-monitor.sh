@@ -1,7 +1,5 @@
 #!/bin/bash
 # @DESCRIPTION: If battery is discharging and under 20%, shutdown the server in 2 minutes
-# @FREQUENCY: Every 5 minutes
-# @CRON: root
 # @CAPABILITIES:
 #   • Prevents data loss by triggering a safe shutdown when battery drops below 20%.
 #   • Grants a two-minute grace period for processes to finish before power cuts.

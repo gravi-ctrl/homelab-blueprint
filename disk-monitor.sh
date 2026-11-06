@@ -1,7 +1,5 @@
 #!/bin/bash
 # @DESCRIPTION: Check if root (/) or /data exceeds 90% and send an alert
-# @FREQUENCY: Every hour
-# @CRON: user
 # @CAPABILITIES:
 #   • Detects root or /data exceeding 90% and triggers immediate alerts.
 #   • Enables proactive remediation by exiting with status 1 for downstream automation.

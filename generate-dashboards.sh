@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Runs both dashboard generators and safely commits the output to their respective pages branches.
-# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
+# @FREQUENCY: At 05:00 (triggered by `backup-scripts-git.sh`)
 # @USES_ENV: STACKS_DIR
 # @CAPABILITIES:
 #   • Deploys dashboards to isolated pages branches, preserving production code integrity.

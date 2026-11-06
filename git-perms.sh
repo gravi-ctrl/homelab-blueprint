@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Snapshots non-standard POSIX ownership and permissions (exceptions) to `.git-perms`, or applies them during bootstrap
-# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)
+# @FREQUENCY: At 05:00 (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)
 # @USES_ENV:
 # @CAPABILITIES:
 #   • Aborts with usage error if first argument is missing or not 'save' or 'apply'
