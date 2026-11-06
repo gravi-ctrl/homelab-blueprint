@@ -1,3 +1,4 @@
+7zip
 acl
 age
 apparmor
@@ -87,6 +88,7 @@ ubuntu-server
 ubuntu-standard
 udev
 ufw
+unar
 unattended-upgrades
 unbound
 unminimize

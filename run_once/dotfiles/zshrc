@@ -251,46 +251,72 @@ vc-umount() { sudo veracrypt --text --dismount "$1" }
 
 # Universal Archive Extractor
 extract() {
-    if [[ -f "$1" ]]; then
-        # 1. Determine the target directory name (remove extension)
-        local dir="${1%.*}"
+    emulate -L zsh
+    setopt extended_glob glob_dots
 
-        # Handle the .tar.* case (e.g., .tar.gz, .tar.zst) where %.* only removes the last part
-        # This regex covers .tar.gz, .tar.bz2, .tar.xz, .tar.zst, etc.
-        if [[ "$1" =~ \.tar\..+$ ]]; then
-            dir="${dir%.*}"
+    (( $# )) || { print -u2 "Usage: extract <archive> [archive...]"; return 1 }
+
+    # Longest first, so tar.gz is matched before gz
+    local -a exts=(tar.gz tar.bz2 tar.xz tar.zst tar.lz4 tar.z tgz tbz2 txz tzst tar
+                   zip jar apk war rar 7z gz bz2 xz zst lz4 z)
+    local f rc=0 base lc e ext name outdir dest tmp st
+    local -a top
+
+    for f in "$@"; do
+        if [[ ! -f $f ]]; then
+            print -u2 "extract: '$f' is not a file"; rc=1; continue
         fi
 
-        # 2. Create and prepare directory
-        if [[ -d "$dir" ]]; then
-            echo "Error: Directory '$dir' already exists. Aborting to prevent overwrite."
-            return 1
+        # Work out the extension (case-insensitive) and the output name
+        base=${f:t} lc=${(L)f:t} ext=""
+        for e in $exts; do
+            [[ $lc == *.$e ]] && { ext=$e; break }
+        done
+        if [[ -z $ext ]]; then
+            print -u2 "extract: '$f' has an unsupported extension"; rc=1; continue
+        fi
+        name=${base:0:$(( ${#base} - ${#ext} - 1 ))}
+        [[ -n $name ]] || name=extracted
+
+        # Output goes next to the archive (set outdir=. on the next line to use the current dir)
+        outdir=${f:h}
+        [[ $outdir == . ]] && dest=$name || dest=$outdir/$name
+
+        if [[ -e $dest ]]; then
+            print -u2 "extract: '$dest' already exists, skipping '$f'"; rc=1; continue
         fi
 
-        mkdir -p "$dir"
+        # Extract into a scratch dir first, so a failure never leaves junk behind
+        tmp=$outdir/.extract.$$.$RANDOM
+        mkdir -- "$tmp" || { rc=1; continue }
 
-        # 3. Extraction logic
-        case "$1" in
-            # Added *.tar.zst, *.tzst, and *.txz to the list
-            *.tar.bz2|*.tbz2|*.tar.gz|*.tgz|*.tar.xz|*.txz|*.tar.zst|*.tzst|*.tar)
-                         tar -xf "$1" -C "$dir" ;;
-            *.zip)       unzip "$1" -d "$dir" ;;
-            *.rar)       unrar x "$1" "$dir/" ;;
-            *.7z)        7z x "$1" -o"$dir"    ;;
-
-            # Single file decompressors
-            *.bz2)       bunzip2 -c "$1" > "$dir/${1%.*}" ;;
-            *.gz)        gunzip -c "$1" > "$dir/${1%.*}"  ;;
-            *.Z)         uncompress -c "$1" > "$dir/${1%.*}" ;;
-            *.zst)       zstd -d "$1" -o "$dir/${1%.*}" ;; # Added standalone zstd
-
-            *)           echo "Error: '$1' cannot be extracted via extract()"
-                         rmdir "$dir"
-                         return 1 ;;
+        case $ext in
+            tar.*|tgz|tbz2|txz|tzst|tar) tar -xf "$f" -C "$tmp" ;;
+            zip|jar|apk|war)             unzip -q -- "$f" -d "$tmp" ;;
+            rar)                         unrar x -inul -- "$f" "$tmp/" ;;
+            7z)                          7z x -bso0 -bsp0 -o"$tmp" -- "$f" ;;
+            gz)                          gunzip  -c -- "$f" > "$tmp/$name" ;;
+            bz2)                         bunzip2 -c -- "$f" > "$tmp/$name" ;;
+            xz)                          xz  -dc -- "$f" > "$tmp/$name" ;;
+            zst)                         zstd -dqc -- "$f" > "$tmp/$name" ;;
+            lz4)                         lz4 -dc -- "$f" > "$tmp/$name" ;;
+            z)                           uncompress -c -- "$f" > "$tmp/$name" ;;
         esac
+        st=$?
 
-        echo "Successfully extracted '$1' into '$dir/'"
-    else
-        echo "Error: '$1' is not a valid file"
-    fi
+        if (( st != 0 )); then
+            rm -rf -- "$tmp"
+            print -u2 "extract: failed to extract '$f'"; rc=1; continue
+        fi
+
+        # One top-level folder inside? Use it directly instead of name/name/
+        top=( "$tmp"/*(N) )
+        if (( ${#top} == 1 )) && [[ -d ${top[1]} && ! -L ${top[1]} ]]; then
+            mv -- "${top[1]}" "$dest" && rmdir -- "$tmp"
+        else
+            mv -- "$tmp" "$dest"
+        fi
+        print "Extracted '$f' -> '$dest/'"
+    done
+    return $rc
 }
