@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-05 06:08 EET</div>
+    <div class="meta-line">Generated 2026-11-06 04:06 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5163,11 +5163,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Auto‑generates concise feature lists for scripts, enabling instant dashboard insights without manual documentation.",
-        "Caches script hashes to skip redundant AI calls, cutting bandwidth and cost.",
-        "Dynamically selects the most compatible Groq model, ensuring optimal performance across environments.",
-        "Parses exact rate‑limit wait times and falls back to exponential backoff, guaranteeing reliable retries.",
-        "Limits header injection to the first 40 lines, preserving existing metadata and preventing accidental overwrites."
+        "Automatically generates and injects evidence-verified capabilities headers into shell and Python scripts using Groq AI.",
+        "Tracks documentation drift through Git history, proposing only edits, additions, or removals justified by subsequent code changes.",
+        "Rejects unsupported claims using literal code-evidence matching and an independent second-pass AI review.",
+        "Protects existing documentation by requiring at least two verified bullets before applying header changes.",
+        "Requires explicit confirmation for updates, with dry-run previews and non-interactive write protection.",
+        "Prevents incomplete documentation from being written when scripts exceed the analysis limit, unless explicitly permitted.",
+        "Skips the model entirely when no code has changed since the header’s commit",
+        "Handles API rate limits with adaptive retry delays and falls back to an available preferred model when discovery fails"
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
@@ -5227,11 +5230,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Captures every tracked file’s mode and ownership into a portable .git-perms, preserving repo state across deployments.",
-        "Abstracts primary user/group to @USER/@GROUP, keeping snapshots valid even when UIDs change on fresh installs.",
-        "Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.",
-        "Safely handles symlinks by chowning the link itself and skipping chmod on targets, preventing broken links.",
-        "Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits."
+        "Aborts with usage error if first argument is missing or not 'save' or 'apply'",
+        "Stops execution when target directory doesn't exist or is not inside a Git work tree",
+        "In save mode, records only files/directories whose owner/group or mode differ from defaults",
+        "Updates .git-perms atomically only when its content differs from previous version",
+        "Replaces @USER and @GROUP placeholders with the current (or sudo) user and group before applying",
+        "Restores ownership with chown -h and mode with chmod, ignoring errors to continue processing",
+        "Outputs concise success messages indicating unchanged, saved, or restored permissions for visibility"
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
@@ -5292,11 +5297,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Consolidates all homelab scripts, cron schedules, and env dependencies into a single interactive HTML dashboard.",
-        "Classifies cron expressions into intuitive frequency tiers, simplifying schedule audits and reducing misconfigurations.",
-        "Detects hidden env variable usage per script, accelerating troubleshooting and preventing configuration drift.",
-        "Filters out development and hidden directories, ensuring the dashboard reflects only production‑relevant assets.",
-        "Limits metadata scanning to the first 60 lines, preventing slow or broken script parses and keeping updates fast."
+        "Scans repository scripts while automatically ignoring archives, virtual environments, and git metadata directories.",
+        "Extracts operational descriptions, execution frequencies, and capability bullet points from script headers.",
+        "Flags undocumented scripts lacking required description or execution frequency metadata tags.",
+        "Translates user and root crontab expressions into human-readable schedules and frequency tiers.",
+        "Detects conditional bash logic, date guards, and pipeline checks within scheduled cron commands.",
+        "Expands cron schedules into weekly time slots for interactive heatmaps, calendars, and agendas.",
+        "Generates a standalone, interactive HTML dashboard embedding all parsed inventory and schedule data."
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
