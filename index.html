@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-06 04:06 EET</div>
+    <div class="meta-line">Generated 2026-11-06 17:49 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5064,7 +5064,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Publishes snapshots to a dedicated branch, preserving mainline stability while retaining daily state history."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "User",
+      "cron_entries": [
+        {
+          "desc": "At 05:00",
+          "owner": "User",
+          "schedule": "0 5 * * *"
+        }
+      ],
       "desc": "Snapshots cron/packages/dotfiles/hosts/dashboards/permissions, pushes dashboards, dotfiles and system_configs",
       "dir_path": "Core Scripts",
       "env": [
@@ -5072,7 +5079,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "CTRL_DIR",
         "TOOLS"
       ],
-      "freq": "Daily 5am",
+      "freq": "At 05:00",
+      "freq_source": "cron",
+      "header_freq": "Daily 5am",
       "name": "backup-scripts-git.sh",
       "path": "backup-scripts-git.sh",
       "semantic_cat": "🧹 Maintenance",
@@ -5087,11 +5096,20 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Automates power protection via cron, eliminating manual intervention during outages."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "root",
+      "cron_ctx": "Root",
+      "cron_entries": [
+        {
+          "desc": "Every 5 minutes",
+          "owner": "Root",
+          "schedule": "*/5 * * * *"
+        }
+      ],
       "desc": "If battery is discharging and under 20%, shutdown the server in 2 minutes",
       "dir_path": "Core Scripts",
       "env": [],
       "freq": "Every 5 minutes",
+      "freq_source": "cron",
+      "header_freq": "Every 5 minutes",
       "name": "battery-monitor.sh",
       "path": "battery-monitor.sh",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5106,13 +5124,22 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Special purge trigger deletes entire folders, enabling rapid recovery from corrupted backup sets."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "root",
+      "cron_ctx": "Root",
+      "cron_entries": [
+        {
+          "desc": "At 00:00 and 12:00",
+          "owner": "Root",
+          "schedule": "0 0,12 * * *"
+        }
+      ],
       "desc": "Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode.",
       "dir_path": "Core Scripts",
       "env": [
         "FILES_TO_KEEP"
       ],
-      "freq": "Daily 1am and 1pm",
+      "freq": "At 00:00 and 12:00",
+      "freq_source": "cron",
+      "header_freq": "Daily 1am and 1pm",
       "name": "cleanup_script.py",
       "path": "cleanup_script.py",
       "semantic_cat": "🧹 Maintenance",
@@ -5131,6 +5158,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "user, root",
+      "cron_entries": [],
       "desc": "Executes commands on Linux/Windows with Telegram alerts (fail/success/all/mute), an optional timeout kill, and fallback logging on delivery failure.",
       "dir_path": "Core Scripts",
       "env": [
@@ -5138,6 +5166,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "TELEGRAM_CHAT_ID"
       ],
       "freq": "Varies",
+      "freq_source": "header",
+      "header_freq": "Varies",
       "name": "cron-guard.py",
       "path": "cron-guard.py",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5151,11 +5181,20 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Operates without external dependencies for lightweight, maintainable monitoring."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "User",
+      "cron_entries": [
+        {
+          "desc": "Every hour",
+          "owner": "User",
+          "schedule": "0 * * * *"
+        }
+      ],
       "desc": "Check if root (/) or /data exceeds 90% and send an alert",
       "dir_path": "Core Scripts",
       "env": [],
       "freq": "Every hour",
+      "freq_source": "cron",
+      "header_freq": "Every hour",
       "name": "disk-monitor.sh",
       "path": "disk-monitor.sh",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5174,6 +5213,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Analyzes ~/scripts and automatically injects an AI-generated capabilities header block using Groq",
       "dir_path": "Core Scripts",
       "env": [
@@ -5181,6 +5221,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "GROQ_MODEL"
       ],
       "freq": "On Demand",
+      "freq_source": "header",
+      "header_freq": "On Demand",
       "name": "doc-injector.py",
       "path": "doc-injector.py",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5197,12 +5239,15 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Runs both dashboard generators and safely commits the output to their respective pages branches.",
       "dir_path": "Core Scripts",
       "env": [
         "STACKS_DIR"
       ],
       "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
+      "freq_source": "header",
+      "header_freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
       "name": "generate-dashboards.sh",
       "path": "generate-dashboards.sh",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5218,11 +5263,20 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Continues syncing remaining branches after individual failures, ensuring partial recovery and minimizing downtime."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "User",
+      "cron_entries": [
+        {
+          "desc": "Every 30 minutes",
+          "owner": "User",
+          "schedule": "*/30 * * * *"
+        }
+      ],
       "desc": "Master logic to push/pull Git repos (all local branches)",
       "dir_path": "Core Scripts",
       "env": [],
-      "freq": "Varies",
+      "freq": "Every 30 minutes",
+      "freq_source": "cron",
+      "header_freq": "Varies",
       "name": "git-auto-sync.py",
       "path": "git-auto-sync.py",
       "semantic_cat": "💾 Backups & Sync",
@@ -5240,10 +5294,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Snapshots non-standard POSIX ownership and permissions (exceptions) to `.git-perms`, or applies them during bootstrap",
       "dir_path": "Core Scripts",
       "env": [],
       "freq": "Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)",
+      "freq_source": "header",
+      "header_freq": "Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)",
       "name": "git-perms.sh",
       "path": "git-perms.sh",
       "semantic_cat": "🧹 Maintenance",
@@ -5260,7 +5317,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Provides read‑only probe and verify modes for quick health‑check validation without affecting running services."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "user",
+      "cron_ctx": "User",
+      "cron_entries": [
+        {
+          "desc": "Every 15 minutes",
+          "owner": "User",
+          "schedule": "*/15 * * * *"
+        }
+      ],
       "desc": "Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.",
       "dir_path": "Core Scripts",
       "env": [
@@ -5269,6 +5333,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "TELEGRAM_CHAT_ID"
       ],
       "freq": "Every 15 minutes",
+      "freq_source": "cron",
+      "header_freq": "Every 15 minutes",
       "name": "gitops-deploy.sh",
       "path": "gitops-deploy.sh",
       "semantic_cat": "💾 Backups & Sync",
@@ -5284,12 +5350,15 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Prints an on-demand health snapshot of the server",
       "dir_path": "Core Scripts",
       "env": [
         "BACKUP_DIR"
       ],
       "freq": "On Demand",
+      "freq_source": "header",
+      "header_freq": "On Demand",
       "name": "health-snapshot.sh",
       "path": "health-snapshot.sh",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5307,10 +5376,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Generates a self-contained, interactive HTML dashboard of all homelab scripts, cron schedules, and environment variables.",
       "dir_path": "Core Scripts",
       "env": [],
       "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
+      "freq_source": "header",
+      "header_freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
       "name": "homelab_dash.py",
       "path": "homelab_dash.py",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5327,7 +5399,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "root",
+      "cron_ctx": "Root",
+      "cron_entries": [
+        {
+          "desc": "At 05:25, only on Thursday",
+          "owner": "Root",
+          "schedule": "25 5 * * 4"
+        }
+      ],
       "desc": "Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive",
       "dir_path": "Core Scripts",
       "env": [
@@ -5340,7 +5419,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "TELEGRAM_DANTE_BOT_TOKEN",
         "TELEGRAM_CHAT_ID"
       ],
-      "freq": "Weekly 5:25am on Thursday",
+      "freq": "At 05:25, only on Thursday",
+      "freq_source": "cron",
+      "header_freq": "Weekly 5:25am on Thursday",
       "name": "local-opt-backup.sh",
       "path": "local-opt-backup.sh",
       "semantic_cat": "💾 Backups & Sync",
@@ -5356,6 +5437,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Terminal AI assistant powered by Google Gemini supporting massive piped logs, script reviews, multi-turn chat, and auto-failover streaming",
       "dir_path": "Core Scripts",
       "env": [
@@ -5363,6 +5445,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "GEMINI_MODEL"
       ],
       "freq": "On Demand",
+      "freq_source": "header",
+      "header_freq": "On Demand",
       "name": "oracle.py",
       "path": "oracle.py",
       "semantic_cat": "🧹 Maintenance",
@@ -5378,11 +5462,20 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Logs API responses with jq, surfacing failures for quick troubleshooting."
       ],
       "category": "Cert-Manager",
-      "cron_ctx": "user",
+      "cron_ctx": "User",
+      "cron_entries": [
+        {
+          "desc": "At 03:00, on day 1 of the month",
+          "owner": "User",
+          "schedule": "0 3 1 * *"
+        }
+      ],
       "desc": "Automates local SSL (mkcert) management: handles CA distribution, multi-service SAN generation, and API-based deployment to Nginx Proxy Manager and Pihole.",
       "dir_path": "cert-manager",
       "env": [],
-      "freq": "On Demand - At 03:00, on day 1 of the month",
+      "freq": "At 03:00, on day 1 of the month",
+      "freq_source": "cron",
+      "header_freq": "On Demand - At 03:00, on day 1 of the month",
       "name": "cert-manager.sh",
       "path": "cert-manager/cert-manager.sh",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5398,10 +5491,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Docker-Dash",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard",
       "dir_path": "docker-dash",
       "env": [],
       "freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
+      "freq_source": "header",
+      "header_freq": "Daily 5am (triggered by `backup-scripts-git.sh`)",
       "name": "docker_dash.py",
       "path": "docker-dash/docker_dash.py",
       "semantic_cat": "💾 Backups & Sync",
@@ -5417,10 +5513,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Run Once",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Phase 1 Bootstrap: Decrypts & restores a Day-0 archive, fixes permissions, removes cloud-init and re-links blueprint git repos.",
       "dir_path": "run_once",
       "env": [],
       "freq": "Run Once (Disaster Recovery)",
+      "freq_source": "header",
+      "header_freq": "Run Once (Disaster Recovery)",
       "name": "bootstrap.sh",
       "path": "run_once/bootstrap.sh",
       "semantic_cat": "⚙️ Core System & Automation",
@@ -5436,6 +5535,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Run Once",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Auto-configures containers once they are manually started",
       "dir_path": "run_once",
       "env": [
@@ -5444,6 +5544,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "WATCHER_TASKS"
       ],
       "freq": "Run Once",
+      "freq_source": "header",
+      "header_freq": "Run Once",
       "name": "container-watcher.sh",
       "path": "run_once/container-watcher.sh",
       "semantic_cat": "💾 Backups & Sync",
@@ -5460,10 +5562,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Run Once",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Resets UFW and applies correct rules (Private Server Mode)",
       "dir_path": "run_once",
       "env": [],
       "freq": "Run Once (triggered by `setup.sh`)",
+      "freq_source": "header",
+      "header_freq": "Run Once (triggered by `setup.sh`)",
       "name": "firewall-rules.sh",
       "path": "run_once/firewall-rules.sh",
       "semantic_cat": "🐳 Apps & Containers",
@@ -5481,6 +5586,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Run Once",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Phase 2 System Provisioning: Full server bootstrap for disaster recovery — restores packages, Docker, directories, dotfiles, DNS, firewall and crontabs on a fresh OS.",
       "dir_path": "run_once",
       "env": [
@@ -5490,6 +5596,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "SERVER_IP"
       ],
       "freq": "Run Once (Disaster Recovery)",
+      "freq_source": "header",
+      "header_freq": "Run Once (Disaster Recovery)",
       "name": "setup.sh",
       "path": "run_once/setup.sh",
       "semantic_cat": "⚙️ Core System & Automation",
@@ -5507,10 +5615,13 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "category": "Tg-Vergil",
       "cron_ctx": "",
+      "cron_entries": [],
       "desc": "Runs scripts and commands directly on server with logs",
       "dir_path": "tg-vergil",
       "env": [],
       "freq": "On Demand (triggered by `setup.sh`)",
+      "freq_source": "header",
+      "header_freq": "On Demand (triggered by `setup.sh`)",
       "name": "vergil.py",
       "path": "tg-vergil/vergil.py",
       "semantic_cat": "🌐 Network & Monitoring",
@@ -5526,6 +5637,14 @@ let activeParentDir = null, activeChildDir = null;
 
 function e(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function bdg(cls, txt){ return `<span class="bdg ${cls}">${e(txt)}</span>`; }
+function srcBdg(s){
+  const m = {
+    cron:   ['b-blue', 'cron',   'Schedule read from the crontab snapshot'],
+    header: ['b-gray', 'header', 'Written by hand in the script header (not found in any crontab)'],
+    manual: ['b-gray', 'manual', 'Not in any crontab and no @FREQUENCY in the header']
+  }[s.freq_source];
+  return m ? `<span class="bdg ${m[0]}" title="${e(m[2])}">${m[1]}</span>` : '';
+}
 
 function getTierColor(tier) {
   if (!tier) return 'gray';
@@ -5895,10 +6014,11 @@ function renderStats() {
 
 function renderScripts() {
   const grouped = {};
-  D.scripts.forEach((s, idx) => { s._idx = idx; grouped[s.category] = grouped[s.category] || []; grouped[s.category].push(s); });
-  const cats = Object.keys(grouped).sort((a,b) => a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
+  const MANUAL = "Manual / not scheduled";
+  D.scripts.forEach((s, idx) => { s._idx = idx; const k = s.freq_source === 'manual' ? MANUAL : s.category; grouped[k] = grouped[k] || []; grouped[k].push(s); });
+  const cats = Object.keys(grouped).sort((a,b) => a===MANUAL?1:b===MANUAL?-1:a==="Core Scripts"?-1:b==="Core Scripts"?1:a.localeCompare(b));
 
-  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang:</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   How often it runs\n# @CRON:        User, Root\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Bullet 1</div></div></div>`;
+  let html = `<div class="group-container" id="guide-container"><div class="group-head guide-head" id="guide-head" onclick="toggleGroup('guide')"><div>How to document new scripts</div><span class="group-count guide-status" id="guide-status">Expand</span></div><div class="group-body" id="guide-body" style="grid-template-columns:1fr"><div style="color:var(--ink-2);margin-bottom:10px;font-size:13px">To automatically include a new <code>.sh</code> or <code>.py</code> script in this inventory, add this header block right below your shebang. Schedule and User/Root come from the crontab snapshots automatically; <code>@FREQUENCY</code> is only needed for scripts that are not in a crontab (e.g. <code>Triggered by x.sh</code>).</div><div class="mono-cmd">#!/bin/bash\n# @DESCRIPTION: One-line summary.\n# @FREQUENCY:   Only if not in a crontab\n# @USES_ENV:    VAR1, VAR2\n# @CAPABILITIES:\n#   • Bullet 1</div></div></div>`;
 
   cats.forEach((cat, c_idx) => {
     const scripts = grouped[cat], gid = `s-cat-${c_idx}`, warnsInCat = scripts.filter(s => s.warnings.length).length;
@@ -5906,17 +6026,22 @@ function renderScripts() {
     scripts.forEach(s => {
       const badges = [];
       if(s.freq) badges.push(bdg('b-green', s.freq));
+      badges.push(srcBdg(s));
       if(s.cron_ctx) { if(s.cron_ctx.toLowerCase().includes('root')) badges.push(bdg('b-root', 'Root')); if(s.cron_ctx.toLowerCase().includes('user')) badges.push(bdg('b-user', 'User')); }
       s.env.forEach(ev => badges.push(bdg('b-env', ev)));
       
       const warnHtml = s.warnings.length ? `<div class="card-desc" style="border-color:var(--danger);background:var(--danger-soft)"><ul class="warning-list">${s.warnings.map(w=>`<li>${e(w)}</li>`).join('')}</ul></div>` : '';
       
+      let cronHtml = '';
+      if (s.cron_entries && s.cron_entries.length > 1) {
+        cronHtml = `<details class="caps-details"><summary class="caps-summary"><span>🕒 Schedules (${s.cron_entries.length})</span></summary><ul class="caps-list">${s.cron_entries.map(c => `<li><code>${e(c.schedule)}</code> · ${e(c.owner)} · ${e(c.desc)}</li>`).join('')}</ul></details>`;
+      }
       let capsHtml = '';
       if (s.capabilities && s.capabilities.length > 0) {
         capsHtml = `<details class="caps-details"><summary class="caps-summary"><span>⚡ Capabilities &amp; Safeguards (${s.capabilities.length})</span></summary><ul class="caps-list">${s.capabilities.map(c => `<li>${e(c)}</li>`).join('')}</ul></details>`;
       }
 
-      html += `<div class="card item-card" data-idx="${s._idx}"><div class="card-title"><span>${e(s.name)}</span></div><div class="card-sub">${e(s.path)}</div>${s.desc?`<div class="card-desc">${e(s.desc)}</div>`:''}${capsHtml}${warnHtml}<div class="badges">${badges.join('')}</div></div>`;
+      html += `<div class="card item-card" data-idx="${s._idx}"><div class="card-title"><span>${e(s.name)}</span></div><div class="card-sub">${e(s.path)}</div>${s.desc?`<div class="card-desc">${e(s.desc)}</div>`:''}${capsHtml}${cronHtml}${warnHtml}<div class="badges">${badges.join('')}</div></div>`;
     });
     html += `</div></div>`;
   });
