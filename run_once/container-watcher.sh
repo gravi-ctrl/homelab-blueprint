@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # @DESCRIPTION: Auto-configures containers once they are manually started
-# @FREQUENCY: Run Once
+# @FREQUENCY: Run Once (triggered by `setup.sh`)
 # @USES_ENV: TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, WATCHER_TASKS
 # @CAPABILITIES:
 #   • Auto‑configures services after manual container start, eliminating manual post‑restore steps.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # @DESCRIPTION: Reads your stacks from GitHub, pulls proxy-host URLs from Nginx Proxy Manager, and generates a self-contained HTML dashboard
-# @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh`)
+# @FREQUENCY: At 05:00 (triggered by `backup-scripts-git.sh`)
 # @CAPABILITIES:
 #   • Generates a live, self‑contained HTML dashboard from GitHub Docker stacks for instant on‑demand visibility.
 #   • Cross‑references Nginx Proxy Manager hosts, injecting live URLs and SSL status to keep service links current.

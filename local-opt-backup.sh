@@ -1,8 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive
-# @FREQUENCY: Weekly 5:25am on Thursday
 # @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
-# @CRON: root
 # @CAPABILITIES:
 #   • Creates a single, age‑encrypted archive of Docker stacks, user scripts, SSH keys, and system configs for secure off‑site storage.
 #   • Gracefully stops and masks Docker before snapshotting, then automatically restores services to avoid data corruption.

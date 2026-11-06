@@ -1,8 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.
-# @FREQUENCY: Every 15 minutes
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
-# @CRON: user
 # @CAPABILITIES:
 #   • Auto‑synchronizes production stacks from GitHub main, preventing accidental feature‑branch deployments.
 #   • Detects merge conflicts before redeploy, halting updates and notifying admins via Telegram to avoid broken services.

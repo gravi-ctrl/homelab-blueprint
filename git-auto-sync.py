@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Master logic to push/pull Git repos (all local branches)
-# @FREQUENCY: Varies
-# @CRON: user
 # @CAPABILITIES:
 #   • Isolates branch syncs in separate worktrees, protecting live Docker deployments from accidental overwrites.
 #   • Enforces single-instance execution with cross‑platform file locking, preventing race conditions in concurrent cron runs.
