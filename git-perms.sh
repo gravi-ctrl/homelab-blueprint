@@ -3,11 +3,13 @@
 # @FREQUENCY: Daily 5am (triggered by `backup-scripts-git.sh` & `bootstrap.sh`)
 # @USES_ENV:
 # @CAPABILITIES:
-#   • Captures every tracked file’s mode and ownership into a portable .git-perms, preserving repo state across deployments.
-#   • Abstracts primary user/group to @USER/@GROUP, keeping snapshots valid even when UIDs change on fresh installs.
-#   • Applies stored permissions during bootstrap, resolving placeholders to the current executor, even under sudo.
-#   • Safely handles symlinks by chowning the link itself and skipping chmod on targets, preventing broken links.
-#   • Commits changes only when permissions differ, eliminating noisy diffs and unnecessary commits.
+#   • Aborts with usage error if first argument is missing or not 'save' or 'apply'
+#   • Stops execution when target directory doesn't exist or is not inside a Git work tree
+#   • In save mode, records only files/directories whose owner/group or mode differ from defaults
+#   • Updates .git-perms atomically only when its content differs from previous version
+#   • Replaces @USER and @GROUP placeholders with the current (or sudo) user and group before applying
+#   • Restores ownership with chown -h and mode with chmod, ignoring errors to continue processing
+#   • Outputs concise success messages indicating unchanged, saved, or restored permissions for visibility
 # ==============================================================================
 # GIT PERMISSIONS PRESERVATION ENGINE
 # ==============================================================================

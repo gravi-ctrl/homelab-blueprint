@@ -35,7 +35,7 @@ This is the automation engine behind my home server. It issues its own certifica
 
 **Backups.** The server takes a snapshot of itself every day: scripts, crontabs, package lists and so on. Once a week it makes an encrypted archive (with `age`) of the whole stack, checks that it's good, and copies it offsite to Backblaze B2. I tested a full restore on a wiped VM, pulling the archive from B2, and the machine was back online in about **27 minutes**: about 14 for the OS install and about 12 for the stack restore (see the runbook below).
 
-**Docs that write themselves.** After I write or change a script, I run `doc-injector.py`. It asks an LLM what the script does and writes the answer into the script's header. At 5 AM the live dashboard picks those headers up, so the docs stay in sync with the code.
+**Docs drafted by an LLM from the code, then verified.** After I write or change a script, I run `doc-injector.py`. It asks an LLM what the script does and writes the answer into the script's header. At 5 AM the live dashboard picks those headers up, so the docs stay in sync with the code.
 
 **`oracle`.** My terminal AI helper (Jarvis was overused, so `oracle` it is). I can pipe Docker logs, systemd traces or a whole script into it and get a root-cause analysis streamed back. Secrets are scrubbed from the text before anything leaves the server.
 
