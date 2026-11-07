@@ -26,7 +26,7 @@ SNAPSHOT_DIR="/opt/rabbit-hole/run_once/system_configs"
 
 # --- 1. SNAPSHOT SYSTEM CONFIGS ---
 mkdir -p "$SNAPSHOT_DIR"
-mkdir -p "/opt/rabbit-hole/run_once/dotfiles"
+mkdir -p "/opt/rabbit-hole/run_once/dotfiles/zsh"
 
 # A. System Files & Raw Crons
 cp /etc/hosts "$SNAPSHOT_DIR/hosts.txt"
@@ -73,8 +73,10 @@ grep -rhoPe 'ppa\.launchpad(content)?\.net/\K[^/ ]+/[^/ ]+' \
     | sort -u | sed 's/^/ppa:/' > "$SNAPSHOT_DIR/my_repos.txt" || true
 
 # E. Dotfiles
-[ -f ~/.zshrc ] && cp ~/.zshrc "/opt/rabbit-hole/run_once/dotfiles/zshrc"
-[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "/opt/rabbit-hole/run_once/dotfiles/p10k.zsh"
+[ -f ~/.zshrc ] && cp ~/.zshrc "/opt/rabbit-hole/run_once/dotfiles/zsh/zshrc"
+[ -f ~/.p10k.zsh ] && cp ~/.p10k.zsh "/opt/rabbit-hole/run_once/dotfiles/zsh/p10k.zsh"
+[ -f ~/.zsh/welcome.zsh ] && cp ~/.zsh/welcome.zsh "/opt/rabbit-hole/run_once/dotfiles/zsh/welcome.zsh"
+[ -f ~/.zsh/functions.zsh ] && cp ~/.zsh/functions.zsh "/opt/rabbit-hole/run_once/dotfiles/zsh/functions.zsh"
 [ -f /etc/nanorc ] && cp /etc/nanorc "/opt/rabbit-hole/run_once/dotfiles/nanorc"
 [ -f ~/.hushlogin ] && cp ~/.hushlogin "/opt/rabbit-hole/run_once/dotfiles/hushlogin"
 
