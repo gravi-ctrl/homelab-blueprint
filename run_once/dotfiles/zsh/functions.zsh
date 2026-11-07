@@ -1,6 +1,8 @@
 # ~/.zsh/functions.zsh
 #
-# Custom functions, moved out of ~/.zshrc.
+# Custom functions, moved out of ~/.zshrc unchanged.
+# Remember: if a name here is also defined as an alias anywhere, run
+# `unalias <name>` first or zsh will give a parse error.
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
@@ -33,14 +35,68 @@ EOF
 }
 
 # Readable Docker Status
+#   dps                  one-off table
+#   dps <regex>          only rows matching <regex> (case-insensitive, any column)
+#   dps -w [secs] [re]   live view, refreshed every <secs> (default 0.5); Ctrl+C quits
+# Problems show in red on a terminal: unhealthy, restarting, non-zero exits.
+_dps_render() {
+  emulate -L zsh
+  local pattern=$1 color=$2 body out
+  local R=$'\e[31m' Z=$'\e[0m'
+  body=$(docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1) \
+    || { print -r -- "docker: $body"; return 1 }
+  body=$(print -r -- "$body" \
+    | sort -k1,1 \
+    | awk -F'\t' -v OFS='\t' '{ sub(/^[^\/]*[.:][^\/]*\//, "", $3); print }' \
+    | sed -E 's/, \[::\]:[0-9-]+->[0-9-]+\/(tcp|udp)//g; s/0\.0\.0\.0://g')
+  [[ -n $pattern ]] && body=$(print -r -- "$body" | grep -iE -- "$pattern")
+  out=$({ printf 'NAMES\tSTATUS\tIMAGE\tPORTS\n'; [[ -n $body ]] && print -r -- "$body" } | column -t -s $'\t')
+  [[ -n $pattern && -z $body ]] && out+=$'\n(no rows match: '"$pattern)"
+  if [[ $color == 1 ]]; then
+    out=$(print -r -- "$out" | sed -E "s/(unhealthy|Restarting|Exited \([1-9][0-9]*\))/${R}&${Z}/g")
+  fi
+  print -r -- "$out"
+}
+
 dps() {
+  emulate -L zsh
+  local watch=0 interval=0.5 pattern="" color=0 frame
+  local nl=$'\n' el=$'\e[K'
+  while (( $# )); do
+    case $1 in
+      -h|--help)
+        print "usage: dps [-w [secs]] [regex]"
+        print "  regex  show only matching rows (case-insensitive), e.g. dps unhealthy, dps 'exited|restart'"
+        print "  -w [secs]  live view, default every 0.5s; Ctrl+C to quit"
+        return 0 ;;
+      -w|--watch)
+        watch=1
+        if [[ ${2:-} == <->(.<->|) ]]; then interval=$2; shift; fi ;;
+      *) pattern=$1 ;;
+    esac
+    shift
+  done
+  [[ -t 1 ]] && color=1
+
+  if (( ! watch )); then
+    _dps_render "$pattern" $color
+    return
+  fi
+
+  # Live view: alternate screen, no autowrap, cursor hidden; always restored on exit
   {
-    printf 'NAMES\tSTATUS\tIMAGE\tPORTS\n'
-    docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' \
-      | sort -k1,1 \
-      | awk -F'\t' -v OFS='\t' '{ sub(/^[^\/]*[.:][^\/]*\//, "", $3); print }' \
-      | sed -E 's/, \[::\]:[0-9-]+->[0-9-]+\/(tcp|udp)//g; s/0\.0\.0\.0://g'
-  } | column -t -s $'\t'
+    printf '\e[?1049h\e[?25l\e[?7l'
+    while true; do
+      frame=$(_dps_render "$pattern" $color)
+      printf '\e[H'
+      print -r -- "${frame//$nl/$el$nl}$el"
+      printf '\e[90m%s · every %ss%s · Ctrl+C to quit\e[0m\e[K\n\e[J' \
+        "$(date +%T)" "$interval" "${pattern:+ · filter: $pattern}"
+      sleep $interval
+    done
+  } always {
+    printf '\e[?7h\e[?25h\e[?1049l'
+  }
 }
 
 # VeraCrypt mount and unmount
