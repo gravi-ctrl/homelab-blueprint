@@ -316,10 +316,12 @@ fi
 task "Restore dotfiles"
 DOTFILES_DIR="/opt/rabbit-hole/run_once/dotfiles"
 if [ -d "$DOTFILES_DIR" ]; then
-    [ -f "$DOTFILES_DIR/zshrc" ]     && cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
-    [ -f "$DOTFILES_DIR/p10k.zsh" ]  && cp "$DOTFILES_DIR/p10k.zsh" "$HOME/.p10k.zsh"
+    [ -f "$DOTFILES_DIR/zsh/zshrc" ] && cp "$DOTFILES_DIR/zsh/zshrc" "$HOME/.zshrc"
+    [ -f "$DOTFILES_DIR/zsh/p10k.zsh" ] && cp "$DOTFILES_DIR/zsh/p10k.zsh" "$HOME/.p10k.zsh"
+    [ -f "$DOTFILES_DIR/zsh/welcome.zsh" ] && cp "$DOTFILES_DIR/zsh/welcome.zsh" "$HOME/zsh/welcome.zsh"
+    [ -f "$DOTFILES_DIR/zsh/functions.zsh" ] && cp "$DOTFILES_DIR/zsh/functions.zsh" "$HOME/zsh/functions.zsh"
     [ -f "$DOTFILES_DIR/hushlogin" ] && cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
-    [ -f "$DOTFILES_DIR/nanorc" ]    && sudo cp "$DOTFILES_DIR/nanorc" "/etc/nanorc"
+    [ -f "$DOTFILES_DIR/nanorc" ] && sudo cp "$DOTFILES_DIR/nanorc" "/etc/nanorc"
     mkdir -p "$HOME/.config"
     quietly rsync -av "$DOTFILES_DIR/config/" "$HOME/.config/"
     pass
