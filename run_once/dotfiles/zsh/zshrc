@@ -49,7 +49,7 @@ source $ZSH/oh-my-zsh.sh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # ==============================================================================
-# 2. ENVIRONMENT & PATHS
+# 1. ENVIRONMENT & PATHS
 # ==============================================================================
 export assets="/data/assets"
 export HISTFILE=~/.zsh_history
@@ -58,7 +58,7 @@ export SAVEHIST=10000
 umask 0022
 
 # ==============================================================================
-# 3. SMART HISTORY MANAGEMENT
+# 2. SMART HISTORY MANAGEMENT
 # ==============================================================================
 # Deduplication Logic
 setopt HIST_IGNORE_ALL_DUPS    # Overwrite old duplicate with the new one
@@ -82,7 +82,7 @@ zshaddhistory() {
 }
 
 # ==============================================================================
-# 4. INPUT BEHAVIOR & KEYBINDINGS
+# 3. INPUT BEHAVIOR & KEYBINDINGS
 # ==============================================================================
 # Word Style: Only letters/numbers are "words" (Stops backspace at / or -)
 autoload -U select-word-style && select-word-style bash
@@ -101,7 +101,7 @@ bindkey "^[[OA" up-line-or-beginning-search # Support for Termux/Alternative cod
 bindkey "^[[OB" down-line-or-beginning-search
 
 # ==============================================================================
-# 5. EXTERNAL TOOLS & ALIASES
+# 4. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
 
 # cert-manager
@@ -121,6 +121,6 @@ alias guestwifi='/opt/stacks/wifi-robot/guestwifi'
 bindkey '^ ' autosuggest-execute
 
 # ==============================================================================
-# 6. CUSTOM FUNCTIONS
+# 5. CUSTOM FUNCTIONS
 # ==============================================================================
 source ~/.zsh/functions.zsh

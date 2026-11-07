@@ -1,8 +1,6 @@
 # ~/.zsh/functions.zsh
 #
-# Custom functions, moved out of ~/.zshrc unchanged.
-# Remember: if a name here is also defined as an alias anywhere, run
-# `unalias <name>` first or zsh will give a parse error.
+# Custom functions, moved out of ~/.zshrc.
 
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
