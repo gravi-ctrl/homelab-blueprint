@@ -1,6 +1,7 @@
-# -------------------------------------------------------------------------
-# 0. WELCOME MESSAGE
-# -------------------------------------------------------------------------
+# ==============================================================================
+# 1. WELCOME MESSAGE
+# ==============================================================================
+
 source ~/.zsh/welcome.zsh
 
 # fastfetch welcome message
@@ -15,6 +16,8 @@ fi
 if [[ -n "$SSH_CONNECTION" ]]; then
     welcome_status
 fi
+
+# ==============================================================================
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -49,7 +52,7 @@ source $ZSH/oh-my-zsh.sh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # ==============================================================================
-# 1. ENVIRONMENT & PATHS
+# 2. ENVIRONMENT & PATHS
 # ==============================================================================
 export assets="/data/assets"
 export HISTFILE=~/.zsh_history
@@ -58,7 +61,7 @@ export SAVEHIST=10000
 umask 0022
 
 # ==============================================================================
-# 2. SMART HISTORY MANAGEMENT
+# 3. SMART HISTORY MANAGEMENT
 # ==============================================================================
 # Deduplication Logic
 setopt HIST_IGNORE_ALL_DUPS    # Overwrite old duplicate with the new one
@@ -82,7 +85,7 @@ zshaddhistory() {
 }
 
 # ==============================================================================
-# 3. INPUT BEHAVIOR & KEYBINDINGS
+# 4. INPUT BEHAVIOR & KEYBINDINGS
 # ==============================================================================
 # Word Style: Only letters/numbers are "words" (Stops backspace at / or -)
 autoload -U select-word-style && select-word-style bash
@@ -101,7 +104,7 @@ bindkey "^[[OA" up-line-or-beginning-search # Support for Termux/Alternative cod
 bindkey "^[[OB" down-line-or-beginning-search
 
 # ==============================================================================
-# 4. EXTERNAL TOOLS & ALIASES
+# 5. EXTERNAL TOOLS & ALIASES
 # ==============================================================================
 
 # cert-manager
@@ -121,6 +124,6 @@ alias guestwifi='/opt/stacks/wifi-robot/guestwifi'
 bindkey '^ ' autosuggest-execute
 
 # ==============================================================================
-# 5. CUSTOM FUNCTIONS
+# 6. CUSTOM FUNCTIONS
 # ==============================================================================
 source ~/.zsh/functions.zsh
