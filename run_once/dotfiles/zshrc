@@ -71,6 +71,7 @@ function actual_show_welcome_msg() {
     # =========================================================
     local -a aliases=(
         "welcome|Briefing"
+        "clipin|File to Clipb"
         "oracle|AI Assistant"
         "dps|Docker Table"
         "cert|Cert Manager"
@@ -236,6 +237,31 @@ bindkey '^ ' autosuggest-execute
 # ==============================================================================
 # 6. CUSTOM FUNCTIONS
 # ==============================================================================
+
+# File or logs to clipboard
+clipin() {
+  if [[ "$1" == -h || "$1" == --help || -t 0 ]]; then
+    local rc=1
+    [[ "$1" == -h || "$1" == --help ]] && rc=0
+    cat <<'EOF'
+clipin: copy stdin to your local clipboard (OSC 52, works over SSH)
+
+Usage:
+  clipin < file.txt
+  some-command 2>&1 | clipin
+
+Options:
+  -h, --help   show this help
+
+Notes:
+  With no piped input it shows this help instead of waiting.
+  Large inputs may be truncated by the terminal.
+  Inside tmux, set-clipboard must be on.
+EOF
+    return $rc
+  fi
+  printf '\033]52;c;%s\a' "$(base64 -w0)"
+}
 
 # Readable Docker Status
 dps() {
