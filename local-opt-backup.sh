@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Backs up Docker stacks, `~/scripts`, `~/ctrl_s_master`, `~/.ssh`, /etc/ssh and $HOME/.local/share/mkcert to an age-encrypted tar.zst archive
-# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
+# @USES_ENV: BACKUP_DIR, STACKS_DIR, AGE_KEYFILE, KUMA_HC_URL, CTRL_DIR, OFFSITE_BACKUP_TARGET, OFFSITE_KEEP_DAYS, OFFSITE_MIN_COPIES, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
 # @CAPABILITIES:
 #   • Creates a single, age‑encrypted archive of Docker stacks, user scripts, SSH keys, and system configs for secure off‑site storage.
 #   • Gracefully stops and masks Docker before snapshotting, then automatically restores services to avoid data corruption.
@@ -138,6 +138,61 @@ cleanup() {
 
 # Trap signals: EXIT (Success/Fail), INT (Ctrl+C), TERM (Kill), HUP (Disconnect)
 trap cleanup EXIT INT TERM HUP
+
+# TELEGRAM NOTICE (best effort, never fails the run)
+tg_warn() {
+    curl -fsS --max-time 10 \
+        -d chat_id="${TELEGRAM_CHAT_ID:-}" \
+        --data-urlencode "text=$1" \
+        "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN:-}/sendMessage" >/dev/null || true
+}
+
+# OFFSITE PRUNE (by the date in the file name, never by mtime)
+# Removes docker-stacks-YYYY-MM-DD.tar.zst.age archives older than OFFSITE_KEEP_DAYS
+# (default 30), but always keeps the newest OFFSITE_MIN_COPIES (default 3).
+# Only touches files matching that pattern. Never fails the backup.
+# On B2 `deletefile` only hides the file; the bucket lifecycle rule removes it afterwards.
+prune_offsite() {
+    local target="$1"
+    local keep_days="${OFFSITE_KEEP_DAYS:-30}"
+    local min_copies="${OFFSITE_MIN_COPIES:-3}"
+    local cutoff listing f d idx=0 removed=0 failed=0
+
+    if ! [[ "$keep_days" =~ ^[0-9]+$ && "$min_copies" =~ ^[0-9]+$ ]]; then
+        echo "  ⚠️ OFFSITE_KEEP_DAYS/OFFSITE_MIN_COPIES must be whole numbers. Skipping prune."
+        return 0
+    fi
+    cutoff=$(date -d "-${keep_days} days" +%F)
+
+    if ! listing=$(rclone lsf --files-only --include "docker-stacks-*.tar.zst.age" "${target}/" 2>&1); then
+        echo "  ⚠️ Could not list offsite archives, skipping prune: ${listing}"
+        tg_warn "⚠️ $(hostname): offsite prune skipped (could not list ${target})."
+        return 0
+    fi
+
+    # Newest first; the first $min_copies are always kept.
+    while IFS= read -r f; do
+        [[ "$f" =~ ^docker-stacks-([0-9]{4}-[0-9]{2}-[0-9]{2})\.tar\.zst\.age$ ]] || continue
+        d="${BASH_REMATCH[1]}"
+        idx=$((idx + 1))
+        if [ "$idx" -le "$min_copies" ]; then continue; fi
+        if [[ "$d" < "$cutoff" ]]; then
+            if rclone deletefile "${target}/${f}"; then
+                removed=$((removed + 1))
+                echo "  🧹 Pruned $f"
+            else
+                failed=$((failed + 1))
+                echo "  ⚠️ Failed to prune $f"
+            fi
+        fi
+    done < <(printf '%s\n' "$listing" | sort -r)
+
+    echo "  🧹 Offsite prune: removed ${removed}, failed ${failed} (keeping newest ${min_copies} plus anything newer than ${cutoff})."
+    if [ "$failed" -gt 0 ]; then
+        tg_warn "⚠️ $(hostname): offsite prune failed for ${failed} archive(s)."
+    fi
+    return 0
+}
 
 echo "--- [1/2] Starting Docker Stacks Backup ---"
 
@@ -330,10 +385,10 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
 					echo "  → Uploading verified archive to ${REMOTE_NAME} (${OFFSITE_BACKUP_TARGET})..."
 					if rclone copy "$BACKUP_DIR/$DOCKER_FILENAME" "${OFFSITE_BACKUP_TARGET}/"; then
 						echo "  ✅ Offsite upload successful."
-						# Prune cloud archives older than 30 days
-						rclone delete --min-age 30d "${OFFSITE_BACKUP_TARGET}/" 2>/dev/null || true
+						prune_offsite "${OFFSITE_BACKUP_TARGET}"
 					else
 						echo "  ⚠️ WARNING: Offsite upload failed (network glitch or bad credentials). Local backup remains intact."
+						tg_warn "⚠️ $(hostname): backup OK locally, but the offsite upload FAILED."
 					fi
 				else
 					echo "  ⏭️  rclone remote '${REMOTE_NAME}:' not configured yet. Skipping offsite sync."
