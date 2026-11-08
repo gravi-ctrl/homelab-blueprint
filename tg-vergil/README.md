@@ -11,6 +11,13 @@ A Python bot that runs server commands via Telegram. Commands are defined entire
 4. If output exceeds 4000 characters, it sends a `.txt` log file instead
 5. Only `TELEGRAM_CHAT_ID` can execute commands — all others are silently ignored
 
+### Safeguards
+
+* **Timeout:** every command is killed if it runs too long (default 600s, set globally with `VERGIL_TIMEOUT` or per command with `TIMEOUT_<COMMAND>`, in seconds).
+* **Non-blocking:** commands run asynchronously and updates are handled concurrently, so a slow command never blocks the others (e.g. `/health` still answers while `/deploy` runs).
+* **No double runs:** triggering a command that is already running replies "already running" instead of starting a second copy.
+* **Token isolation:** `TELEGRAM_VERGIL_BOT_TOKEN` is removed from the environment passed to the scripts you run. All other `.env` variables are still inherited.
+
 ## Installation
 
 ### 1. Install Dependencies
@@ -30,8 +37,12 @@ TELEGRAM_VERGIL_BOT_TOKEN=your-token
 TELEGRAM_CHAT_ID=your-telegram-id
 
 CMD_backup="bash ~/scripts/backup.sh"
+TIMEOUT_backup="1800"
 CMD_ping="ping -c 3 google.com"
 MUTE_ping="true"
+
+# Optional: default timeout for all commands, in seconds (600 if unset)
+VERGIL_TIMEOUT="600"
 ```
 
 ### 3. Install & Start
@@ -60,7 +71,7 @@ python3 vergil.py
 
 ## Adding New Commands
 
-1. Edit `.env` and add a new `CMD_` line (and optional `MUTE_` line if you want to silence success logs)
+1. Edit `.env` and add a new `CMD_` line (plus an optional `MUTE_` line to silence success logs, or a `TIMEOUT_` line for long-running commands)
 2. Restart: `sudo systemctl restart tg-vergil`
 
 That's it — the new `/command` is live.
