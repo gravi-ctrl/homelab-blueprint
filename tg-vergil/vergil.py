@@ -9,8 +9,8 @@
 #   • Outputs exceeding 4,000 characters are auto‑converted to downloadable documents for readability.
 #   • Self‑healing systemd service restarts automatically on crash, ensuring continuous availability.
 #   • Startup aborts if critical credentials are missing, preventing mis‑configured deployments.
-#   • Per‑command timeout aborts scripts exceeding configured seconds, preventing hangs.
-#   • Lock per command prevents simultaneous executions of the same script.
+#   • Commands are locked per trigger, preventing simultaneous executions of the same script
+#   • Each command has a configurable timeout; exceeding it aborts the process
 
 import asyncio
 import html
@@ -96,7 +96,7 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             try:
                 stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 proc.kill()
                 await proc.communicate()
                 await status_msg.edit_text(
