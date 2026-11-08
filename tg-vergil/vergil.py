@@ -9,7 +9,10 @@
 #   • Outputs exceeding 4,000 characters are auto‑converted to downloadable documents for readability.
 #   • Self‑healing systemd service restarts automatically on crash, ensuring continuous availability.
 #   • Startup aborts if critical credentials are missing, preventing mis‑configured deployments.
+#   • Commands are locked per trigger, preventing simultaneous executions of the same script
+#   • Each command has a configurable timeout; exceeding it aborts the process
 
+import asyncio
 import html
 import io
 import os
@@ -49,6 +52,11 @@ except ValueError:
 
 COMMAND_MAP = {k.replace('CMD_', '').lower(): v for k, v in os.environ.items() if k.startswith('CMD_')}
 
+# Per-command timeout in seconds: TIMEOUT_<NAME> in .env, falling back to VERGIL_TIMEOUT (default 600)
+DEFAULT_TIMEOUT = int(os.getenv('VERGIL_TIMEOUT', '600'))
+# One lock per command so the same command can't run twice at once
+LOCKS = {name: asyncio.Lock() for name in COMMAND_MAP}
+
 # ── Bot Logic ─────────────────────────────────────────────────────────────────
 async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ALLOWED_ID:
@@ -61,56 +69,74 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Command configuration not found.")
         return
 
-    status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
+    lock = LOCKS[trigger]
+    if lock.locked():
+        await update.message.reply_text(f"⏳ <b>{trigger}</b> is already running.", parse_mode=ParseMode.HTML)
+        return
 
-    try:
-        custom_env = os.environ.copy()
+    async with lock:
+        status_msg = await update.message.reply_text(f"⏳ Running: {trigger}...")
 
-        venv_bin = os.path.join(sys.prefix, 'bin')
-        current_path = custom_env.get('PATH', '')
-        custom_env['PATH'] = f"{venv_bin}:{current_path}" if current_path else venv_bin
+        try:
+            custom_env = os.environ.copy()
+            # Child scripts never need the token that can run commands on this server
+            custom_env.pop('TELEGRAM_VERGIL_BOT_TOKEN', None)
 
-        result = subprocess.run(
-            shlex.split(shell_command),
-            shell=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=custom_env  # <--- Pass the modified environment to the script
-        )
+            venv_bin = os.path.join(sys.prefix, 'bin')
+            current_path = custom_env.get('PATH', '')
+            custom_env['PATH'] = f"{venv_bin}:{current_path}" if current_path else venv_bin
 
-        output = (result.stdout + result.stderr).strip() or "Success (No Output)"
+            timeout = int(os.getenv(f"TIMEOUT_{trigger}".upper(), DEFAULT_TIMEOUT))
 
-        target_key = f"MUTE_{trigger}".upper()
-        mute_on_success = any(
-            k.upper() == target_key and v.strip().lower() == "true"
-            for k, v in os.environ.items()
-        )
-
-        if mute_on_success and result.returncode == 0:
-            await status_msg.edit_text(
-                f"✅ <b>{trigger}</b> completed successfully!", 
-                parse_mode=ParseMode.HTML
+            proc = await asyncio.create_subprocess_exec(
+                *shlex.split(shell_command),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=custom_env,
             )
-            return
+            try:
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+            except TimeoutError:
+                proc.kill()
+                await proc.communicate()
+                await status_msg.edit_text(
+                    f"⏱️ <b>{trigger}</b> killed after {timeout}s timeout.",
+                    parse_mode=ParseMode.HTML
+                )
+                return
 
-        if len(output) > 4000:
-            file_obj = io.BytesIO(output.encode('utf-8'))
-            file_obj.name = f"{trigger}_log.txt"
-            await update.message.reply_document(
-                document=file_obj,
-                caption=f"✅ Output for <b>{trigger}</b> (Log too long for text)",
-                parse_mode=ParseMode.HTML
+            output = (stdout.decode('utf-8', 'replace') + stderr.decode('utf-8', 'replace')).strip() or "Success (No Output)"
+
+            target_key = f"MUTE_{trigger}".upper()
+            mute_on_success = any(
+                k.upper() == target_key and v.strip().lower() == "true"
+                for k, v in os.environ.items()
             )
-            await context.bot.delete_message(
-                chat_id=update.message.chat_id,
-                message_id=status_msg.message_id
-            )
-        else:
-            escaped_output = html.escape(output)
-            await status_msg.edit_text(f"<pre>{escaped_output}</pre>", parse_mode=ParseMode.HTML)
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error: {e!s}")
+
+            if mute_on_success and proc.returncode == 0:
+                await status_msg.edit_text(
+                    f"✅ <b>{trigger}</b> completed successfully!",
+                    parse_mode=ParseMode.HTML
+                )
+                return
+
+            if len(output) > 4000:
+                file_obj = io.BytesIO(output.encode('utf-8'))
+                file_obj.name = f"{trigger}_log.txt"
+                await update.message.reply_document(
+                    document=file_obj,
+                    caption=f"✅ Output for <b>{trigger}</b> (Log too long for text)",
+                    parse_mode=ParseMode.HTML
+                )
+                await context.bot.delete_message(
+                    chat_id=update.message.chat_id,
+                    message_id=status_msg.message_id
+                )
+            else:
+                escaped_output = html.escape(output)
+                await status_msg.edit_text(f"<pre>{escaped_output}</pre>", parse_mode=ParseMode.HTML)
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {e!s}")
 
 
 # ── Execution & Install Logic ─────────────────────────────────────────────────
@@ -154,7 +180,8 @@ WantedBy=multi-user.target
         sys.exit(0)
 
     # 2. Otherwise, run the bot (foreground or background)
-    app = ApplicationBuilder().token(TOKEN).build()
+    # concurrent_updates lets /health answer while a slow /deploy is still running
+    app = ApplicationBuilder().token(TOKEN).concurrent_updates(True).build()
 
     for cmd_trigger in COMMAND_MAP:
         app.add_handler(CommandHandler(cmd_trigger, execute_script))
