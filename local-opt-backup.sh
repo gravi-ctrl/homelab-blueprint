@@ -9,6 +9,7 @@
 #   • Sends periodic heartbeats to a health‑check endpoint, keeping the job alive during long operations and alerting on failure.
 #   • Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.
 #   • Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.
+#   • Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
