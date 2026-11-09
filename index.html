@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-09 02:42 EET</div>
+    <div class="meta-line">Generated 2026-11-09 03:58 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5465,7 +5465,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.",
         "Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.",
         "Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.",
-        "Restores previously‑running Docker stacks if the backup aborts after stopping them."
+        "Restores previously‑running Docker stacks if the backup aborts after stopping them.",
+        "Alerts via Telegram when offsite sync is skipped or fails, preserving the local backup.",
+        "Sends a Telegram warning if containers stay unhealthy after backup completes."
       ],
       "category": "Core Scripts",
       "cron_ctx": "Root",
