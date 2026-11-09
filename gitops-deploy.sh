@@ -9,6 +9,7 @@
 #   • Performs comprehensive post‑deploy verification: compose wait, crash‑loop soak, port/HTTP checks, optional URL probe.
 #   • Automatically rolls back to the last known good compose file on failure, keeping services online and alerting stakeholders.
 #   • Provides read‑only probe and verify modes for quick health‑check validation without affecting running services.
+#   • Skips deployment when a weekly backup holds an exclusive lock, avoiding interference with backup operations.
 
 # ================================================================================================
 
@@ -454,6 +455,18 @@ case "${1:-}" in
     "") ;;
     *) echo "Usage: $(basename "$0") [--probe CONTAINER [PORT] | --verify STACK]" >&2; exit 2 ;;
 esac
+
+# The weekly backup holds an exclusive lock on this file for its whole run (including the 5 min
+# warning and the stacks being down). Never touch git or containers while it runs.
+# Open read-only so we never create the file (root couldn't reopen a user-owned one in /tmp).
+BACKUP_LOCK="/tmp/local-opt-backup.lock"
+if [ -r "$BACKUP_LOCK" ] && exec 201< "$BACKUP_LOCK"; then
+    if ! flock -n 201; then
+        echo "⏭️  Backup in progress, skipping this cycle."
+        exit 0
+    fi
+    exec 201<&-   # nothing running: close the fd, which also drops the lock
+fi
 
 # Prevent stepping on git-auto-sync.py or dashboard generation.
 # Non-blocking: if busy, skip this run entirely.
