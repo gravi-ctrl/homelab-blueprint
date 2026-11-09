@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-08 04:44 EET</div>
+    <div class="meta-line">Generated 2026-11-09 02:26 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4766,6 +4766,21 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 3
     },
     {
+      "command": "cron-guard --mode fail \"Backup Recovery\" \"/opt/rabbit-hole/local-opt-backup-recover.sh\"",
+      "day_conditional": null,
+      "env": [],
+      "full_comment": "Bring the stacks back after a power-loss or a crash mid-backup",
+      "has_wrapper": true,
+      "heat_slots": [],
+      "human_desc": "On boot",
+      "is_root": true,
+      "label": "Backup Recovery",
+      "owner": "⚡ Root Cron",
+      "raw_schedule": "@reboot",
+      "tier": "🔁 On Reboot",
+      "tier_order": 6
+    },
+    {
       "command": "[ \"$(date +\\%u)\" = 5 ] && cron-guard --mode fail \"ctrl_s_master\" \"$CTRL_DIR/run.sh\"",
       "day_conditional": 5,
       "env": [
@@ -5334,7 +5349,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Implements non‑blocking lock and retry logic to avoid race conditions and transient registry failures.",
         "Performs comprehensive post‑deploy verification: compose wait, crash‑loop soak, port/HTTP checks, optional URL probe.",
         "Automatically rolls back to the last known good compose file on failure, keeping services online and alerting stakeholders.",
-        "Provides read‑only probe and verify modes for quick health‑check validation without affecting running services."
+        "Provides read‑only probe and verify modes for quick health‑check validation without affecting running services.",
+        "Skips deployment when a weekly backup holds an exclusive lock, avoiding interference with backup operations."
       ],
       "category": "Core Scripts",
       "cron_ctx": "User",
@@ -5410,6 +5426,37 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
+        "Detects pending recovery by checking for a snapshot file and exits cleanly if absent",
+        "Waits up to five minutes for Docker daemon to become responsive before proceeding",
+        "Restores each recorded stack by launching its compose.yml in detached mode",
+        "Skips entries without a compose.yml, preventing unnecessary failures",
+        "Logs each stack being restored, providing visibility into recovery progress",
+        "Captures and reports individual stack launch failures while continuing other recoveries",
+        "Deletes the snapshot file after processing to avoid repeated recovery attempts",
+        "Returns a non‑zero exit code if any stack failed, enabling downstream error handling"
+      ],
+      "category": "Core Scripts",
+      "cron_ctx": "Root",
+      "cron_entries": [
+        {
+          "desc": "On boot",
+          "owner": "Root",
+          "schedule": "@reboot"
+        }
+      ],
+      "desc": "After a crash or power loss mid-backup (that got started by `local-opt-backup.sh`, brings the stacks back up from the snapshot the backup left behind.",
+      "dir_path": "Core Scripts",
+      "env": [],
+      "freq": "On boot",
+      "freq_source": "cron",
+      "header_freq": "",
+      "name": "local-opt-backup-recover.sh",
+      "path": "local-opt-backup-recover.sh",
+      "semantic_cat": "💾 Backups & Sync",
+      "warnings": []
+    },
+    {
+      "capabilities": [
         "Creates a single, age‑encrypted archive of Docker stacks, user scripts, SSH keys, and system configs for secure off‑site storage.",
         "Gracefully stops and masks Docker before snapshotting, then automatically restores services to avoid data corruption.",
         "Guarantees only one backup runs at a time with a lockfile, preventing race conditions and resource contention.",
@@ -5417,7 +5464,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Sends periodic heartbeats to a health‑check endpoint, keeping the job alive during long operations and alerting on failure.",
         "Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.",
         "Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.",
-        "Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies."
+        "Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.",
+        "Restores previously‑running Docker stacks if the backup aborts after stopping them."
       ],
       "category": "Core Scripts",
       "cron_ctx": "Root",
@@ -5634,7 +5682,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Successful runs are muted by default, preventing alert fatigue while still logging failures.",
         "Outputs exceeding 4,000 characters are auto‑converted to downloadable documents for readability.",
         "Self‑healing systemd service restarts automatically on crash, ensuring continuous availability.",
-        "Startup aborts if critical credentials are missing, preventing mis‑configured deployments."
+        "Startup aborts if critical credentials are missing, preventing mis‑configured deployments.",
+        "Commands are locked per trigger, preventing simultaneous executions of the same script",
+        "Each command has a configurable timeout; exceeding it aborts the process"
       ],
       "category": "Tg-Vergil",
       "cron_ctx": "",
