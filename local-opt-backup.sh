@@ -11,6 +11,8 @@
 #   • Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.
 #   • Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.
 #   • Restores previously‑running Docker stacks if the backup aborts after stopping them.
+#   • Alerts via Telegram when offsite sync is skipped or fails, preserving the local backup.
+#   • Sends a Telegram warning if containers stay unhealthy after backup completes.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
@@ -176,6 +178,12 @@ tg_warn() {
         -d chat_id="${TELEGRAM_CHAT_ID:-}" \
         --data-urlencode "text=$1" \
         "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN:-}/sendMessage" >/dev/null || true
+}
+
+# $1 = SKIPPED or FAILED, $2 = reason
+offsite_alert() {
+    echo "  ⚠️ Offsite sync $1: $2. Local backup remains intact."
+    tg_warn "⚠️ $(hostname): backup OK locally, but offsite $1 ($2)."
 }
 
 # OFFSITE PRUNE (by the date in the file name, never by mtime)
@@ -393,14 +401,14 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
         ls -1t "$BACKUP_DIR"/docker-stacks-*.tar.zst.age \
             | tail -n +3 \
             | xargs -r rm -f
-			
+
 			# --- OFFSITE REPLICATION ---
 			echo "☁️ Checking offsite replication..."
 			if [ -z "${OFFSITE_BACKUP_TARGET:-}" ]; then
-				echo "  ⏭️  OFFSITE_BACKUP_TARGET not set in .env. Skipping offsite sync."
+				offsite_alert "SKIPPED" "OFFSITE_BACKUP_TARGET not set in .env"
 			elif command -v rclone &>/dev/null; then
 				REMOTE_NAME="${OFFSITE_BACKUP_TARGET%%:*}" # Extracts "b2", "gdrive", "r2", etc.
-				
+
 				# Verify the remote actually exists in rclone.conf before running
 				if rclone listremotes 2>/dev/null | grep -q "^${REMOTE_NAME}:$"; then
 					echo "  → Uploading verified archive to ${REMOTE_NAME} (${OFFSITE_BACKUP_TARGET})..."
@@ -408,14 +416,13 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
 						echo "  ✅ Offsite upload successful."
 						prune_offsite "${OFFSITE_BACKUP_TARGET}"
 					else
-						echo "  ⚠️ WARNING: Offsite upload failed (network glitch or bad credentials). Local backup remains intact."
-						tg_warn "⚠️ $(hostname): backup OK locally, but the offsite upload FAILED."
+						offsite_alert "FAILED" "upload to ${REMOTE_NAME} failed, check network or credentials"
 					fi
 				else
-					echo "  ⏭️  rclone remote '${REMOTE_NAME}:' not configured yet. Skipping offsite sync."
+					offsite_alert "SKIPPED" "rclone remote '${REMOTE_NAME}:' not configured"
 				fi
 			else
-				echo "  ⏭️  rclone not installed. Skipping offsite sync."
+				offsite_alert "SKIPPED" "rclone not installed"
 			fi
     else
         echo "❌ Backup CORRUPT or key mismatch."
@@ -489,9 +496,10 @@ else
         # Combine current and recent failures, sort them, and remove duplicates
         COMBINED_FAILS=$(echo -e "${CURRENT_STUCK}\n${RECENT_FAILURES}")
         HEALTH_WARNINGS=$(echo "$COMBINED_FAILS" | sed '/^$/d' | awk '{print "  • " $1 " (" $2 ")"}' | sort -u)
-        
+
         echo "⚠️  Containers still unhealthy or flapping after timeout:"
-        echo "$HEALTH_WARNINGS"
+        echo "$HEALTH_WARNINGS" && tg_warn "⚠️ $(hostname): backup finished, but some containers need attention:
+${HEALTH_WARNINGS}"
     fi
 fi
 
