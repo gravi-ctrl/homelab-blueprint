@@ -8,6 +8,9 @@ BASH_ENV=/opt/rabbit-hole/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
+# Bring the stacks back after a power-loss or a crash mid-backup
+@reboot cron-guard --mode fail "Backup Recovery" "/opt/rabbit-hole/local-opt-backup-recover.sh"
+
 # Shutdown if battery is discharging and below 20%
 */5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/rabbit-hole/battery-monitor.sh"
 
