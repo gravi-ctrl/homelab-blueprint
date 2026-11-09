@@ -10,6 +10,7 @@
 #   • Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.
 #   • Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.
 #   • Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.
+#   • Restores previously‑running Docker stacks if the backup aborts after stopping them
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
@@ -71,7 +72,7 @@ export HOME="$USER_HOME"
 LOCKFILE="/tmp/local-opt-backup.lock"
 DATE=$(date +%F)
 DOCKER_FILENAME="docker-stacks-$DATE.tar.zst.age"
-RUNNING_STACKS_FILE="/tmp/running-stacks.list"
+RUNNING_STACKS_FILE="/var/lib/local-opt-backup/running-stacks.list"
 
 # --- PREVENT CONCURRENT RUNS ---
 exec 9>"$LOCKFILE"
@@ -105,7 +106,9 @@ fi
 AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public key from $AGE_KEYFILE"; exit 1; }
 
 mkdir -p "$BACKUP_DIR"
+mkdir -p "$(dirname "$RUNNING_STACKS_FILE")"
 
+# --- FUNCTIONS ---
 # HEARTBEAT FUNCTION
 keep_kuma_alive() {
     while true; do
@@ -114,31 +117,56 @@ keep_kuma_alive() {
     done
 }
 
+# Restart stacks if the script died after the down loop
+RESTORE_PENDING=0
+
+start_stacks() {
+    [ -f "$RUNNING_STACKS_FILE" ] || { echo "⚠️  No snapshot found. Skipping stack startup."; return 0; }
+    while IFS= read -r stack_dir; do
+        [ -f "$stack_dir/compose.yml" ] || continue
+        echo "  → $(basename "$stack_dir")"
+        docker compose -f "$stack_dir/compose.yml" up -d \
+            || echo "  ⚠️ Failed to start $(basename "$stack_dir")"
+    done < "$RUNNING_STACKS_FILE"
+}
+
+HEARTBEAT_PID=""
+
 # SAFETY & CLEANUP FUNCTION
 cleanup() {
     set +e
-    # 1. Remove lock & stacks snapshot
-    rm -f "$LOCKFILE"
-    rm -f "$RUNNING_STACKS_FILE"
-    rm -f /tmp/backup-uid.txt
 
-    # 2. Kill Heartbeat
+    # 1. Kill Heartbeat
     if [ -n "$HEARTBEAT_PID" ]; then
         kill $HEARTBEAT_PID 2>/dev/null || true
         wait $HEARTBEAT_PID 2>/dev/null || true
     fi
 
-    # 3. Ensure Docker is unmasked and started
+    # 2. Ensure Docker is unmasked and started
     # Only restore Docker if it's not already running
     if ! docker info &>/dev/null; then
         echo "Restoring Docker Services..."
-        systemctl unmask docker.socket 2>/dev/null
+        systemctl unmask --runtime docker.socket 2>/dev/null
         systemctl start containerd docker.socket docker.service 2>/dev/null
+        for _ in $(seq 1 30); do docker info &>/dev/null && break; sleep 2; done
     fi
+
+    # 3. Restore stacks if the script died after a down loop
+    if [ "$RESTORE_PENDING" = 1 ]; then
+        RESTORE_PENDING=0
+        echo "Restoring stacks after interrupted backup..."
+        start_stacks
+    fi
+
+    # 4. Remove lock & stacks snapshot
+    rm -f "$LOCKFILE" "$RUNNING_STACKS_FILE" /tmp/backup-uid.txt
 }
 
 # Trap signals: EXIT (Success/Fail), INT (Ctrl+C), TERM (Kill), HUP (Disconnect)
-trap cleanup EXIT INT TERM HUP
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 
 # TELEGRAM NOTICE (best effort, never fails the run)
 tg_warn() {
@@ -224,6 +252,7 @@ echo "Captured $(wc -l < "$RUNNING_STACKS_FILE") running stack(s)."
 # Write backup UID/GID metadata
 echo "$(id -u "$SCRIPT_OWNER"):$(id -g "$SCRIPT_OWNER")" > /tmp/backup-uid.txt
 
+RESTORE_PENDING=1
 echo "Stopping stacks gracefully..."
 if [ -f "$RUNNING_STACKS_FILE" ]; then
     while IFS= read -r stack_dir; do
@@ -235,7 +264,7 @@ if [ -f "$RUNNING_STACKS_FILE" ]; then
 fi
 
 echo "Stopping and masking Docker..."
-systemctl mask docker.socket
+systemctl mask --runtime docker.socket
 systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
@@ -326,7 +355,7 @@ AGE_EXIT_CODE=${STATUSES[1]}
 set -e
 
 # Explicit restart for immediate healthchecks
-systemctl unmask docker.socket
+systemctl unmask --runtime docker.socket
 systemctl start containerd docker.socket docker.service
 
 echo "Waiting for Docker socket..."
@@ -341,16 +370,8 @@ if ! docker info &>/dev/null; then
 fi
 
 echo "Starting previously-running stacks..."
-if [ -f "$RUNNING_STACKS_FILE" ]; then
-    while IFS= read -r stack_dir; do
-        if [ -f "$stack_dir/compose.yml" ]; then
-            echo "  → $(basename "$stack_dir")"
-            docker compose -f "$stack_dir/compose.yml" up -d
-        fi
-    done < "$RUNNING_STACKS_FILE"
-else
-    echo "⚠️  No snapshot found. Skipping stack startup."
-fi
+start_stacks
+RESTORE_PENDING=0
 
 # Validation
 if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]]; then
