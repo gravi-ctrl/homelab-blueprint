@@ -233,10 +233,7 @@ HEARTBEAT_PID=$!
 # --- PRE-BACKUP WARNING (scheduled runs only) ---
 if [ -z "${BACKUP_MANUAL:-}" ] && [ ! -t 0 ]; then
     echo "Warning dispatched (best effort), waiting 5 min before taking Docker down..."
-    curl -fsS --max-time 10 \
-        -d chat_id="${TELEGRAM_CHAT_ID:-}" \
-        --data-urlencode "text=⚠️ $(hostname): weekly backup starts in 5 min. Docker will be down for the duration and restart on its own." \
-        "https://api.telegram.org/bot${TELEGRAM_DANTE_BOT_TOKEN:-}/sendMessage" >/dev/null || true
+    tg_warn "⚠️ $(hostname): weekly backup starts in 5 min. Docker will be down for the duration and restart on its own."
     sleep 300
 fi
 
