@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: After a crash or power loss mid-backup (that got started by `local-opt-backup.sh`, brings the stacks back up from the snapshot the backup left behind.
+# @DESCRIPTION: After a crash or power loss mid-backup (initiated by `local-opt-backup.sh`), brings the stacks back up from the snapshot the backup left behind.
 # @CAPABILITIES:
 #   • Detects pending recovery by checking for a snapshot file and exits cleanly if absent
 #   • Waits up to five minutes for Docker daemon to become responsive before proceeding
