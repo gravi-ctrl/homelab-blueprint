@@ -10,7 +10,7 @@
 #   • Issues a Telegram warning five minutes before stopping Docker for scheduled runs, keeping operators informed.
 #   • Installs missing dependencies (zstd, age) on the fly, ensuring the backup can run on minimal systems.
 #   • Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.
-#   • Restores previously‑running Docker stacks if the backup aborts after stopping them
+#   • Restores previously‑running Docker stacks if the backup aborts after stopping them.
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
@@ -158,8 +158,10 @@ cleanup() {
         start_stacks
     fi
 
-    # 4. Remove lock & stacks snapshot
-    rm -f "$LOCKFILE" "$RUNNING_STACKS_FILE" /tmp/backup-uid.txt
+    # 4. Remove lock & temp files. Keep the stacks snapshot if Docker never came back,
+    #    so the recovery script (`local-opt-backup-recover.sh`) still has something to work from.
+    rm -f "$LOCKFILE" /tmp/backup-uid.txt
+    if docker info &>/dev/null; then rm -f "$RUNNING_STACKS_FILE"; fi
 }
 
 # Trap signals: EXIT (Success/Fail), INT (Ctrl+C), TERM (Kill), HUP (Disconnect)
