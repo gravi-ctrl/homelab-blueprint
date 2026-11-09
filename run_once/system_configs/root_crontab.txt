@@ -8,9 +8,6 @@ BASH_ENV=/opt/rabbit-hole/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# Bring the stacks back after a power-loss or a crash mid-backup
-@reboot cron-guard --mode fail "Backup Recovery" "/opt/rabbit-hole/local-opt-backup-recover.sh"
-
 # Shutdown if battery is discharging and below 20%
 */5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/rabbit-hole/battery-monitor.sh"
 
@@ -19,6 +16,9 @@ BASH_ENV=/opt/rabbit-hole/.env
 
 # Cold backup of Docker Stacks, scripts, ctrl_s_master, mkcert & SSH keys
 25 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
+
+# Bring the stacks back after a power-loss or a crash mid-backup
+@reboot cron-guard --mode fail "Backup Recovery" "/opt/rabbit-hole/local-opt-backup-recover.sh"
 
 # ctrl_s_master Project
 0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard --mode fail "ctrl_s_master" "$CTRL_DIR/run.sh"
