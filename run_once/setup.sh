@@ -147,6 +147,12 @@ fi
 
 [ "$_restored" -gt 0 ] || [ "$_keyrings" -gt 0 ] && pass "$_restored source(s), $_keyrings keyring(s) restored" || skip "none found"
 
+task "Configure APT lock timeout"
+sudo tee /etc/apt/apt.conf.d/99-timeout > /dev/null <<'EOF'
+DPkg::Lock::Timeout "180";
+EOF
+pass "180s wait threshold"
+
 task "Full system upgrade"
 quietly sudo apt-get update
 quietly sudo apt-get upgrade -y
@@ -315,11 +321,12 @@ fi
 
 task "Restore dotfiles"
 DOTFILES_DIR="/opt/rabbit-hole/run_once/dotfiles"
+mkdir -p "$HOME/.zsh/"
 if [ -d "$DOTFILES_DIR" ]; then
     [ -f "$DOTFILES_DIR/zsh/zshrc" ] && cp "$DOTFILES_DIR/zsh/zshrc" "$HOME/.zshrc"
     [ -f "$DOTFILES_DIR/zsh/p10k.zsh" ] && cp "$DOTFILES_DIR/zsh/p10k.zsh" "$HOME/.p10k.zsh"
-    [ -f "$DOTFILES_DIR/zsh/welcome.zsh" ] && cp "$DOTFILES_DIR/zsh/welcome.zsh" "$HOME/zsh/welcome.zsh"
-    [ -f "$DOTFILES_DIR/zsh/functions.zsh" ] && cp "$DOTFILES_DIR/zsh/functions.zsh" "$HOME/zsh/functions.zsh"
+    [ -f "$DOTFILES_DIR/zsh/welcome.zsh" ] && cp "$DOTFILES_DIR/zsh/welcome.zsh" "$HOME/.zsh/welcome.zsh"
+    [ -f "$DOTFILES_DIR/zsh/functions.zsh" ] && cp "$DOTFILES_DIR/zsh/functions.zsh" "$HOME/.zsh/functions.zsh"
     [ -f "$DOTFILES_DIR/hushlogin" ] && cp "$DOTFILES_DIR/hushlogin" "$HOME/.hushlogin"
     [ -f "$DOTFILES_DIR/nanorc" ] && sudo cp "$DOTFILES_DIR/nanorc" "/etc/nanorc"
     mkdir -p "$HOME/.config"
@@ -538,3 +545,4 @@ printf "       borg key import /mnt/external_hdd/borg-repo ~/borg-key-backup.txt
 printf "       borgmatic check\n"
 printf "    4. ${BOLD}Backblaze B2 (Offsite):${NC} Link your B2 account on this machine:\n"
 printf "       rclone config create b2 b2 account <YOUR_KEY_ID> key <YOUR_APPLICATION_KEY>\n"
+printf "       ${DIM}(The read-and-write B2 keyID and Application Key can be retrieved from my password manager)\n"

@@ -149,6 +149,7 @@ Choose your scenario before running the script:
     *   **A1 (local):** place `docker-stacks-*.tar.zst.age` in `$HOME`.
     *   **A2 (offsite):** leave `$HOME` empty. The script offers to fetch the latest archive
         from Backblaze B2 and will ask for the **read-only** B2 key ID and application key.
+        (The read-only B2 keyID and Application Key can be retrieved from my password manager)
         Both are typed at a hidden prompt and never written to disk.
 
 *   **Option B: Fresh Start (No Backup)**
@@ -167,7 +168,8 @@ For maximum security, verify the script's cryptographic hash before executing it
    ```
 
 2. **Retrieve the trusted hash:**
-   Grab the SHA-256 hash of `bootstrap.sh` stored in your password manager.
+   Grab the SHA-256 hash of `bootstrap.sh`.
+   (The SHA-256 Hash can be retrieved from my password manager)
 
 3. **Verify and execute:**
    Replace `<hash>` below with your stored hash. If the checksum matches, the script runs immediately:
