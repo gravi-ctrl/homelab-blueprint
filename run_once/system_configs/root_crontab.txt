@@ -8,9 +8,6 @@ BASH_ENV=/opt/rabbit-hole/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
-# Shutdown if battery is discharging and below 20%
-*/5 * * * * cron-guard --mode fail "Battery Monitor" "/opt/rabbit-hole/battery-monitor.sh"
-
 # Rotate backups (retain recent) and purge download watch folder
 0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
 
