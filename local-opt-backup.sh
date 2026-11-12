@@ -283,7 +283,6 @@ CTRL_DIR="${CTRL_DIR#/}"; CTRL_DIR="${CTRL_DIR%/}"
 set +e
 
 timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
-    # 1. Global Python & dev caches (matches anywhere at any depth)
     --exclude='__pycache__' \
     --exclude='*.pyc' \
     --exclude='.pytest_cache' \
@@ -310,8 +309,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='GPUCache' \
     --exclude='CachedImages' \
     --exclude='Crash Reports' \
-    \
-    # 2. Path-specific exclusions
     --exclude="${STACKS_DIR}/arrs/config/*/*.db-shm" \
     --exclude="${STACKS_DIR}/arrs/config/*/*.db-wal" \
     --exclude="${STACKS_DIR}/arrs/config/*/MediaCover" \
@@ -354,8 +351,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${USER_HOME}/scripts/status" \
     --exclude="${USER_HOME}/scripts/logs" \
     --exclude="${USER_HOME}/scripts/state" \
-    \
-    # 3. Targets to archive
     -C / \
     "${STACKS_DIR}" \
     "${CTRL_DIR}" \
