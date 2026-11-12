@@ -276,11 +276,20 @@ systemctl stop docker.socket docker.service containerd
 
 echo "Creating backup (ZSTD)..."
 
+# Strip both the leading and trailing slashes for exact tar matching
+STACKS_DIR="${STACKS_DIR#/}"; STACKS_DIR="${STACKS_DIR%/}"
+CTRL_DIR="${CTRL_DIR#/}"; CTRL_DIR="${CTRL_DIR%/}"
+
 set +e
 
 timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='__pycache__' \
+    --exclude='*.pyc' \
+    --exclude='.pytest_cache' \
+    --exclude='.ruff_cache' \
     --exclude='node_modules' \
+    --exclude='venv' \
+    --exclude='_dry_run_output' \
     --exclude='lost+found' \
     --exclude='*~' \
     --exclude='*.old' \
@@ -288,7 +297,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='*.log.gz' \
     --exclude='*.log.??' \
     --exclude='*.tmp' \
-    --exclude='*.pyc' \
     --exclude='*.pid' \
     --exclude='*.swp' \
     --exclude='*.bak' \
@@ -301,55 +309,54 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude='GPUCache' \
     --exclude='CachedImages' \
     --exclude='Crash Reports' \
-    --exclude="${STACKS_DIR#/}/arrs/config/*/*.db-shm" \
-    --exclude="${STACKS_DIR#/}/arrs/config/*/*.db-wal" \
-    --exclude="${STACKS_DIR#/}/arrs/config/*/MediaCover" \
-    --exclude="${STACKS_DIR#/}/arrs/config/*/logs" \
-    --exclude="${STACKS_DIR#/}/arrs/config/*/log" \
-    --exclude="${STACKS_DIR#/}/arrs/config/*/UpdateLogs" \
-    --exclude="${STACKS_DIR#/}/audiobookshelf/backups" \
-    --exclude="${STACKS_DIR#/}/audiobookshelf/metadata/logs" \
-    --exclude="${STACKS_DIR#/}/audiobookshelf/metadata/cache" \
-    --exclude="${STACKS_DIR#/}/jdownloader/config/logs" \
-    --exclude="${STACKS_DIR#/}/jdownloader/config/tmp" \
-    --exclude="${STACKS_DIR#/}/jellyfin/config/transcodes" \
-    --exclude="${STACKS_DIR#/}/jellyfin/config/cache" \
-    --exclude="${STACKS_DIR#/}/jellyfin/config/data/metadata/People" \
-    --exclude="${STACKS_DIR#/}/jellyfin/config/log" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/apps" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/core" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/lib" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/3rdparty" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/dist" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/resources" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/ocs" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/ocs-provider" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/themes" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/updater" \
-    --exclude="${STACKS_DIR#/}/nextcloud/html/version.php" \
-    --exclude="${STACKS_DIR#/}/nextcloud/db/\#innodb_redo" \
-    --exclude="${STACKS_DIR#/}/nextcloud/db/\#innodb_temp" \
-    --exclude="${STACKS_DIR#/}/npm/data/logs" \
-    --exclude="${STACKS_DIR#/}/paperless-ngx/redisdata" \
-    --exclude="${STACKS_DIR#/}/pihole/etc-pihole/pihole-FTL.db" \
-    --exclude="${STACKS_DIR#/}/pihole/etc-pihole/gravity_old.db" \
-    --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/logs" \
-    --exclude="${STACKS_DIR#/}/qbittorrent/config/qBittorrent/data/GeoDB" \
-    --exclude="${STACKS_DIR#/}/scrutiny/influxdb" \
-    --exclude="${CTRL_DIR#/}/_logs" \
-    --exclude="${CTRL_DIR#/}/status.json" \
-    --exclude="${CTRL_DIR#/}/status_dashboard.md" \
-    --exclude="${CTRL_DIR#/}/vaults.hc" \
-    --exclude="${USER_HOME#/}/scripts/.ruff_cache" \
-    --exclude="${USER_HOME#/}/scripts/status" \
-    --exclude="${USER_HOME#/}/scripts/logs" \
-    --exclude="${USER_HOME#/}/scripts/state" \
+    --exclude="${STACKS_DIR}/arrs/config/*/*.db-shm" \
+    --exclude="${STACKS_DIR}/arrs/config/*/*.db-wal" \
+    --exclude="${STACKS_DIR}/arrs/config/*/MediaCover" \
+    --exclude="${STACKS_DIR}/arrs/config/*/logs" \
+    --exclude="${STACKS_DIR}/arrs/config/*/log" \
+    --exclude="${STACKS_DIR}/arrs/config/*/UpdateLogs" \
+    --exclude="${STACKS_DIR}/audiobookshelf/backups" \
+    --exclude="${STACKS_DIR}/audiobookshelf/metadata/logs" \
+    --exclude="${STACKS_DIR}/audiobookshelf/metadata/cache" \
+    --exclude="${STACKS_DIR}/jdownloader/config/logs" \
+    --exclude="${STACKS_DIR}/jdownloader/config/tmp" \
+    --exclude="${STACKS_DIR}/jellyfin/config/transcodes" \
+    --exclude="${STACKS_DIR}/jellyfin/config/cache" \
+    --exclude="${STACKS_DIR}/jellyfin/config/data/metadata/People" \
+    --exclude="${STACKS_DIR}/jellyfin/config/log" \
+    --exclude="${STACKS_DIR}/nextcloud/html/apps" \
+    --exclude="${STACKS_DIR}/nextcloud/html/core" \
+    --exclude="${STACKS_DIR}/nextcloud/html/lib" \
+    --exclude="${STACKS_DIR}/nextcloud/html/3rdparty" \
+    --exclude="${STACKS_DIR}/nextcloud/html/dist" \
+    --exclude="${STACKS_DIR}/nextcloud/html/resources" \
+    --exclude="${STACKS_DIR}/nextcloud/html/ocs" \
+    --exclude="${STACKS_DIR}/nextcloud/html/ocs-provider" \
+    --exclude="${STACKS_DIR}/nextcloud/html/themes" \
+    --exclude="${STACKS_DIR}/nextcloud/html/updater" \
+    --exclude="${STACKS_DIR}/nextcloud/html/version.php" \
+    --exclude="${STACKS_DIR}/nextcloud/db/\#innodb_redo" \
+    --exclude="${STACKS_DIR}/nextcloud/db/\#innodb_temp" \
+    --exclude="${STACKS_DIR}/npm/data/logs" \
+    --exclude="${STACKS_DIR}/paperless-ngx/redisdata" \
+    --exclude="${STACKS_DIR}/pihole/etc-pihole/pihole-FTL.db" \
+    --exclude="${STACKS_DIR}/pihole/etc-pihole/gravity_old.db" \
+    --exclude="${STACKS_DIR}/qbittorrent/config/qBittorrent/data/logs" \
+    --exclude="${STACKS_DIR}/qbittorrent/config/qBittorrent/data/GeoDB" \
+    --exclude="${STACKS_DIR}/scrutiny/influxdb" \
+    --exclude="${CTRL_DIR}/_logs" \
+    --exclude="${CTRL_DIR}/status.json" \
+    --exclude="${CTRL_DIR}/status_dashboard.md" \
+    --exclude="${CTRL_DIR}/vaults.hc" \
+    --exclude="${USER_HOME}/scripts/status" \
+    --exclude="${USER_HOME}/scripts/logs" \
+    --exclude="${USER_HOME}/scripts/state" \
     -C / \
-    "${STACKS_DIR#/}" \
-    "${CTRL_DIR#/}" \
-    "${USER_HOME#/}/scripts" \
-    "${USER_HOME#/}/.ssh" \
-    "${USER_HOME#/}/.local/share/mkcert" \
+    "${STACKS_DIR}" \
+    "${CTRL_DIR}" \
+    "${USER_HOME}/scripts" \
+    "${USER_HOME}/.ssh" \
+    "${USER_HOME}/.local/share/mkcert" \
     etc/ssh \
     tmp/backup-uid.txt \
 | age -e -r "$AGE_PUBKEY" -o "$BACKUP_DIR/$DOCKER_FILENAME"
