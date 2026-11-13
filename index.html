@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-13 05:32 EET</div>
+    <div class="meta-line">Generated 2026-11-13 05:47 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4058,6 +4058,21 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 4
     },
     {
+      "command": "cron-guard --mode fail \"Backup Recovery\" \"/opt/rabbit-hole/local-opt-backup-recover.sh\"",
+      "day_conditional": null,
+      "env": [],
+      "full_comment": "Bring the stacks back after a power-loss or a crash mid-backup",
+      "has_wrapper": true,
+      "heat_slots": [],
+      "human_desc": "On boot",
+      "is_root": false,
+      "label": "Backup Recovery",
+      "owner": "👤 User Cron (alice)",
+      "raw_schedule": "@reboot",
+      "tier": "🔁 On Reboot",
+      "tier_order": 6
+    },
+    {
       "command": "cron-guard --mode all \"Docker Stacks Backup\" \"/opt/rabbit-hole/local-opt-backup.sh\"",
       "day_conditional": null,
       "env": [],
@@ -4076,21 +4091,6 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "raw_schedule": "25 5 * * 4",
       "tier": "📅 Weekly",
       "tier_order": 3
-    },
-    {
-      "command": "cron-guard --mode fail \"Backup Recovery\" \"/opt/rabbit-hole/local-opt-backup-recover.sh\"",
-      "day_conditional": null,
-      "env": [],
-      "full_comment": "Bring the stacks back after a power-loss or a crash mid-backup",
-      "has_wrapper": true,
-      "heat_slots": [],
-      "human_desc": "On boot",
-      "is_root": true,
-      "label": "Backup Recovery",
-      "owner": "⚡ Root Cron",
-      "raw_schedule": "@reboot",
-      "tier": "🔁 On Reboot",
-      "tier_order": 6
     },
     {
       "command": "[ \"$(date +\\%u)\" = 5 ] && cron-guard --mode fail \"ctrl_s_master\" \"$CTRL_DIR/run.sh\"",
@@ -4720,11 +4720,11 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Returns a non‑zero exit code if any stack failed, enabling downstream error handling"
       ],
       "category": "Core Scripts",
-      "cron_ctx": "Root",
+      "cron_ctx": "User",
       "cron_entries": [
         {
           "desc": "On boot",
-          "owner": "Root",
+          "owner": "User",
           "schedule": "@reboot"
         }
       ],
@@ -4751,7 +4751,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Prunes offsite archives older than a configurable period, always keeping a minimum number of recent copies.",
         "Restores previously‑running Docker stacks if the backup aborts after stopping them.",
         "Alerts via Telegram when offsite sync is skipped or fails, preserving the local backup.",
-        "Sends a Telegram warning if containers stay unhealthy after backup completes."
+        "Sends a Telegram warning if containers stay unhealthy after backup completes.",
+        "Ensures the running‑stacks directory is owned by the script user so recovery can delete it"
       ],
       "category": "Core Scripts",
       "cron_ctx": "Root",
