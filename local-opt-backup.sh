@@ -13,6 +13,7 @@
 #   • Restores previously‑running Docker stacks if the backup aborts after stopping them.
 #   • Alerts via Telegram when offsite sync is skipped or fails, preserving the local backup.
 #   • Sends a Telegram warning if containers stay unhealthy after backup completes.
+#   • Ensures the running‑stacks directory is owned by the script user so recovery can delete it
 # ==============================================================================
 # RESTORE:
 #   1. Stop Docker:         sudo systemctl stop docker
@@ -109,6 +110,9 @@ AGE_PUBKEY=$(age-keygen -y "$AGE_KEYFILE") || { echo "❌ Failed to read public 
 
 mkdir -p "$BACKUP_DIR"
 mkdir -p "$(dirname "$RUNNING_STACKS_FILE")"
+
+# So `local-opt-backup-recover.sh` can delete the stacks file as user
+chown "$SCRIPT_OWNER": "$(dirname "$RUNNING_STACKS_FILE")"
 
 # --- FUNCTIONS ---
 # HEARTBEAT FUNCTION
