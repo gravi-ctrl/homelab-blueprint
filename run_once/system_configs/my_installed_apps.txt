@@ -44,6 +44,7 @@ hostname
 hwctl
 init
 inotify-tools
+iperf3
 jq
 kdump-tools
 libnss3-tools
