@@ -20,6 +20,9 @@ BASH_ENV=/opt/rabbit-hole/.env
 # Sync Personal and Work Obsidian vaults to Git
 */30 * * * * cron-guard --mode fail --repeat-after 1d --recovery "Obsidian Notes Sync" "/opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/personal' 'Obsidian Personal'; /opt/rabbit-hole/git-auto-sync.py '$DATA_DIR/syncthing/Backup/obsidian-notes/work' 'Obsidian Work'"
 
+# Rotate backups (retain recent) and purge download watch folder
+0 0,12 * * * cron-guard --mode fail "Cleanup Job" "/opt/rabbit-hole/cleanup_script.py $DATA_DIR/syncthing/Backup/self-hosted/contacts-calendars_backup $DATA_DIR/syncthing/Backup/antennapod $DATA_DIR/downloads/watch::DELETE_ALL"
+
 # Check if root (/) or /data exceeds 90%
 0 * * * * cron-guard --mode fail "Disk Monitor" "/opt/rabbit-hole/disk-monitor.sh"
 
