@@ -43,5 +43,6 @@ BASH_ENV=/opt/rabbit-hole/.env
 
 # cert-manager: regenerate & upload SSL certs to NPM
 0 3 1 * * cron-guard --mode fail "cert-mgr: Renew SSL certs" "/opt/rabbit-hole/cert-manager/cert-manager.sh renew"
+
 # Bring the stacks back after a power-loss or a crash mid-backup
 @reboot cron-guard --mode fail "Backup Recovery" "/opt/rabbit-hole/local-opt-backup-recover.sh"
