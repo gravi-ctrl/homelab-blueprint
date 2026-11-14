@@ -12,4 +12,4 @@ BASH_ENV=/opt/rabbit-hole/.env
 25 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
 
 # ctrl_s_master Project
-0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard --mode fail "ctrl_s_master" "$CTRL_DIR/run.sh"
+0 2 8-14,22-28 * * [ "$(date +\%u)" = 5 ] && cron-guard --mode mute "ctrl_s_master" "$CTRL_DIR/run.sh"
