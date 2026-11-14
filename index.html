@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-13 05:47 EET</div>
+    <div class="meta-line">Generated 2026-11-14 19:37 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4093,7 +4093,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 3
     },
     {
-      "command": "[ \"$(date +\\%u)\" = 5 ] && cron-guard --mode fail \"ctrl_s_master\" \"$CTRL_DIR/run.sh\"",
+      "command": "[ \"$(date +\\%u)\" = 5 ] && cron-guard --mode mute \"ctrl_s_master\" \"$CTRL_DIR/run.sh\"",
       "day_conditional": 5,
       "env": [
         "CTRL_DIR"
