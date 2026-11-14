@@ -44,7 +44,7 @@ LASTGOOD_DIR="${STATE_DIR}/lastgood"                    # last compose.yml that 
 REASON_FILE="${STATE_DIR}/last_reason"
 
 # Tunables (override from the environment if a stack needs longer)
-WAIT_TIMEOUT="${WAIT_TIMEOUT:-120}"      # seconds `docker compose up --wait` may take
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-300}"      # seconds `docker compose up --wait` may take
 SOAK_SECONDS="${SOAK_SECONDS:-30}"       # watch for crash-loops this long after it reports ready
 PROBE_TIMEOUT="${PROBE_TIMEOUT:-120}"    # seconds a service gets to start listening / answer HTTP / answer its URL after an update
 
