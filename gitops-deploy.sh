@@ -10,6 +10,8 @@
 #   • Automatically rolls back to the last known good compose file on failure, keeping services online and alerting stakeholders.
 #   • Provides read‑only probe and verify modes for quick health‑check validation without affecting running services.
 #   • Skips deployment when a weekly backup holds an exclusive lock, avoiding interference with backup operations.
+#   • Skips deployment when a manual hold file exists, allowing operators to pause GitOps cycles.
+#   • Provides a configurable grace period before deploying, during which a hold can cancel the operation.
 
 # ================================================================================================
 

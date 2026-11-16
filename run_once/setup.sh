@@ -10,6 +10,7 @@
 #   • Maintains sudo session in background to eliminate repeated authentication prompts.
 #   • Enables passwordless root crontab access for automated backup verification.
 #   • Prevents root execution to ensure safe, non-privileged bootstrap workflow.
+#   • Sets APT lock timeout to 180 seconds to avoid stalled package operations.
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
