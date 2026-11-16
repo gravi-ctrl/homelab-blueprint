@@ -21,6 +21,7 @@ DEFAULT_KEEP = 2  # items kept per folder when no --keep/--purge is given
 # Never valid targets: these exact directories, or any directory that contains one of them.
 SYSTEM_DIRS = ("bin", "boot", "dev", "etc", "home", "lib", "lib64", "media", "mnt",
                "opt", "proc", "root", "run", "sbin", "srv", "sys", "tmp", "usr", "var")
+WINDOWS_SYSTEM_VARS = ("SystemRoot", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "ProgramData")
 ALWAYS_SKIP = {".stfolder"}  # Syncthing's folder marker: deleting it makes Syncthing stop the folder
 
 
@@ -50,7 +51,14 @@ class Plan:
 
 def protected_paths():
     found = {os.path.realpath(os.sep)}
-    if os.name != "nt":
+    if os.name == "nt":
+        # Standard Windows variables, always defined by the OS itself.
+        for var in WINDOWS_SYSTEM_VARS:
+            value = os.environ.get(var, "").strip()
+            if value:
+                found.add(os.path.realpath(value))
+        found.add(os.path.dirname(os.path.realpath(os.path.expanduser("~"))))  # e.g. C:/Users
+    else:
         found.update(os.path.realpath(os.path.join(os.sep, name)) for name in SYSTEM_DIRS)
     found.add(os.path.dirname(os.path.realpath(__file__)))
     found.add(os.path.realpath(os.path.expanduser("~")))
@@ -78,6 +86,8 @@ def resolve_target(raw):
         raise SafetyError(f"'{path}' is not a directory")
 
     canonical = os.path.realpath(path)
+    if os.path.dirname(canonical) == canonical:
+        raise SafetyError(f"'{canonical}' is a drive/filesystem root")
     key = os.path.normcase(canonical)
     protected = protected_paths()
     if key in protected:
@@ -186,7 +196,8 @@ def build_help_parser():
             "                 Syncthing's .stfolder is never touched.\n"
             "\n"
             "Safety: everything is validated before anything is deleted. Refused: relative\n"
-            "paths, symlink targets, system directories (/, /home, /opt, /tmp, ...), your home\n"
+            "paths, symlink targets, drive roots, system directories (/, /home, /opt, /tmp, ...\n"
+            "or C:\\Windows, Program Files, C:\\Users on Windows), your home\n"
             "directory, this script's folder, folders that contain any of those, and\n"
             "overlapping folders. Subfolders of the protected ones are fine.\n"
             "A folder that doesn't exist is reported as an error, but the others still run.\n"
