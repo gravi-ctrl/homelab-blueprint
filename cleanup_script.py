@@ -1,110 +1,318 @@
 #!/usr/bin/env python3
-# @DESCRIPTION: Rotates backups by keeping the N most recent items or purging folders entirely. Includes Dry Run safety mode.
-# @USES_ENV: FILES_TO_KEEP
+# @DESCRIPTION: Rotates backups by keeping the N newest items per folder, or purging a folder's contents. Per-folder --keep/--purge flags, --dry-run preview, and safety guards against dangerous targets.
 # @CAPABILITIES:
-#   • Keeps only the newest N backups, instantly freeing disk space.
-#   • Dry‑run mode previews deletions, eliminating accidental data loss during testing.
-#   • Timestamp‑based sorting works reliably on Windows and Linux, ensuring correct retention order.
-#   • Immediate abort on deletion errors prevents cascading failures and preserves remaining data.
-#   • Special purge trigger deletes entire folders, enabling rapid recovery from corrupted backup sets.
+#   • Keeps only the newest N backups per folder, with per-folder --keep N overrides in a single call.
+#   • --purge empties a folder's contents while leaving the folder itself in place.
+#   • --dry-run previews every deletion, eliminating accidental data loss during testing.
+#   • Refuses system directories, the home directory, its own folder, symlink targets and overlapping folders.
+#   • Validates every folder before deleting anything, so a bad argument never causes a partial run.
+#   • Skips hidden entries (such as Syncthing's .stfolder) unless --hidden is given.
+#   • Aborts a folder on the first deletion error, preventing cascading failures and preserving remaining data.
 
-import glob
+import argparse
 import os
 import shutil
+import stat
 import sys
+from dataclasses import dataclass
 
-from dotenv import load_dotenv
+DEFAULT_KEEP = 2  # items kept per folder when no --keep/--purge is given
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-load_dotenv(os.path.join(script_dir, '.env'))
+# Never valid targets: these exact directories, or any directory that contains one of them.
+SYSTEM_DIRS = ("bin", "boot", "dev", "etc", "home", "lib", "lib64", "media", "mnt",
+               "opt", "proc", "root", "run", "sbin", "srv", "sys", "tmp", "usr", "var")
+ALWAYS_SKIP = {".stfolder"}  # Syncthing's folder marker: deleting it makes Syncthing stop the folder
 
-# --- CONFIGURATION ---
-# Defaults to 2 if variable is missing in .env
-FILES_TO_KEEP = int(os.environ.get("FILES_TO_KEEP", "2"))
-DELETE_ALL_TRIGGER = "::DELETE_ALL"
 
-# Safety toggle: set DRY_RUN=1 in shell to test without deleting
-DRY_RUN = os.environ.get("DRY_RUN", "0") == "1"
-# --- END OF CONFIGURATION ---
+class UsageError(Exception):
+    """Bad command line."""
 
-def get_best_timestamp(path):
-    stat = os.stat(path)
-    if os.name == 'nt':
-        return stat.st_ctime  # Windows: true creation time
-    return stat.st_mtime      # Linux: mtime avoids false ctime updates (chmod, chown, etc.)
 
-def clean_backup_folder(folder_path, num_to_keep):
-    """
-    Rotates files/folders, keeping only the most recent 'num_to_keep' items.
-    Returns True if successful, False if there was an error.
-    """
-    if not os.path.isdir(folder_path):
-        print(f"❌ Error: The folder '{folder_path}' was not found.")
-        return False
+class SafetyError(Exception):
+    """A target failed a safety check; the whole run is aborted before deleting anything."""
+
+
+class FolderMissing(Exception):
+    """Target folder doesn't exist: reported as an error, but other folders still run."""
+
+
+@dataclass
+class Plan:
+    folder: str
+    limit: int
+    dev: int
+    ino: int
+    total: int
+    doomed: list  # [(path, dev, ino), ...]
+
+
+# ---------------------------------------------------------------- safety checks
+
+def protected_paths():
+    found = {os.path.realpath(os.sep)}
+    if os.name != "nt":
+        found.update(os.path.realpath(os.path.join(os.sep, name)) for name in SYSTEM_DIRS)
+    found.add(os.path.dirname(os.path.realpath(__file__)))
+    found.add(os.path.realpath(os.path.expanduser("~")))
+    return {os.path.normcase(p) for p in found}
+
+
+def resolve_target(raw):
+    """Validates a target and returns (canonical_path, lstat_result)."""
+    if not raw.strip():
+        raise SafetyError("empty folder path")
+    if not os.path.isabs(raw):
+        raise SafetyError(f"folder path must be absolute: '{raw}'")
+
+    path = os.path.normpath(raw)
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        raise FolderMissing(f"The folder '{path}' was not found.")
+    except OSError as e:
+        raise SafetyError(f"cannot inspect '{path}': {e}")
+
+    if stat.S_ISLNK(st.st_mode):
+        raise SafetyError(f"'{path}' is a symlink; pass the real path instead (e.g. from `readlink -f`)")
+    if not stat.S_ISDIR(st.st_mode):
+        raise SafetyError(f"'{path}' is not a directory")
+
+    canonical = os.path.realpath(path)
+    key = os.path.normcase(canonical)
+    protected = protected_paths()
+    if key in protected:
+        raise SafetyError(f"'{canonical}' is a protected directory")
+    prefix = key if key.endswith(os.sep) else key + os.sep
+    for p in protected:
+        if p.startswith(prefix):
+            raise SafetyError(f"'{canonical}' contains the protected location '{p}'")
+
+    return canonical, os.lstat(canonical)
+
+
+def get_best_timestamp(st):
+    if os.name == "nt":
+        return st.st_ctime_ns  # Windows: true creation time
+    return st.st_mtime_ns      # Linux: mtime avoids false ctime updates (chmod, chown, etc.)
+
+
+def build_plan(raw, limit, include_hidden):
+    folder, folder_st = resolve_target(raw)
 
     try:
-        all_items = glob.glob(os.path.join(folder_path, '*'))
+        items = []
+        with os.scandir(folder) as entries:
+            for entry in entries:
+                if entry.name in ALWAYS_SKIP or (entry.name.startswith(".") and not include_hidden):
+                    continue
+                st = entry.stat(follow_symlinks=False)
+                items.append((get_best_timestamp(st), entry.name, entry.path, st))
+    except OSError as e:
+        raise SafetyError(f"cannot list '{folder}': {e}")
 
-        if len(all_items) > num_to_keep:
-            all_items.sort(key=lambda p: get_best_timestamp(p), reverse=True)  # ← here
-            items_to_delete = all_items[num_to_keep:]
+    items.sort(key=lambda i: (i[0], i[1]), reverse=True)  # newest first, name breaks ties
 
-            for item_path in items_to_delete:
-                try:
-                    if DRY_RUN:
-                        print(f"🕵️ [DRY RUN] Would delete: {item_path}")
-                        continue
+    doomed = []
+    for _, _, path, st in items[limit:]:
+        # A different device means a mount point sits inside the folder: never delete through it.
+        if not stat.S_ISLNK(st.st_mode) and st.st_dev != folder_st.st_dev:
+            raise SafetyError(f"'{path}' is on another filesystem (mount point?); refusing to delete it")
+        doomed.append((path, st.st_dev, st.st_ino))
 
-                    if os.path.isfile(item_path) or os.path.islink(item_path):
-                        os.remove(item_path)
-                        print(f"🗑️ Deleted file: {os.path.basename(item_path)}")
-                    elif os.path.isdir(item_path):
-                        shutil.rmtree(item_path)
-                        print(f"🗑️ Deleted folder: {os.path.basename(item_path)}")
-                except OSError as e:
-                    print(f"❌ Error deleting {item_path}: {e}")
-                    return False
-        else:
-            print(f"✅ Skipping '{folder_path}': {len(all_items)} items (limit is {num_to_keep}).")
+    return Plan(folder, limit, folder_st.st_dev, folder_st.st_ino, len(items), doomed)
 
+
+def check_overlaps(plans):
+    paths = [os.path.normcase(p.folder) for p in plans]
+    for i, a in enumerate(paths):
+        for b in paths[i + 1:]:
+            if a == b:
+                raise SafetyError(f"the same folder was given more than once: '{a}'")
+            if b.startswith(a.rstrip(os.sep) + os.sep) or a.startswith(b.rstrip(os.sep) + os.sep):
+                raise SafetyError(f"overlapping folders in one run: '{a}' and '{b}'")
+
+
+# ---------------------------------------------------------------- cleanup
+
+def clean_folder(plan, dry_run):
+    """Deletes the planned items. Returns True if successful, False on the first error."""
+    if not plan.doomed:
+        print(f"✅ Nothing to delete: {plan.total} item(s), limit is {plan.limit}.")
         return True
 
-    except Exception as e:
-        print(f"❌ An unexpected error occurred in {folder_path}: {e}")
-        return False
+    for path, dev, ino in plan.doomed:
+        if dry_run:
+            print(f"🕵️ [DRY RUN] Would delete: {path}")
+            continue
+        try:
+            # Make sure nothing was swapped out between validation and deletion.
+            cur = os.lstat(plan.folder)
+            if stat.S_ISLNK(cur.st_mode) or (cur.st_dev, cur.st_ino) != (plan.dev, plan.ino):
+                raise OSError("target folder changed after validation")
+            cur = os.lstat(path)
+            if (cur.st_dev, cur.st_ino) != (dev, ino):
+                raise OSError("item changed after validation")
+
+            if stat.S_ISDIR(cur.st_mode):
+                shutil.rmtree(path)
+                print(f"🗑️ Deleted folder: {os.path.basename(path)}")
+            else:
+                os.unlink(path)  # files and symlinks (the link itself, never its target)
+                print(f"🗑️ Deleted file: {os.path.basename(path)}")
+        except OSError as e:
+            print(f"❌ Error deleting {path}: {e}")
+            return False
+    return True
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------- command line
+
+def build_help_parser():
+    # Only used to render -h; the real parsing is order-sensitive and done in parse_args().
+    return argparse.ArgumentParser(
+        prog="cleanup_script.py",
+        usage="%(prog)s [-h] [--dry-run] [--hidden] FOLDER [--keep N] FOLDER [--purge] FOLDER ...",
+        description="Rotate backups: keep the newest N items in each folder and delete the rest.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "FOLDER           a backup folder (absolute path). With no flag before it, keeps the\n"
+            f"                 newest {DEFAULT_KEEP} items.\n"
+            "--keep N FOLDER  keep the newest N items in FOLDER (N >= 1).\n"
+            "--purge FOLDER   delete EVERYTHING inside FOLDER (the folder itself stays).\n"
+            "\n"
+            "--keep and --purge only affect the single FOLDER that follows them.\n"
+            "--dry-run        preview what would be deleted, without deleting anything.\n"
+            "--hidden         also count/delete hidden entries (dotfiles). Skipped by default;\n"
+            "                 Syncthing's .stfolder is never touched.\n"
+            "\n"
+            "Safety: everything is validated before anything is deleted. Refused: relative\n"
+            "paths, symlink targets, system directories (/, /home, /opt, /tmp, ...), your home\n"
+            "directory, this script's folder, folders that contain any of those, and\n"
+            "overlapping folders. Subfolders of the protected ones are fine.\n"
+            "A folder that doesn't exist is reported as an error, but the others still run.\n"
+            "\n"
+            "Exit codes: 0 ok, 1 error or refusal, 2 bad usage.\n"
+            "\n"
+            "example:\n"
+            "  cleanup_script.py \\\n"
+            '    "$DATA_DIR/Backup/contacts" \\\n'
+            '    --keep 1 "$DATA_DIR/Backup/antennapod" \\\n'
+            '    --purge "$DATA_DIR/downloads/watch"'
+        ),
+    )
+
+
+def parse_args(args):
+    """Returns (targets, dry_run, include_hidden). --keep/--purge apply to the folder right after them."""
+    targets = []
+    dry_run = False
+    include_hidden = False
+    pending_keep = None
+    pending_purge = False
+    i = 0
+    while i < len(args):
+        tok = args[i]
+        i += 1
+
+        if tok == "--dry-run":
+            dry_run = True
+        elif tok == "--hidden":
+            include_hidden = True
+        elif tok == "--purge":
+            if pending_purge or pending_keep is not None:
+                raise UsageError("--purge/--keep given twice for the same folder")
+            pending_purge = True
+        elif tok == "--keep" or tok.startswith("--keep="):
+            if pending_purge or pending_keep is not None:
+                raise UsageError("--purge/--keep given twice for the same folder")
+            if tok == "--keep":
+                if i >= len(args):
+                    raise UsageError("--keep needs a number (e.g. --keep 1)")
+                value = args[i]
+                i += 1
+            else:
+                value = tok.split("=", 1)[1]
+            try:
+                pending_keep = int(value)
+            except ValueError:
+                raise UsageError(f"--keep expects a whole number, got '{value}'")
+            if pending_keep < 1:
+                raise UsageError("--keep must be at least 1 (use --purge to delete everything)")
+        elif tok.startswith("--"):
+            raise UsageError(f"unknown option '{tok}'")
+        else:
+            limit = 0 if pending_purge else (pending_keep if pending_keep is not None else DEFAULT_KEEP)
+            targets.append((tok, limit))
+            pending_keep = None
+            pending_purge = False
+
+    if pending_purge:
+        raise UsageError("--purge must be followed by a folder")
+    if pending_keep is not None:
+        raise UsageError("--keep N must be followed by a folder")
+    if not targets:
+        raise UsageError("No backup folders provided.")
+    return targets, dry_run, include_hidden
+
+
+def main():
     args = sys.argv[1:]
 
-    if not args:
-        print("❌ Error: No backup folders provided.")
-        sys.exit(1)
+    if "-h" in args or "--help" in args:
+        build_help_parser().print_help()
+        return 0
 
-    if DRY_RUN:
+    try:
+        targets, dry_run, include_hidden = parse_args(args)
+    except UsageError as e:
+        print(f"❌ Error: {e}")
+        print("   Run with -h for usage.")
+        return 2
+
+    # Validate and plan EVERY folder before deleting anything.
+    entries = []   # (raw, limit, plan or None, missing-message or None)
+    refusals = []
+    for raw, limit in targets:
+        try:
+            entries.append((raw, limit, build_plan(raw, limit, include_hidden), None))
+        except FolderMissing as e:
+            entries.append((raw, limit, None, str(e)))
+        except SafetyError as e:
+            refusals.append(f"{raw!r}: {e}")
+
+    if not refusals:
+        try:
+            check_overlaps([plan for _, _, plan, _ in entries if plan])
+        except SafetyError as e:
+            refusals.append(str(e))
+
+    if refusals:
+        print("❌ Refusing to run. Nothing was deleted:")
+        for r in refusals:
+            print(f"  • {r}")
+        return 1
+
+    if dry_run:
         print("🧪 --- DRY RUN MODE ACTIVE (No files will be deleted) ---")
     else:
         print("🧹 --- Starting Backup Cleanup ---")
 
-    any_error_occurred = False
-
-    for arg in args:
-        if arg.endswith(DELETE_ALL_TRIGGER):
-            # Strip the trigger to get real path, set limit to 0
-            folder = arg[:-len(DELETE_ALL_TRIGGER)]
-            limit = 0
-            print(f"📂 Mode: PURGE ALL for '{folder}'")
+    any_error = False
+    for raw, limit, plan, missing in entries:
+        if limit == 0:
+            print(f"📂 Mode: PURGE ALL for '{raw}'")
         else:
-            # Standard mode
-            folder = arg
-            limit = FILES_TO_KEEP
-            print(f"📂 Mode: ROTATE (Keep {limit}) for '{folder}'")
+            print(f"📂 Mode: ROTATE (Keep {limit}) for '{raw}'")
 
-        success = clean_backup_folder(folder, limit)
-        if not success:
-            any_error_occurred = True
+        if missing:
+            print(f"❌ Error: {missing}")
+            any_error = True
+        elif not clean_folder(plan, dry_run):
+            any_error = True
 
     print("✨ --- Cleanup Process Finished ---")
+    return 1 if any_error else 0
 
-    if any_error_occurred:
-        sys.exit(1)
+
+if __name__ == "__main__":
+    sys.exit(main())

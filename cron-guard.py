@@ -13,6 +13,7 @@
 #   • Hashes job names for unique file identifiers, avoiding disk collisions between similarly named tasks.
 #   • Suppresses repeated identical failures for a configurable period, sending a single reminder instead of noise.
 #   • Sends a single recovery message after a previously alerted failure resolves, closing the alert loop.
+#   • Shows command placeholder in usage help, improving CLI discoverability.
 
 # optional: sudo ln -s cron-guard.py /usr/local/bin/cron-guard
 
@@ -322,6 +323,14 @@ def send_telegram_alert(token, chat_id, job_name, exit_code, log_tail, duration,
     return False
 
 
+class CommandUsageFormatter(argparse.HelpFormatter):
+    """argparse hardcodes '...' for nargs=REMAINDER and ignores metavar in the usage line.
+    This shows the metavar (e.g. 'command ...') there instead."""
+    def _format_args(self, action, default_metavar):
+        if action.nargs == argparse.REMAINDER:
+            return f"{self._metavar_formatter(action, default_metavar)(1)[0]} ..."
+        return super()._format_args(action, default_metavar)
+
 class AlertingArgumentParser(argparse.ArgumentParser):
     """Custom parser to intercept arguments errors and send a Telegram 'curse' alert."""
     def error(self, message):
@@ -360,7 +369,8 @@ def main():
     if os.name != 'nt':
         os.umask(0o022)
 
-    parser = AlertingArgumentParser(description="Run a command and notify via Telegram.")
+    parser = AlertingArgumentParser(description="Run a command and notify via Telegram.",
+                                    formatter_class=CommandUsageFormatter)
     parser.add_argument("--mode", choices=["fail", "success", "all", "mute"], default="fail",
                         help="When to send notification (default: fail)")
     parser.add_argument("--timeout", type=int, default=None,
@@ -370,7 +380,7 @@ def main():
     parser.add_argument("--recovery", action="store_true",
                         help="Send one 'recovered' message on the first success after an alerted failure (fail/all modes)")
     parser.add_argument("job_name", help="Name of the job for the report")
-    parser.add_argument("command", nargs=argparse.REMAINDER, help="The command to execute")
+    parser.add_argument("command", nargs=argparse.REMAINDER, metavar="command", help="The command to execute")
 
     args = parser.parse_args()
 
