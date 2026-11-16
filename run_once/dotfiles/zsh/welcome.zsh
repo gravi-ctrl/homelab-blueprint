@@ -23,6 +23,8 @@ typeset -ga WELCOME_COMMANDS=(
   "extract|Unzip / untar"
   "guestwifi|WiFi toggle"
   "stamp|Timestamp output"
+  "gitops-hold <MIN>|Pauses the script"
+  "gitops-resume|Resumes the script"
 )
 
 typeset -ga WELCOME_SHORTCUTS=(

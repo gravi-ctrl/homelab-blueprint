@@ -4,6 +4,10 @@
 # Remember: if a name here is also defined as an alias anywhere, run
 # `unalias <name>` first or zsh will give a parse error.
 
+# gitops-deploy's new function
+gitops-hold()   { echo $(( $(date +%s) + ${1:-120} * 60 )) > /tmp/gitops_hold; echo "GitOps paused for ${1:-120} min"; }
+gitops-resume() { rm -f /tmp/gitops_hold; echo "GitOps resumed"; }
+
 # Adds a timestamp to terminal. Usage: stamp <command>
 stamp() {
   "$@" | ts

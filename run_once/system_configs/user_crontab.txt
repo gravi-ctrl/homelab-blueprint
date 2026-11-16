@@ -27,7 +27,7 @@ BASH_ENV=/opt/rabbit-hole/.env
 0 * * * * cron-guard --mode fail "Disk Monitor" "/opt/rabbit-hole/disk-monitor.sh"
 
 # Update Pi-hole Gravity and apply mmotti regex rules
-5 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "/opt/stacks/pihole/update-pihole-regex.sh"
+5 4 * * * cron-guard --mode fail "Pi-hole Gravity & Regex" "/opt/stacks/pihole/scripts/update-pihole-regex.sh"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
 20 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
