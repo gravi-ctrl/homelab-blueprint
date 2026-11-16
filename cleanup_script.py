@@ -4,7 +4,7 @@
 #   • Keeps only the newest N backups per folder, with per-folder --keep N overrides in a single call.
 #   • --purge empties a folder's contents while leaving the folder itself in place.
 #   • --dry-run previews every deletion, eliminating accidental data loss during testing.
-#   • Refuses system directories, the home directory, its own folder, symlink targets and overlapping folders.
+#   • Refuses system directories, drive roots, Windows system folders, home, its own folder, symlink targets and overlapping folders.
 #   • Validates every folder before deleting anything, so a bad argument never causes a partial run.
 #   • Skips hidden entries (such as Syncthing's .stfolder) unless --hidden is given.
 #   • Aborts a folder on the first deletion error, preventing cascading failures and preserving remaining data.
@@ -115,7 +115,8 @@ def build_plan(raw, limit, include_hidden):
             for entry in entries:
                 if entry.name in ALWAYS_SKIP or (entry.name.startswith(".") and not include_hidden):
                     continue
-                st = entry.stat(follow_symlinks=False)
+                # os.lstat, not entry.stat(): on Windows DirEntry.stat() leaves st_dev/st_ino at 0.
+                st = os.lstat(entry.path)
                 items.append((get_best_timestamp(st), entry.name, entry.path, st))
     except OSError as e:
         raise SafetyError(f"cannot list '{folder}': {e}")
