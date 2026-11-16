@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-16 20:48 EET</div>
+    <div class="meta-line">Generated 2026-11-16 20:54 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4644,7 +4644,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Performs comprehensive post‑deploy verification: compose wait, crash‑loop soak, port/HTTP checks, optional URL probe.",
         "Automatically rolls back to the last known good compose file on failure, keeping services online and alerting stakeholders.",
         "Provides read‑only probe and verify modes for quick health‑check validation without affecting running services.",
-        "Skips deployment when a weekly backup holds an exclusive lock, avoiding interference with backup operations."
+        "Skips deployment when a weekly backup holds an exclusive lock, avoiding interference with backup operations.",
+        "Skips deployment when a manual hold file exists, allowing operators to pause GitOps cycles.",
+        "Provides a configurable grace period before deploying, during which a hold can cancel the operation."
       ],
       "category": "Core Scripts",
       "cron_ctx": "User",
@@ -4951,7 +4953,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "Hardens Docker with isolated networks, DNS, and log rotation for stability.",
         "Maintains sudo session in background to eliminate repeated authentication prompts.",
         "Enables passwordless root crontab access for automated backup verification.",
-        "Prevents root execution to ensure safe, non-privileged bootstrap workflow."
+        "Prevents root execution to ensure safe, non-privileged bootstrap workflow.",
+        "Sets APT lock timeout to 180 seconds to avoid stalled package operations."
       ],
       "category": "Run Once",
       "cron_ctx": "",
