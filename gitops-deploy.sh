@@ -1,6 +1,6 @@
 #!/bin/bash
 # @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.
-# @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID
+# @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, GITOPS_GRACE
 # @CAPABILITIES:
 #   • Auto‑synchronizes production stacks from GitHub main, preventing accidental feature‑branch deployments.
 #   • Detects merge conflicts before redeploy, halting updates and notifying admins via Telegram to avoid broken services.
@@ -37,6 +37,8 @@ source "/opt/rabbit-hole/.env"
 
 cd "${STACKS_DIR}"
 PAUSE_FILE="/tmp/gitops_paused"
+HOLD_FILE="/tmp/gitops_hold"          # "do not disturb": see gitops-hold in ~/.zshrc
+GITOPS_GRACE="${GITOPS_GRACE:-0}"       # seconds to wait (and allow a cancel) before deploying; 0 = notify only
 # Everything below lives inside .git, so it is never committed or synced.
 RETRY_FILE="${STACKS_DIR}/.git/gitops_retry"            # stacks to retry next cycle
 STATE_DIR="${STACKS_DIR}/.git/gitops_state"
@@ -456,6 +458,19 @@ case "${1:-}" in
     *) echo "Usage: $(basename "$0") [--probe CONTAINER [PORT] | --verify STACK]" >&2; exit 2 ;;
 esac
 
+# "Do not disturb": while the hold file exists (and has not expired) no deploys happen.
+# Create it with `gitops-hold [minutes]`; an epoch time inside the file means "until then".
+if [ -e "$HOLD_FILE" ]; then
+    _until=$(cat "$HOLD_FILE" 2>/dev/null || true)
+    if [[ "$_until" =~ ^[0-9]+$ ]] && [ "$(date +%s)" -ge "$_until" ]; then
+        rm -f "$HOLD_FILE"
+        send_telegram "▶️ GitOps hold expired. Deploys resume."
+    else
+        echo "⏸️  GitOps hold active ($HOLD_FILE). Skipping this cycle."
+        exit 0
+    fi
+fi
+
 # The weekly backup holds an exclusive lock on this file for its whole run (including the 5 min
 # warning and the stacks being down). Never touch git or containers while it runs.
 # Open read-only so we never create the file (root couldn't reopen a user-owned one in /tmp).
@@ -486,11 +501,18 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
     exit 0
 fi
 
+
 git fetch -q origin main
 
 OLD_HEAD=$(git rev-parse HEAD)
-# Count how many remote commits we are missing
-BEHIND=$(git rev-list HEAD..origin/main | wc -l)
+
+# Snapshot the exact upstream commit for THIS GitOps cycle.
+# Commits merged during the grace period belong to the next cycle.
+TARGET_HEAD=$(git rev-parse FETCH_HEAD)
+
+# Count commits missing from the local deployment checkout.
+BEHIND=$(git rev-list "${OLD_HEAD}..${TARGET_HEAD}" | wc -l)
+
 CHANGED_DIRS=""
 NEW_FAILED=""
 PREV_FAILED=""
@@ -501,10 +523,33 @@ if [ "$BEHIND" -gt 0 ]; then
     echo "🔄 GitOps: Upstream changes detected on main branch."
 
     # Trigger only if a compose.yml file was modified
-    CHANGED_DIRS=$(git diff --name-only HEAD origin/main | grep '/compose\.yml$' | cut -d/ -f1 | sort -u || true)
+    CHANGED_DIRS=$(git diff --name-only "$OLD_HEAD" "$TARGET_HEAD" \
+    | grep '/compose\.yml$' \
+    | cut -d/ -f1 \
+    | sort -u || true)
+    # Heads-up before touching anything. With GITOPS_GRACE > 0 you also get a window to cancel (create the hold file).
+    if [ -n "$CHANGED_DIRS" ]; then
+        _stacks=$(printf '%s\n' "$CHANGED_DIRS" | sed 's/^/ - /')
+        if [ "$GITOPS_GRACE" -gt 0 ]; then
+            send_telegram "🔔 GitOps: stack changes detected
+━━━━━━━━━━━━━━━━━━━━
+${_stacks}
+Deploying in $((GITOPS_GRACE / 60)) min. Run gitops-hold to cancel."
+            sleep "$GITOPS_GRACE"
+            if [ -e "$HOLD_FILE" ]; then
+                echo "⏸️  Hold set during the grace period. Nothing pulled; retrying next cycle."
+                exit 0
+            fi
+        else
+            send_telegram "🔔 GitOps: deploying stack changes now
+━━━━━━━━━━━━━━━━━━━━
+${_stacks}"
+        fi
+    fi
 
-    # Attempt pull with autostash. Trigger lockout and restore clean state on failure.
-    if ! git pull -q origin main --rebase --autostash; then
+    # Apply the exact upstream snapshot captured before the grace period.
+    # Newer commits on origin/main remain for the next GitOps cycle.
+    if ! git rebase -q --autostash "$TARGET_HEAD"; then
         git rebase --abort 2>/dev/null || true
 
         if [ ! -f "$PAUSE_FILE" ]; then

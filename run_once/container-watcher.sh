@@ -50,8 +50,8 @@ check_tailscale() {
 
 # 🔹 TASK: NEXTCLOUD
 task_nextcloud() {
-    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/nextcloud_post-restore_fix.sh || return 1
-    /opt/stacks/nextcloud/nextcloud-dynamic-watch.sh || return 1
+    sudo -u "$(stat -L -c '%U' /opt/rabbit-hole)" /opt/stacks/nextcloud/scripts/nextcloud_post-restore_fix.sh || return 1
+    /opt/stacks/nextcloud/scripts/nextcloud-dynamic-watch.sh || return 1
 
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Nextcloud
 ━━━━━━━━━━━━━━━
