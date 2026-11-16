@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-14 19:37 EET</div>
+    <div class="meta-line">Generated 2026-11-16 20:48 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3906,7 +3906,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 2
     },
     {
-      "command": "cron-guard --mode fail \"Pi-hole Gravity & Regex\" \"/opt/stacks/pihole/update-pihole-regex.sh\"",
+      "command": "cron-guard --mode fail \"Pi-hole Gravity & Regex\" \"/opt/stacks/pihole/scripts/update-pihole-regex.sh\"",
       "day_conditional": null,
       "env": [],
       "full_comment": "Update Pi-hole Gravity and apply mmotti regex rules",
@@ -4214,6 +4214,16 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "GEMINI_MODEL",
       "script_used": [
         "oracle.py"
+      ]
+    },
+    {
+      "env_used": [
+        "gitops-deploy.sh"
+      ],
+      "mismatch": false,
+      "name": "GITOPS_GRACE",
+      "script_used": [
+        "gitops-deploy.sh"
       ]
     },
     {
@@ -4650,7 +4660,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "env": [
         "STACKS_DIR",
         "TELEGRAM_DANTE_BOT_TOKEN",
-        "TELEGRAM_CHAT_ID"
+        "TELEGRAM_CHAT_ID",
+        "GITOPS_GRACE"
       ],
       "freq": "Every 15 minutes",
       "freq_source": "cron",
