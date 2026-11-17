@@ -5,6 +5,7 @@
 [![Code Quality & Tests](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/ctrl-s-master/actions/workflows/ci.yml)
 [![Security Scans](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/security.yml)
 [![Stacks Validation & CI](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/ci.yml)
+[![Renovate Config](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/renovate-config-check.yml/badge.svg)](https://github.com/gravi-ctrl/server-docker-backup/actions/workflows/renovate-config-check.yml)
 
 # 🛠️ Homelab Blueprint
 
@@ -51,6 +52,7 @@ Every commit and pull request across my repos gets checked before any code or co
 
 * **Linting:** [ShellCheck](https://www.shellcheck.net/) for Bash, [Ruff](https://docs.astral.sh/ruff/) for Python, and [Hadolint](https://github.com/hadolint/hadolint) for Dockerfiles.
 * **Stack validation:** A custom CI job goes through every Docker Compose stack and runs `docker compose config -q` against its `.env.example`, so syntax and schema mistakes show up before deployment. (The `.env.example` is there because the real `.env` files are not in git.)
+* **Config validation:** The Renovate config (and the generated n8n version allowlist) is validated with `renovate-config-validator` on every PR, and the check is required on `main`, so a typo in it can't quietly stop dependency updates.
 * **Automated tests:** `pytest` runs on the core utility modules, on both `ubuntu-latest` and `windows-latest`.
 * **Security and supply chain:**
   * [Trivy](https://github.com/aquasecurity/trivy) scans for committed credentials, API keys and Dockerfile misconfigurations (`HIGH` and `CRITICAL`).
@@ -81,7 +83,7 @@ flowchart LR
     V -->|healthy| OK["Telegram: success"]
     V -->|failed| RB["Rollback to last known good + Telegram alert"]
 ```
-
+Renovate automerges Docker digest and patch updates inside a daily window once all required checks pass. Anything stateful (Nextcloud, databases, n8n, Pocket ID, uptime-kuma, romm) is never automerged and always waits for me.
 `main` is protected in every repo (a PR and passing checks are required), and no script ever pushes to it. Anything the server generates goes to its own side branch: dashboards to `pages`, system snapshots to `snapshots`. If something on the server changes without going through a PR, it shows up in a daily drift report instead of being committed quietly. The reasoning is in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §16–19.
 
 ---
