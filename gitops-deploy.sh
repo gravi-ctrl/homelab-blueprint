@@ -1,5 +1,5 @@
 #!/bin/bash
-# @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes.
+# @DESCRIPTION: Pulls merged GitHub changes (e.g. Renovate PRs) into /opt/stacks, redeploys the affected running stacks, verifies each one (compose --wait, crash-loop soak, automatic port + HTTP checks, optional URL probe) and rolls back to the last known good compose file on failure. Also has read-only --probe and --verify helper modes, and --now to deploy immediately.
 # @USES_ENV: STACKS_DIR, TELEGRAM_DANTE_BOT_TOKEN, TELEGRAM_CHAT_ID, GITOPS_GRACE
 # @CAPABILITIES:
 #   • Auto‑synchronizes production stacks from GitHub main, preventing accidental feature‑branch deployments.
@@ -11,7 +11,7 @@
 #   • Provides read‑only probe and verify modes for quick health‑check validation without affecting running services.
 #   • Skips deployment when a weekly backup holds an exclusive lock, avoiding interference with backup operations.
 #   • Skips deployment when a manual hold file exists, allowing operators to pause GitOps cycles.
-#   • Provides a configurable grace period before deploying, during which a hold can cancel the operation.
+#   • Provides a configurable grace period before deploying, which can be bypassed with --now
 
 # ================================================================================================
 
@@ -34,14 +34,40 @@
 
 set -euo pipefail
 
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTION]
+
+Pulls merged changes from GitHub main into \$STACKS_DIR, redeploys the affected
+running stacks, verifies them and rolls back on failure.
+
+Options:
+  (none)                    normal run (what cron does); honours GITOPS_GRACE
+  --now                     manual run: skip the grace period
+  --probe CONTAINER [PORT]  find a health path, print a deploy.healthcheck label (read-only)
+  --verify STACK            run the post-deploy checks on a stack as it runs now (read-only)
+  -h, --help                show this help
+
+Environment (.env or shell):
+  GITOPS_GRACE    seconds to wait before deploying, cancellable with gitops-hold (default 0)
+  WAIT_TIMEOUT    seconds 'compose up --wait' may take (default 300)
+  SOAK_SECONDS    crash-loop watch time after ready (default 30)
+  PROBE_TIMEOUT   seconds for port/HTTP/URL checks after an update (default 120)
+EOF
+}
+
+case "${1:-}" in
+    -h | --help) usage; exit 0 ;;
+esac
+
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 source "/opt/rabbit-hole/.env"
 
 cd "${STACKS_DIR}"
 PAUSE_FILE="/tmp/gitops_paused"
 HOLD_FILE="/tmp/gitops_hold"          # "do not disturb": see gitops-hold in ~/.zshrc
-GITOPS_GRACE="${GITOPS_GRACE:-0}"       # seconds to wait (and allow a cancel) before deploying; 0 = notify only
-# Everything below lives inside .git, so it is never committed or synced.
+GITOPS_GRACE="${GITOPS_GRACE:-0}"       # seconds to wait (and allow a cancel) before deploying; 0 = notify only; --now skips it
+[[ "$GITOPS_GRACE" =~ ^[0-9]+$ ]] || GITOPS_GRACE=0
 RETRY_FILE="${STACKS_DIR}/.git/gitops_retry"            # stacks to retry next cycle
 STATE_DIR="${STACKS_DIR}/.git/gitops_state"
 LASTGOOD_DIR="${STATE_DIR}/lastgood"                    # last compose.yml that deployed AND verified OK
@@ -456,8 +482,9 @@ verify_only() {
 case "${1:-}" in
     --probe)  shift; rc=0; probe_container "$@" || rc=$?; exit "$rc" ;;
     --verify) shift; rc=0; verify_only "$@" || rc=$?; exit "$rc" ;;
+    --now)    GITOPS_GRACE=0 ;;      # manual run: skip the grace period
     "") ;;
-    *) echo "Usage: $(basename "$0") [--probe CONTAINER [PORT] | --verify STACK]" >&2; exit 2 ;;
+    *) usage >&2; exit 2 ;;
 esac
 
 # "Do not disturb": while the hold file exists (and has not expired) no deploys happen.
