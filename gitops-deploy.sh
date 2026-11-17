@@ -34,6 +34,32 @@
 
 set -euo pipefail
 
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTION]
+
+Pulls merged changes from GitHub main into \$STACKS_DIR, redeploys the affected
+running stacks, verifies them and rolls back on failure.
+
+Options:
+  (none)                    normal run (what cron does); honours GITOPS_GRACE
+  --now                     manual run: skip the grace period
+  --probe CONTAINER [PORT]  find a health path, print a deploy.healthcheck label (read-only)
+  --verify STACK            run the post-deploy checks on a stack as it runs now (read-only)
+  -h, --help                show this help
+
+Environment (.env or shell):
+  GITOPS_GRACE    seconds to wait before deploying, cancellable with gitops-hold (default 0)
+  WAIT_TIMEOUT    seconds 'compose up --wait' may take (default 300)
+  SOAK_SECONDS    crash-loop watch time after ready (default 30)
+  PROBE_TIMEOUT   seconds for port/HTTP/URL checks after an update (default 120)
+EOF
+}
+
+case "${1:-}" in
+    -h | --help) usage; exit 0 ;;
+esac
+
 [[ -f "/opt/rabbit-hole/.env" ]] || { echo ".env does not exist at /opt/rabbit-hole" >&2; exit 1; }
 source "/opt/rabbit-hole/.env"
 
@@ -458,7 +484,7 @@ case "${1:-}" in
     --verify) shift; rc=0; verify_only "$@" || rc=$?; exit "$rc" ;;
     --now)    GITOPS_GRACE=0 ;;      # manual run: skip the grace period
     "") ;;
-    *) echo "Usage: $(basename "$0") [--now | --probe CONTAINER [PORT] | --verify STACK]" >&2; exit 2 ;;
+    *) usage >&2; exit 2 ;;
 esac
 
 # "Do not disturb": while the hold file exists (and has not expired) no deploys happen.
