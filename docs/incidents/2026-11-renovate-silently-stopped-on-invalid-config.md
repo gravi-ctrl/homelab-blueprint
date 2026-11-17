@@ -44,8 +44,8 @@ Invalid JSON in `renovate.json`: missing commas after several entries in the `ma
 - [x] CI workflow `Validate Renovate config` runs `renovate-config-validator` on every PR and on pushes to `main`, set as a required status check. It deliberately has no `paths:` filter on `pull_request`, so the required check always reports.
 - [x] Validate the generated `renovate-feed/n8n-stable.json` preset too, since a broken preset causes the same failure.
 - [x] Enable automerge on the generated n8n allowlist PR, gated by the required checks, so it is safe without manual review. Tested end to end.
-- [ ] Get notified when Renovate opens an "Action Required: Fix Renovate Configuration" issue, instead of relying on me to notice it.
-- [ ] When adding a new required check, re-trigger open PRs so they pick it up.
+- [X] Get notified when Renovate opens an "Action Required: Fix Renovate Configuration" issue, instead of relying on me to notice it.
+- [x] When adding a new required check, re-trigger open PRs so they pick it up.
 
 ## Lessons
 A status message in a PR is only as fresh as the last successful run, so when automation looks healthy but does nothing, read the run log first. Anything that can silently stall a pipeline, like a config file, deserves a CI check that fails loudly before the change merges.
