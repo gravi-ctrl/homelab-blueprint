@@ -294,6 +294,7 @@ The repos `homelab-blueprint`, `ctrl-s-master`, and `server-docker-backup` are p
 When a branch protection rule marks a check (like `pytest` or `shellcheck`) as **Required**, GitHub blocks the merge button until that exact check reports a status.
 * **The problem:** if a workflow has `paths: ['**.py']` and a PR only edits `README.md`, GitHub skips the workflow. It never reports, so the PR sits forever at `Waiting for status to be reported (Expected)`.
 * **Rule:** workflows for required checks must run on `pull_request` **without** path filters, so they always report a pass, even on docs-only changes. (Targeted workflows like `terraform.yml` do use path filters because they only care about infrastructure files.)
+* **Gotcha:** a newly required check only applies to PRs opened after its workflow exists. Open PRs sit on `Expected` until they get a new event (rebase, update branch, or close and reopen).
 
 ### 2. Pin third-party Actions to full commit SHAs
 Third-party Actions (like `aquasecurity/trivy-action`) use an unchangeable **40-character commit SHA**, not a tag like `@v0.36.0` that can be moved:
@@ -303,6 +304,13 @@ uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36
 
 ### 3. Compose validation needs a fake `.env`
 `docker compose config -q` refuses to render a file when a `${VAR}` has no value, and real `.env` files are (rightly) not in git. So CI copies each stack's `.env.example` to `.env`, validates, then deletes it. This proves the syntax and schema are fine. It does not prove the images exist or the stack starts. A stack also fails validation if `.env.example` leaves a *required* value blank. Give such variables a default (`${PORT:-8080}`) or a sample value.
+
+### 4. A broken Renovate config fails silently, so CI validates it
+If `renovate.json` (or a preset it extends) is invalid, hosted Renovate aborts at the init phase and processes nothing. Open PRs stay green and untouched, and their body keeps saying `Automerge: Enabled` from the last good run. The only signal is an `Action Required: Fix Renovate Configuration` issue and the Mend job log (`config-validation`, exit code 5).
+* **Rule:** `renovate-config-validator` runs on every PR (no `paths` filter, see §15.1) and is a required check. It covers `renovate.json` and `renovate-feed/n8n-stable.json`.
+* **Rule order:** in `packageRules`, later rules win. The never-automerge list must stay after the automerge rule.
+* **Matching:** `matchPackageNames` matches the *image name*, not the stack, so `**/uptime-kuma` does not block `tecnativa/docker-socket-proxy` in that stack.
+* **Debugging:** automerge looks wrong? Open the Mend job log first, before the PR body.
 
 ---
 
@@ -435,8 +443,11 @@ Terraform is never applied from my workstation:
 
 **CI and Terraform**
 - Setting up a required PR check? Never add `paths` filtering, or docs-only PRs get stuck on `Expected`. (§15.1)
+- Just made a new check required? Re-trigger open PRs (rebase, update branch, or close and reopen), or they stay on
+`Expected`. (§15.1)
 - Adding third-party GitHub Actions? Pin to the full 40-character commit SHA, never a tag or `latest`. (§15.2)
 - Testing Compose files in CI? Make sure `.env.example` exists. CI copies it temporarily so required variables resolve. (§15.3)
+- Renovate PRs green but not automerging? Check the Mend job log for `config-validation`. The `Automerge: Enabled` text in the PR body is stale after a failed run. (§15.4)
 - Custom S3 endpoint giving `unsupported protocol scheme ""`? The endpoint URL must include `https://`. (§19.2)
 - `terraform import` planning to delete a repo's description or homepage? Leaving out an attribute or setting `null` means "wipe it." Pass the existing values in the module call. (§19.3)
 - Race during resource replacement (`422 Name already exists`)? Renaming an unmanaged or moved resource runs `create` and `destroy` at the same time. Run `terraform import` for existing cloud assets before applying changes. (§19.3)
