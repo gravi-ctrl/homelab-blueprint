@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Terminal AI assistant powered by Google Gemini: piped logs/diffs/scripts, multi-turn chat, commit/PR/changelog writer, container log diagnosis, linter-backed script review, command suggester, read-only investigation agent
 # @FREQUENCY: On Demand
-# @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL, GEMINI_DEEP_MODEL, ORACLE_CONTEXT
+# @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
 #   • Streams AI responses; smart log handling (dedupe, line numbers, error windows) instead of blind tail-trimming.
 #   • Auto-fails over to other models on 429/404/5xx, keeping analysis uninterrupted on the free tier.
