@@ -15,6 +15,7 @@
 
 import argparse
 import difflib
+import hashlib
 import json
 import os
 import platform
@@ -1375,6 +1376,7 @@ DIGEST_ROLE = (
     "Write a short briefing in plain text. For each problem, most severe first: WHAT (one line), LIKELY CAUSE (cite the evidence; "
     "say 'unclear' if it cannot be determined from what you were given), NEXT (one non-destructive command to confirm or fix). "
     "Finish with at most one line on whether the problems look related. No filler, no greetings.\n"
+    "LENGTH: keep the whole briefing under 12 lines and 1500 characters; it is shown in a chat alert that cuts off older lines.\n"
     "Never claim anything is fine that the checks did not cover. Never suggest destructive commands as a first step."
 )
 
@@ -1574,11 +1576,18 @@ def digest_briefing(host: str, stamp: str, since: str, problems: list, notes: li
     msg = ask_gemini(messages, model)
     return (msg.get("content") or "").strip() if msg else ""
 
+BRIEF_TTL = 6 * 3600   # reuse an identical briefing for 6h: stable alert text + no repeat API calls
+
+def problem_set_key(problems: list) -> str:
+    """Same problems (ignoring numbers like 91% -> 92% or restart counters) = same key."""
+    norm = sorted(re.sub(r'\d+', '#', p["title"]) for p in problems)
+    return hashlib.sha1("\n".join(norm).encode()).hexdigest()[:16]
+
 def cmd_digest(args, model: str) -> int:
     since = args.since or "24h"
     warn_pct = args.disk_warn or 85
     ignore = set(args.ignore or [])
-    state = load_digest_state()
+    state = {} if args.no_state else load_digest_state()
     findings, parts, skipped, ran = [], [], [], 0
 
     f, summary, skip, counts = digest_docker(ignore, state)
@@ -1593,7 +1602,13 @@ def cmd_digest(args, model: str) -> int:
         (skipped.append(skip) if skip else None)
         ran += 0 if skip else 1
     if counts:
-        save_digest_state({"restarts": counts, "ts": int(time.time())})
+        state["restarts"] = counts
+    state["ts"] = int(time.time())
+
+    def finish(code: int) -> int:
+        if not args.no_state:
+            save_digest_state(state)
+        return code
 
     host, stamp = platform.node() or "this host", time.strftime("%Y-%m-%d %H:%M")
     if ran == 0:
@@ -1603,33 +1618,47 @@ def cmd_digest(args, model: str) -> int:
     notes = [x for x in findings if x["sev"] == "note"]
 
     if not problems:
+        state.pop("brief", None)     # recovered: the next incident gets a fresh briefing
         line = f"✓ all clear on {host} ({stamp}): " + ", ".join(parts)
         if skipped:
             line += f"  [skipped: {'; '.join(skipped)}]"
         print(line)
         for n in notes:
             print(f"  note: {n['title']}")
-        return 0
+        return finish(0)
+
+    # Layout matters when a wrapper such as cron-guard forwards only the LAST lines of the output:
+    # headline, compact raw results, and the AI briefing LAST so it is what the alert shows.
+    brief, written = "", ""
+    if not args.no_ai:
+        key = problem_set_key(problems)
+        cached = state.get("brief") or {}
+        if cached.get("key") == key and cached.get("text") and time.time() - cached.get("ts", 0) < BRIEF_TTL:
+            brief, written_ts = cached["text"], cached["ts"]
+        else:
+            brief, written_ts = digest_briefing(host, stamp, since, problems, notes, model), int(time.time())
+            if brief:
+                state["brief"] = {"key": key, "text": brief, "ts": written_ts}
+        # Constant wording + only digits differ between a fresh and a reused briefing, so a wrapper that
+        # fingerprints the output (cron-guard ignores digits) sees the same text and keeps suppressing repeats.
+        written = time.strftime("%Y-%m-%d %H:%M", time.localtime(written_ts))
 
     print(f"⚠ {len(problems)} problem{'s' if len(problems) != 1 else ''} on {host} ({stamp}, last {since})")
     print()
-    if not args.no_ai:
-        brief = digest_briefing(host, stamp, since, problems, notes, model)
-        if brief:
-            print(brief)
-        else:
-            print("(AI briefing unavailable — raw findings below)")
-        print()
     print("--- CHECK RESULTS ---")
     for p in problems:
         print(f"✗ {p['title']}")
-        for l in p["lines"][:6]:
+        for l in p["lines"][:4]:
             print(f"    {l}")
     for n in notes:
         print(f"• {n['title']}")
     if skipped:
-        print(f"\n(skipped checks: {'; '.join(skipped)})")
-    return 1
+        print(f"(skipped checks: {'; '.join(skipped)})")
+    if not args.no_ai:
+        print()
+        print(f"--- AI BRIEFING (written {written}) ---" if brief else "--- AI BRIEFING ---")
+        print(brief if brief else "(unavailable: see the check results above)")
+    return finish(1)
 
 # ── Interactive chat (also used for follow-ups after a pipe) ──────────────────
 CHAT_ROLE = (
@@ -1796,6 +1825,7 @@ HELP["overview"] = """[[t:oracle]] — terminal AI assistant & diagnostics engin
   [[f:--disk-warn N]]         disk usage % that counts as a problem, default 85 (digest)
   [[f:--ignore NAME]]         skip a container or systemd unit; repeatable (digest)
   [[f:--no-ai]]               digest without the AI briefing: checks only, no API call (digest)
+  [[f:--no-state]]            digest ignores and leaves untouched its saved baseline/briefing (digest)
 
 [[h:EXAMPLES]]
   [[d:# Diagnose a container; oracle collects inspect data, compose block, neighbours, host stats itself:]]
@@ -1958,28 +1988,58 @@ HELP["agent"] = """[[t:oracle agent]] — the AI investigates, you approve each 
 HELP["digest"] = """[[t:oracle digest]] — host health check for schedulers
 
 [[h:USAGE]]
-  oracle digest [--since 24h] [--disk-warn 85] [--ignore NAME]... [--no-ai] [--deep]
+  oracle digest [--since 24h] [--disk-warn 85] [--ignore NAME]... [--no-ai] [--no-state] [--deep]
 
   Plain, deterministic checks decide what is wrong; the AI only explains what they found:
-    containers   restarting, unhealthy, exited with a non-zero code, OOM-killed, and restarted since the previous digest
+    containers   restarting, unhealthy, exited with a non-zero code, OOM-killed, restarted since the previous digest
     disk         any filesystem at/above --disk-warn %, inodes at/above 90 %
     memory       less than 10 % available (swap over 50 % is only a note)
     systemd      failed units
     journal      kernel OOM-killer events, one error repeated 20+ times (spam); other errors are notes
 
-[[h:OUTPUT AND EXIT CODE]] (built to be wrapped by cron-guard or any scheduler; stdout is the alert body)
-  0  healthy     ONE line, e.g. "✓ all clear on homelab (...): 12/12 containers running, disk max 61% (/srv), ..."
-                 and no API call at all. Lists "[skipped: ...]" for checks that could not run here.
-  1  problems     headline, AI briefing first (what / likely cause / next command), then the raw check results.
-                 If the AI is unreachable you still get the raw findings, and the exit code stays 1.
-  2  blind       nothing could be checked (no docker, no systemd, journal unreadable ...): never reported as "healthy".
+[[h:FLAGS]]
+  --since T        journal window, e.g. 6h, 24h, 2d (default 24h)
+  --disk-warn N    disk % that counts as a problem (default 85)
+  --ignore NAME    skip a container or systemd unit; repeatable (one-shot containers that exit on purpose)
+  --no-ai          checks only: no API call, no briefing
+  --no-state       don't read/update ~/.oracle/digest_state.json (use for a second schedule such as a heartbeat)
+  --deep / -m      stronger / specific model for the briefing
+
+[[h:WHAT YOU SEE]] (exit code 0 healthy, 1 problems, 2 blind)
+  0  ONE line, no API call:
+       ✓ all clear on homelab (2026-11-18 09:00): 12/12 containers running, disk max 61% (/srv), mem 38% used, 0 failed units, 0 journal error lines
+     plus "note:" lines for low-severity things, and "[skipped: ...]" for checks that could not run here.
+  1  headline, then the check results, then the AI briefing LAST:
+       ⚠ 2 problems on homelab (2026-11-18 03:00, last 24h)
+
+       --- CHECK RESULTS ---
+       ✗ container restarting: pocket-id
+           Restarting (1) 3 seconds ago
+       ✗ disk 91% full: /srv
+           /dev/sda1 ... 91% /srv
+
+       --- AI BRIEFING (written 2026-11-18 03:00) ---
+       <what / likely cause (cites the log lines) / next command, under 12 lines>
+     If the AI is unreachable the briefing says so, but the findings and exit code 1 are unchanged.
+  2  nothing could be checked (no docker, no systemd, journal unreadable ...): never reported as healthy.
+
+[[h:USING IT WITH cron-guard]]
+  cron-guard forwards only the LAST 15 lines (max 3000 chars) of the output to Telegram and keeps the full log when it is longer,
+  which is why the briefing comes last. It also fingerprints that tail to decide whether an error is "the same" for --repeat-after,
+  so oracle reuses an identical briefing for 6 hours while the same problems persist (stable text, and no repeat API calls;
+  the "written <time>" stamp in its header shows when it was generated).
+    # every 6h, alert only on trouble, remind every 12h, send a "recovered" message:
+    0 */6 * * *  python3 /path/cron-guard.py --mode fail --timeout 300 --repeat-after 12h --recovery "Oracle Digest" "python3 /path/oracle.py digest --ignore migrate"
+    # weekly proof of life (own state so it doesn't steal the restart baseline):
+    0 9 * * 1    python3 /path/cron-guard.py --mode all --timeout 300 "Oracle Digest weekly" "python3 /path/oracle.py digest --no-state --ignore migrate"
+  Use full paths in cron (its PATH is minimal). Root's crontab can read the whole journal; a user crontab needs the adm or
+  systemd-journal group (otherwise the journal check shows up as skipped).
 
 [[h:NOTES]]
-  • Silence is never ambiguous: run it in "alert on all" mode now and then as a heartbeat.
-  • "Restarted since last digest" needs a baseline, so the first run only records restart counts (~/.oracle/digest_state.json).
-    Run it as the same user from the same HOME each time.
-  • Reading the journal needs root or membership in the adm / systemd-journal group; otherwise it shows up as skipped.
-  • For problem containers (max 3) the last 60 log lines are sent to the AI, redacted and collapsed like `oracle logs`.
+  • "Restarted since last digest" needs a baseline: the first run only records restart counts (~/.oracle/digest_state.json).
+    Run it as the same user (same HOME) each time; root's cron has HOME=/root, so its state differs from your shell's.
+  • A healthy run clears the saved briefing, so the next incident gets a fresh one.
+  • For problem containers (max 3) the last 60 log lines go to the AI, redacted and collapsed like `oracle logs`.
   • Everything printed is secret-masked, since alerts leave the machine.
 """
 HELP["context"] = """[[t:oracle context]] — your permanent setup notes
@@ -2064,7 +2124,7 @@ def cmd_generic(args, model: str):
 SUBCOMMANDS = {"commit", "pr", "changelog", "logs", "review", "run", "do", "agent", "digest", "context", "help"}
 VALUE_FLAGS = {"-m", "--model", "-a", "-f", "--attach", "--file", "-n", "--tail", "--since", "--steps", "--disk-warn", "--ignore"}
 BOOL_FLAGS = {"-h", "--help", "--models", "--deep", "-i", "--chat", "-l", "--log", "-q", "--quiet",
-              "--no-context", "-p", "--print", "-y", "--yes", "--all", "--no-ai"}
+              "--no-context", "-p", "--print", "-y", "--yes", "--all", "--no-ai", "--no-state"}
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="oracle", add_help=False, allow_abbrev=False)
@@ -2086,6 +2146,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--disk-warn", type=int)
     p.add_argument("--ignore", action="append", default=[])
     p.add_argument("--no-ai", action="store_true")
+    p.add_argument("--no-state", action="store_true")
     p.add_argument("rest", nargs="*")
     return p
 
