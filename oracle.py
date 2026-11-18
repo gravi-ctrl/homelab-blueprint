@@ -32,8 +32,14 @@ import tempfile
 import time
 from collections import Counter
 from pathlib import Path
-
 import requests
+
+# Enable shell-style line editing for input():
+# Backspace, arrows, Home/End, word navigation, history, etc.
+try:
+    import readline
+except ImportError:
+    readline = None
 
 ENV_PATH = Path("/opt/rabbit-hole/.env")
 
@@ -576,17 +582,17 @@ def interactive_tty() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 def prompt_line(prompt: str, default: str | None = None) -> str:
-    """input() that can pre-fill an editable default (readline), falling back to plain input()."""
-    if default is not None:
+    """input() with an editable default when readline is available."""
+    if default is not None and readline is not None:
         try:
-            import readline
             readline.set_startup_hook(lambda: readline.insert_text(default))
             try:
                 return input(prompt)
             finally:
                 readline.set_startup_hook()
-        except ImportError:
+        except (ImportError, AttributeError):
             pass
+
     return input(prompt)
 
 # ── Git: commit / pr / changelog ──────────────────────────────────────────────
