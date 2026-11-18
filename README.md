@@ -38,7 +38,7 @@ This is the automation engine behind my home server. It issues its own certifica
 
 **Docs drafted by an LLM from the code, then verified.** After I write or change a script, I run `doc-injector.py`. It asks an LLM what the script does and writes the answer into the script's header. At 5 AM the live dashboard picks those headers up, so the docs stay in sync with the code.
 
-**`oracle`.** My terminal AI helper (Jarvis was overused, so `oracle` it is). I can pipe Docker logs, systemd traces or a whole script into it and get a root-cause analysis streamed back. Secrets are scrubbed from the text before anything leaves the server.
+**`oracle`**. My terminal AI assistant and diagnostics engine (Jarvis was overused, so `oracle` it is). I can use it to draft git commits and pull requests, run real linters with AI triage, generate and confirm safe shell commands, or pipe Docker logs and systemd traces for root-cause analysis streamed back. Secrets are scrubbed from the text before anything leaves the server.
 
 The result: the server mostly runs itself, and when something does go wrong, I usually hear about it before I'd have noticed.
 
