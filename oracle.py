@@ -387,11 +387,11 @@ def number_lines(text: str) -> str:
 
 # ── Smart log handling ────────────────────────────────────────────────────────
 _TS_RE = re.compile(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}|^\s*[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2}|\b\d{2}:\d{2}:\d{2}\b')
-_LEVEL_RE = re.compile(r'\b(ERROR|WARN(?:ING)?|INFO|DEBUG|FATAL|CRITICAL|TRACE|NOTICE|level=\w+)\b|\[(?:err|warn|info|debug|notice)\]', re.I)
+_LEVEL_RE = re.compile(r'\b(ERROR|WARN(?:ING)?|INFO|DEBUG|FATAL|CRITICAL|TRACE|NOTICE|level=\w+)\b|\[(?:err|warn|info|debug|notice)\]', re.IGNORECASE)
 _ERR_RE = re.compile(
     r"\b(error|fatal|panic|exception|traceback|critical|fail(?:ed|ure|ing)?|denied|refused|timed? ?out|"
     r"oom|out of memory|killed|segfault|cannot|can't|unable|not found|no such|unhealthy|exited|exit code|"
-    r"unreachable|corrupt\w*|deadlock|crash\w*)\b", re.I)
+    r"unreachable|corrupt\w*|deadlock|crash\w*)\b", re.IGNORECASE)
 
 _NORM_SUBS = [
     (re.compile(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?'), '<TS>'),
@@ -467,7 +467,7 @@ def prepare_log(text: str, budget: int = 60000):
 
     err_pos = [p for p, (_, b) in enumerate(kept) if _ERR_RE.search(b)]
     n = len(kept)
-    add(range(0, min(20, n)))                                   # head: startup banner / config
+    add(range(min(20, n)))                                      # head: startup banner / config
     add(range(max(0, n - 100), n))                              # tail: how it ended
     for p in err_pos[:3]:                                       # first errors: usually the root cause
         add(range(p - 6, p + 7))
@@ -1121,7 +1121,7 @@ def classify_command(cmd: str, model_risk: str = "safe") -> tuple[int, list[str]
     reasons, level = [], {"safe": 0, "caution": 1, "destructive": 2}.get((model_risk or "safe").lower(), 1)
     for lvl, table in ((3, _BLOCKED), (2, _DESTRUCTIVE), (1, _CAUTION)):
         for rx, why in table:
-            if re.search(rx, cmd, re.I if lvl != 3 else 0):
+            if re.search(rx, cmd, re.IGNORECASE if lvl != 3 else 0):
                 reasons.append(why)
                 level = max(level, lvl)
     return level, list(dict.fromkeys(reasons))
