@@ -1,17 +1,38 @@
 #!/usr/bin/env python3
-# @DESCRIPTION: Terminal AI assistant powered by Google Gemini: piped logs/diffs/scripts, multi-turn chat, commit/PR/changelog writer, container log diagnosis, linter-backed script review, command suggester, read-only investigation agent
+# @DESCRIPTION: Terminal AI assistant for Linux/DevOps: diagnostics, Git writing, code review, command generation and read-only investigation.
 # @FREQUENCY: On Demand
 # @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
-#   • Streams AI responses; smart log handling (dedupe, line numbers, error windows) instead of blind tail-trimming.
-#   • Auto-fails over to other models on 429/404/5xx, keeping analysis uninterrupted on the free tier.
-#   • Redacts API keys, tokens, passwords, env-style secrets and certificates from everything it sends.
-#   • `commit`, `pr`, `changelog`: writes messages/descriptions from your git history and diffs.
-#   • `logs`: gathers docker/systemd context automatically, then diagnoses with evidence + next step.
-#   • `review`: runs real linters (shellcheck, hadolint, ansible-lint...) and lets the AI triage the findings.
-#   • `run`: runs any command and only asks the AI if it fails. `do`: plain English -> one command, with tiered confirmation.
-#   • `agent`: the model can request read-only commands from an allowlist; you approve every one.
-#   • ~/.oracle/context.md: permanent background about your setup, added to every request.
+#   • Streams AI responses; uses structured API calls for command generation
+#     and tool-driven investigations.
+#   • Smart log processing: collapses repeated lines, preserves original line
+#     numbers, prioritizes errors and keeps useful head/tail context.
+#   • Automatic model failover across the configured Gemini model cascade
+#     on rate limits, unavailable models, selected server errors and connection failures.
+#   • Best-effort secret masking: API keys, tokens, passwords, credentials,
+#     private keys and certificates. Redaction is not a guarantee.
+#   • Universal text attachments (-a / --attach): supports plain questions,
+#     pipes, commit, PR, changelog, logs, review, run, do and agent.
+#     Unsupported commands warn instead of silently ignoring attachments.
+#   • `commit`: generates commit messages from Git diffs, recent commit style,
+#     branch context and optional ticket notes.
+#   • `pr`: generates PR titles and descriptions from commits, diffs and
+#     optional requirements/reviewer notes.
+#   • `changelog`: generates Keep a Changelog-style release notes from Git history.
+#   • `logs`: gathers Docker/systemd context automatically, then diagnoses
+#     with evidence, likely cause and next step.
+#   • `review`: runs available real linters (ShellCheck, Hadolint, Ansible Lint,
+#     Ruff...) and lets AI triage findings with minimal fixes.
+#   • `run`: executes commands in a pseudo-terminal; asks AI only on failure
+#     and preserves the original exit code.
+#   • `do`: plain English -> one command, with independent risk classification,
+#     tiered confirmation and destructive-command safeguards.
+#   • `agent`: investigates using an enforced read-only command allowlist,
+#     with user approval and bounded execution.
+#   • `digest`: deterministic host health checks for Docker, disk, memory,
+#     systemd and journal, with cached AI incident briefings.
+#   • `~/.oracle/context.md`: persistent setup context included in AI prompts
+#     (up to 8,000 characters); supports custom paths and --no-context.
 
 import argparse
 import difflib
