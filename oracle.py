@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-# @DESCRIPTION: Terminal AI assistant powered by Google Gemini: piped logs/diffs/scripts, multi-turn chat, commit/PR/changelog writer, container log diagnosis, linter-backed script review, command suggester, read-only investigation agent
+# @DESCRIPTION: Terminal AI assistant powered by Google Gemini for interactive chat, piped input, Git writing, diagnostics, code review, command generation, read-only investigations, and host health checks
 # @FREQUENCY: On Demand
 # @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
-#   • Streams AI responses; smart log handling (dedupe, line numbers, error windows) instead of blind tail-trimming.
-#   • Auto-fails over to other models on 429/404/5xx, keeping analysis uninterrupted on the free tier.
-#   • Redacts API keys, tokens, passwords, env-style secrets and certificates from everything it sends.
-#   • `commit`, `pr`, `changelog`: writes messages/descriptions from your git history and diffs.
-#   • `logs`: gathers docker/systemd context automatically, then diagnoses with evidence + next step.
-#   • `review`: runs real linters (shellcheck, hadolint, ansible-lint...) and lets the AI triage the findings.
-#   • `run`: runs any command and only asks the AI if it fails. `do`: plain English -> one command, with tiered confirmation.
-#   • `agent`: the model can request read-only commands from an allowlist; you approve every one.
-#   • ~/.oracle/context.md: permanent background about your setup, added to every request.
+#   • Streams AI responses; smart log handling deduplicates repeated lines, preserves original line numbers, and prioritizes error windows when trimming.
+#   • Automatically tries fallback models on HTTP 429/404/500/502/503/504 and connection errors, using a configured model cascade.
+#   • Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output.
+#   • `commit`, `pr`, `changelog`: drafts commit messages from diffs, PR titles/descriptions from commits and diffs, and changelog entries from Git history.
+#   • `logs`: gathers available Docker/container/host context or systemd status and journal data, then diagnoses with evidence and next steps.
+#   • `review`: runs available, file-type-appropriate linters and checks (ShellCheck, Hadolint, Ruff, ansible-lint...) before AI triage.
+#   • `run`: executes a command and invokes AI diagnosis on failure. `do`: plain English -> one risk-classified command with tiered confirmation.
+#   • `agent`: investigates using allowlisted read-only commands behind an interactive approval gate, with optional session-only approval for command prefixes.
+#   • `digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.
+#   • Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.
+#   • Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled.
 
 import argparse
 import difflib
