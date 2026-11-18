@@ -1330,10 +1330,7 @@ def parse_agent_command(command: str) -> list[str]:
         raise ValueError("multi-line commands are not allowed")
     if _has_unquoted_control_operator(command):
         raise ValueError("shell control operators and redirections are not allowed; send one command")
-    try:
-        argv = shlex.split(command, comments=False, posix=True)
-    except ValueError:
-        raise
+    argv = shlex.split(command, comments=False, posix=True)
     if not argv:
         raise ValueError("empty command")
     return argv
