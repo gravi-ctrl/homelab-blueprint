@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-17 15:55 EET</div>
+    <div class="meta-line">Generated 2026-11-18 08:11 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4197,6 +4197,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ]
     },
     {
+      "env_used": [],
+      "mismatch": true,
+      "name": "GEMINI_DEEP_MODEL",
+      "script_used": [
+        "oracle.py"
+      ]
+    },
+    {
       "env_used": [
         "oracle.py"
       ],
@@ -4292,6 +4300,14 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "OFFSITE_MIN_COPIES",
       "script_used": [
         "local-opt-backup.sh"
+      ]
+    },
+    {
+      "env_used": [],
+      "mismatch": true,
+      "name": "ORACLE_CONTEXT",
+      "script_used": [
+        "oracle.py"
       ]
     },
     {
@@ -4791,20 +4807,26 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
     },
     {
       "capabilities": [
-        "Streams AI responses up to 200k characters, preserving full log context for deep diagnostics.",
-        "Auto‑fails over to lighter models on 503 spikes, keeping analysis uninterrupted.",
-        "Redacts API keys, tokens, passwords, and certificates from piped logs, safeguarding secrets.",
-        "Gracefully handles binary or corrupted streams, preventing crashes from non‑UTF8 input.",
-        "Supports multi‑turn chat, script reviews, and log diagnostics via pipe or interactive mode, accelerating troubleshooting."
+        "Streams AI responses; smart log handling (dedupe, line numbers, error windows) instead of blind tail-trimming.",
+        "Auto-fails over to other models on 429/404/5xx, keeping analysis uninterrupted on the free tier.",
+        "Redacts API keys, tokens, passwords, env-style secrets and certificates from everything it sends.",
+        "`commit`, `pr`, `changelog`: writes messages/descriptions from your git history and diffs.",
+        "`logs`: gathers docker/systemd context automatically, then diagnoses with evidence + next step.",
+        "`review`: runs real linters (shellcheck, hadolint, ansible-lint...) and lets the AI triage the findings.",
+        "`run`: runs any command and only asks the AI if it fails. `do`: plain English -> one command, with tiered confirmation.",
+        "`agent`: the model can request read-only commands from an allowlist; you approve every one.",
+        "~/.oracle/context.md: permanent background about your setup, added to every request."
       ],
       "category": "Core Scripts",
       "cron_ctx": "",
       "cron_entries": [],
-      "desc": "Terminal AI assistant powered by Google Gemini supporting massive piped logs, script reviews, multi-turn chat, and auto-failover streaming",
+      "desc": "Terminal AI assistant powered by Google Gemini: piped logs/diffs/scripts, multi-turn chat, commit/PR/changelog writer, container log diagnosis, linter-backed script review, command suggester, read-only investigation agent",
       "dir_path": "Core Scripts",
       "env": [
         "GEMINI_API_KEY",
-        "GEMINI_MODEL"
+        "GEMINI_MODEL",
+        "GEMINI_DEEP_MODEL",
+        "ORACLE_CONTEXT"
       ],
       "freq": "On Demand",
       "freq_source": "header",
@@ -4812,7 +4834,9 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "oracle.py",
       "path": "oracle.py",
       "semantic_cat": "🧹 Maintenance",
-      "warnings": []
+      "warnings": [
+        "Missing from .env.example: GEMINI_DEEP_MODEL, ORACLE_CONTEXT"
+      ]
     },
     {
       "capabilities": [
