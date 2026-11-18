@@ -13,29 +13,116 @@ stamp() {
   "$@" | ts
 }
 
-# File or logs to clipboard
+# Copy files or stdin to the local clipboard via OSC 52 (SSH-friendly)
 clipin() {
-  if [[ "$1" == -h || "$1" == --help || -t 0 ]]; then
-    local rc=1
-    [[ "$1" == -h || "$1" == --help ]] && rc=0
+  emulate -L zsh
+  setopt pipefail
+
+  local encoded
+  local source
+  local has_stdin=0
+
+  # Help
+  if (( $# == 1 )) && [[ "$1" == -h || "$1" == --help ]]; then
     cat <<'EOF'
-clipin: copy stdin to your local clipboard (OSC 52, works over SSH)
+clipin - copy files or stdin to your local clipboard via OSC 52
 
 Usage:
-  clipin < file.txt
-  some-command 2>&1 | clipin
+  clipin FILE [FILE ...]    Copy one or more files
+  clipin < FILE             Copy redirected stdin
+  COMMAND | clipin          Copy piped output
+  clipin -                  Explicitly copy stdin
 
 Options:
-  -h, --help   show this help
+  -h, --help                Show this help
+  --                        End option parsing (for filenames starting with -)
+
+Examples:
+  clipin notes.md
+  clipin file1.txt file2.txt
+  clipin < notes.md
+  cat notes.md | clipin
+  oracle pr main -a notes.md | clipin
+  git diff --cached | clipin
 
 Notes:
-  With no piped input it shows this help instead of waiting.
-  Large inputs may be truncated or ignored by the terminal.
-  Inside tmux, set-clipboard must be on.
+  - Multiple files are concatenated in argument order.
+  - Without arguments, stdin must be piped or redirected.
+  - Clipboard transfer uses OSC 52 through your active terminal.
+  - Your terminal may impose clipboard size limits.
+  - Inside tmux, set-clipboard must be enabled.
 EOF
-    return $rc
+    return 0
   fi
-  printf '\033]52;c;%s\a' "$(base64 -w0)"
+
+  # Allow filenames beginning with -
+  if (( $# > 0 )) && [[ "$1" == -- ]]; then
+    shift
+  fi
+
+  # No arguments: read stdin if piped, otherwise show help.
+  if (( $# == 0 )); then
+    if [[ -t 0 ]]; then
+      print -u2 -- "No input provided."
+      clipin --help
+      return 1
+    fi
+
+  else
+    # Check whether stdin was explicitly included as a source.
+    for source in "$@"; do
+      [[ "$source" == "-" ]] && has_stdin=1
+    done
+
+    # Avoid silently ignoring piped stdin when filenames are supplied.
+    if [[ ! -t 0 ]] && (( ! has_stdin )); then
+      print -u2 -- "clipin: both filenames and piped stdin supplied."
+      print -u2 -- "Use '-' as an argument to include stdin."
+      return 2
+    fi
+
+    # Validate files before reading anything.
+    for source in "$@"; do
+      [[ "$source" == "-" ]] && continue
+
+      if [[ ! -f "$source" || ! -r "$source" ]]; then
+        print -u2 -- "clipin: not a readable file: $source"
+        return 2
+      fi
+    done
+  fi
+
+  # OSC 52 needs an interactive terminal to receive the request.
+  if [[ ! -w /dev/tty ]]; then
+    print -u2 -- "clipin: no writable terminal available."
+    return 1
+  fi
+
+  # Read input and encode it. GNU/macOS base64 output is normalized.
+  if (( $# > 0 )); then
+    encoded=$(command cat -- "$@" | command base64 | command tr -d '\n') || {
+      print -u2 -- "clipin: failed to read or encode input."
+      return 1
+    }
+  else
+    encoded=$(command base64 | command tr -d '\n') || {
+      print -u2 -- "clipin: failed to encode stdin."
+      return 1
+    }
+  fi
+
+  if [[ -z "$encoded" ]]; then
+    print -u2 -- "clipin: input is empty; nothing copied."
+    return 1
+  fi
+
+  # Send OSC 52 directly to the SSH terminal, not stdout.
+  printf '\033]52;c;%s\a' "$encoded" > /dev/tty || {
+    print -u2 -- "clipin: failed to send clipboard request."
+    return 1
+  }
+
+  print -u2 -- "clipin: sent clipboard request."
 }
 
 # Readable Docker Status
