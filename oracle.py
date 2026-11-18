@@ -1,38 +1,17 @@
 #!/usr/bin/env python3
-# @DESCRIPTION: Terminal AI assistant for Linux/DevOps: diagnostics, Git writing, code review, command generation and read-only investigation.
+# @DESCRIPTION: Terminal AI assistant powered by Google Gemini: piped logs/diffs/scripts, multi-turn chat, commit/PR/changelog writer, container log diagnosis, linter-backed script review, command suggester, read-only investigation agent
 # @FREQUENCY: On Demand
 # @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
 # @CAPABILITIES:
-#   • Streams AI responses; uses structured API calls for command generation
-#     and tool-driven investigations.
-#   • Smart log processing: collapses repeated lines, preserves original line
-#     numbers, prioritizes errors and keeps useful head/tail context.
-#   • Automatic model failover across the configured Gemini model cascade
-#     on rate limits, unavailable models, selected server errors and connection failures.
-#   • Best-effort secret masking: API keys, tokens, passwords, credentials,
-#     private keys and certificates. Redaction is not a guarantee.
-#   • Universal text attachments (-a / --attach): supports plain questions,
-#     pipes, commit, PR, changelog, logs, review, run, do and agent.
-#     Unsupported commands warn instead of silently ignoring attachments.
-#   • `commit`: generates commit messages from Git diffs, recent commit style,
-#     branch context and optional ticket notes.
-#   • `pr`: generates PR titles and descriptions from commits, diffs and
-#     optional requirements/reviewer notes.
-#   • `changelog`: generates Keep a Changelog-style release notes from Git history.
-#   • `logs`: gathers Docker/systemd context automatically, then diagnoses
-#     with evidence, likely cause and next step.
-#   • `review`: runs available real linters (ShellCheck, Hadolint, Ansible Lint,
-#     Ruff...) and lets AI triage findings with minimal fixes.
-#   • `run`: executes commands in a pseudo-terminal; asks AI only on failure
-#     and preserves the original exit code.
-#   • `do`: plain English -> one command, with independent risk classification,
-#     tiered confirmation and destructive-command safeguards.
-#   • `agent`: investigates using an enforced read-only command allowlist,
-#     with user approval and bounded execution.
-#   • `digest`: deterministic host health checks for Docker, disk, memory,
-#     systemd and journal, with cached AI incident briefings.
-#   • `~/.oracle/context.md`: persistent setup context included in AI prompts
-#     (up to 8,000 characters); supports custom paths and --no-context.
+#   • Streams AI responses; smart log handling (dedupe, line numbers, error windows) instead of blind tail-trimming.
+#   • Auto-fails over to other models on 429/404/5xx, keeping analysis uninterrupted on the free tier.
+#   • Redacts API keys, tokens, passwords, env-style secrets and certificates from everything it sends.
+#   • `commit`, `pr`, `changelog`: writes messages/descriptions from your git history and diffs.
+#   • `logs`: gathers docker/systemd context automatically, then diagnoses with evidence + next step.
+#   • `review`: runs real linters (shellcheck, hadolint, ansible-lint...) and lets the AI triage the findings.
+#   • `run`: runs any command and only asks the AI if it fails. `do`: plain English -> one command, with tiered confirmation.
+#   • `agent`: the model can request read-only commands from an allowlist; you approve every one.
+#   • ~/.oracle/context.md: permanent background about your setup, added to every request.
 
 import argparse
 import difflib
@@ -1306,29 +1285,188 @@ READONLY_RULES: list[tuple[tuple[str, ...], set[str]]] = [
                        "--sync", "--setup-keys", "--relinquish-var", "--smart-relinquish-var"}),
     (("dmesg",), {"-c", "-C", "--clear", "--read-clear", "-w", "--follow", "-W", "--follow-new"}),
     (("git", "status"), set()), (("git", "log"), set()), (("git", "diff"), set()), (("git", "show"), set()),
-    (("git", "branch"), {"-d", "-D", "-m", "-M", "-c", "-C", "--delete", "--move", "--copy", "--set-upstream-to", "-u"}),
     (("df",), set()), (("du",), set()), (("free",), set()), (("uptime",), {"*"}), (("lsblk",), set()), (("ss",), set()),
-    (("ip", "addr"), set()), (("ip", "a"), set()), (("ip", "route"), set()), (("ip", "link"), set()),
     (("ps",), set()), (("uname",), set()), (("hostname",), {"*"}), (("whoami",), {"*"}), (("id",), set()),
     (("date",), {"-s", "--set"}), (("crontab", "-l"), set()),
     (("ls",), set()), (("stat",), set()), (("cat",), set()), (("head",), set()), (("wc",), set()), (("grep",), set()),
     (("tail",), {"-f", "-F", "--follow"}),
 ]
-_SHELL_META = re.compile(r'[;&|<>`$(){}\n\\]')
+_SHELL_CONTROL_CHARS = ";&|<>"
 _SAFE_EXAMPLE_SUFFIX = ("example", "sample", "template", "dist")
 _SECRET_PATH_RE = re.compile(
     r'(?i)(^|/)(\.env(\.[^/]*)?|\.ssh|\.gnupg|\.aws|\.netrc|\.git-credentials|\.docker/config\.json|'
     r'id_(rsa|ed25519|ecdsa|dsa)(\.pub)?|shadow|gshadow|secrets?|[^/]*\.(pem|key|p12|pfx|kdbx|age|gpg|asc))(/|$)|/proc/\d+/environ')
+
+def _has_unquoted_control_operator(command: str) -> bool:
+    """Detect shell control/redirection characters outside quoted/escaped arguments."""
+    quote = None
+    escaped = False
+    for ch in command:
+        if escaped:
+            escaped = False
+            continue
+        if ch == "\\" and quote != "'":
+            escaped = True
+            continue
+        if quote:
+            if ch == quote:
+                quote = None
+            continue
+        if ch in {"'", '"'}:
+            quote = ch
+        elif ch in _SHELL_CONTROL_CHARS:
+            return True
+    return False
+
+def parse_agent_command(command: str) -> list[str]:
+    """Tokenize one command without a shell; reject unquoted shell control operators.
+
+    Punctuation inside quoted or escaped arguments is data, so grep alternations
+    and Docker --format templates can be passed to argv-based subprocesses.
+    """
+    if not command or not command.strip():
+        raise ValueError("empty command")
+    if "\n" in command or "\r" in command:
+        raise ValueError("multi-line commands are not allowed")
+    if _has_unquoted_control_operator(command):
+        raise ValueError("shell control operators and redirections are not allowed; send one command")
+    try:
+        argv = shlex.split(command, comments=False, posix=True)
+    except ValueError:
+        raise
+    if not argv:
+        raise ValueError("empty command")
+    return argv
+
+def _check_ip_readonly(argv: list[str]):
+    """Allow only explicitly read-only `ip` inspection operations.
+
+    The argument list is already tokenized and will be executed without a shell.
+    Keep the operation verb in a fixed position so `add`, `del`, `flush`, `set`,
+    and other state-changing forms cannot hide among otherwise valid arguments.
+    """
+    if not argv or argv[0] != "ip":
+        return None
+
+    # Harmless global display selectors supported before the object name.
+    global_flags = {
+        "-4", "-6", "-br", "-brief", "-d", "-details", "-s", "-statistics",
+        "-j", "-json", "-p", "-pretty", "-o", "-oneline", "-r", "-resolve",
+        "-c", "-color", "-N", "-numeric", "-h", "-human-readable",
+    }
+    i = 1
+    while i < len(argv) and argv[i] in global_flags:
+        i += 1
+    if i >= len(argv):
+        return False, "'ip' requires an explicitly permitted read-only inspection operation", None
+
+    obj = argv[i]
+    aliases = {
+        "addr": ("ip", "addr"), "address": ("ip", "addr"), "a": ("ip", "addr"),
+        "route": ("ip", "route"), "r": ("ip", "route"),
+        "link": ("ip", "link"), "l": ("ip", "link"),
+        "neigh": ("ip", "neigh"), "neighbor": ("ip", "neigh"), "n": ("ip", "neigh"),
+        "rule": ("ip", "rule"),
+    }
+    prefix = aliases.get(obj)
+    if prefix is None:
+        return False, f"ip operation '{obj}' is not on the read-only allowlist", None
+
+    rest = argv[i + 1:]
+    safe_verbs = {
+        "addr": {"show", "list"},
+        "route": {"show", "list", "get"},
+        "link": {"show", "list"},
+        "neigh": {"show", "list"},
+        "rule": {"show", "list"},
+    }
+    canonical = prefix[1]
+    # Omitting the verb is safe for these iproute2 objects: their default is show.
+    if rest and rest[0] not in safe_verbs[canonical]:
+        return False, f"ip {canonical} only permits read-only operations: {', '.join(sorted(safe_verbs[canonical]))} (or the default show where supported)", prefix
+    return True, "", prefix
+
+
+def _check_git_branch_readonly(argv: list[str]):
+    """Allow branch listing/inspection only; reject branch creation and mutation.
+
+    Git's `branch <name>` creates a branch without a special verb, so a denylist
+    of destructive flags is insufficient. Positional patterns are accepted only
+    after an explicit --list/-l option.
+    """
+    if len(argv) < 2 or argv[:2] != ["git", "branch"]:
+        return None
+
+    args = argv[2:]
+    prefix = ("git", "branch")
+    if not args:
+        return True, "", prefix  # `git branch` lists local branches.
+    if args == ["--show-current"]:
+        return True, "", prefix
+
+    no_value = {
+        "-a", "--all", "-r", "--remotes", "-v", "--verbose", "-vv",
+        "--no-abbrev", "--no-color", "--ignore-case", "--column",
+        "--no-column", "-l", "--list",
+    }
+    value_options = {
+        "--contains", "--no-contains", "--merged", "--no-merged",
+        "--points-at", "--format", "--sort",
+    }
+    list_mode = False
+    i = 0
+    while i < len(args):
+        token = args[i]
+        if token in {"-l", "--list"}:
+            list_mode = True
+            i += 1
+            continue
+        if token in no_value - {"-l", "--list"}:
+            i += 1
+            continue
+        if token in value_options:
+            if i + 1 >= len(args):
+                return False, f"git branch {token} requires a value", prefix
+            i += 2
+            continue
+        if any(token.startswith(opt + "=") for opt in value_options):
+            i += 1
+            continue
+        if token.startswith("--color=") or token.startswith("--column="):
+            i += 1
+            continue
+        if token == "--":
+            if not list_mode:
+                return False, "git branch positional patterns require --list; branch creation is not allowed", prefix
+            i += 1
+            # Remaining tokens are patterns, not branch names to create.
+            return True, "", prefix
+        if token.startswith("-"):
+            return False, f"git branch option '{token}' is not on the read-only allowlist", prefix
+        if not list_mode:
+            return False, "git branch positional arguments can create or modify branches; use --list to inspect patterns", prefix
+        i += 1  # Pattern after explicit --list.
+
+    return True, "", prefix
+
 
 def check_readonly(argv: list[str]):
     """Returns (ok, reason, rule_prefix). Pure function: easy to unit-test."""
     if not argv:
         return False, "empty command", None
     for tok in argv:
-        if _SHELL_META.search(tok):
-            return False, "shell operators (; & | < > ` $ ( ) { } \\) are not allowed — send one plain command", None
         if _SECRET_PATH_RE.search(tok) and not tok.lower().endswith(tuple("." + s for s in _SAFE_EXAMPLE_SUFFIX)):
             return False, f"'{tok}' looks like a secrets file", None
+
+    # Special validators are required for command families where positional
+    # arguments can change state even though the command prefix looks harmless.
+    ip_result = _check_ip_readonly(argv)
+    if ip_result is not None:
+        return ip_result
+    branch_result = _check_git_branch_readonly(argv)
+    if branch_result is not None:
+        return branch_result
+
     for prefix, forbidden in READONLY_RULES:
         if tuple(argv[:len(prefix)]) == prefix:
             rest = argv[len(prefix):]
@@ -1341,7 +1479,12 @@ def check_readonly(argv: list[str]):
     return False, "not on the read-only allowlist", None
 
 def describe_allowed() -> str:
-    return "; ".join(sorted({" ".join(p) for p, _ in READONLY_RULES}))
+    entries = {" ".join(p) for p, _ in READONLY_RULES}
+    entries.update({
+        "ip (read-only addr/address, route, link, neigh/neighbor, rule inspection operations)",
+        "git branch (read-only listing and inspection only)",
+    })
+    return "; ".join(sorted(entries))
 
 def prepare_agent_argv(argv: list[str]) -> list[str]:
     """Nudge commands so they stay bounded and non-interactive."""
@@ -1374,14 +1517,39 @@ def execute_readonly(argv: list[str]) -> str:
     return f"[exit {code}]\n{out}"
 
 AGENT_ROLE = (
-    "You are a Linux/Docker troubleshooting agent on the user's own machine. You can call the tool run_command to execute READ-ONLY "
-    "inspection commands; the user approves each one, so make every call count.\n"
-    "METHOD: form a hypothesis, gather the minimum evidence with targeted commands, then answer. Prefer commands with small output "
-    "(--tail, -n, --format, filters). One plain command per call: no pipes, redirects, shell operators, sudo or globs. If a call is "
-    "blocked or denied, adapt; do not retry the same thing. Stop and answer as soon as you have enough evidence.\n"
-    "HONESTY: never claim you checked something you did not run. Secrets in output are masked; do not ask for them.\n"
-    "FINAL ANSWER (plain text sections): LIKELY CAUSE, EVIDENCE (command run -> what it showed), FIX (exact commands for the USER to run "
-    "themselves; you cannot run changes), CONFIDENCE."
+    "You are a careful Linux/Docker infrastructure investigation agent on the user's own machine. "
+    "You may request READ-ONLY inspection commands through run_command; the user approves each command.\n"
+    "INVESTIGATION METHOD:\n"
+    "- Form competing hypotheses, then gather the smallest useful evidence to distinguish them.\n"
+    "- Request exactly one plain command per tool call. Do not use pipes, redirects, shell operators, shell syntax, sudo or globs.\n"
+    "- Quoted arguments may contain literal punctuation, regex alternation, braces and Docker --format templates; these are data, not shell syntax.\n"
+    "- `ip` is limited to read-only addr/address, route, link, neigh/neighbor and rule inspection forms; never request add, set, del, delete, change, replace or flush operations.\n"
+    "- `git branch` is limited to listing/inspection forms; use `--list` for positional patterns. Never request branch creation, deletion, rename, copy, tracking or description changes.\n"
+    "- If a command is blocked or denied, adapt to an allowed alternative. Do not retry an equivalent blocked command.\n"
+    "- Prefer targeted output (--tail, -n, --since, --format and narrow file paths) over dumping entire files or directories.\n"
+    "- For Docker containers, inspect Mounts and use only verified host bind-mount source paths to inspect relevant files. "
+    "Do not guess conventional host paths. Prefer host-mounted logs/configuration over docker exec. Never try to bypass the allowlist.\n"
+    "- When investigating reverse proxies, distinguish access-log HTTP status fields from arbitrary occurrences of numbers in URLs, bodies or timestamps. "
+    "Check 502 and 504 separately and inspect error-log phrases such as upstream timed out, connect() failed, connection refused, "
+    "host not found in upstream and no live upstreams. Record the actual files and time windows inspected.\n"
+    "EVIDENCE DISCIPLINE:\n"
+    "- Separate OBSERVED FACTS, HYPOTHESES and UNKNOWN / MISSING EVIDENCE.\n"
+    "- Never present a plausible explanation as a confirmed root cause. Every important conclusion must cite the command output that supports it.\n"
+    "- A running or healthy container does not prove that the application or its dependencies are healthy.\n"
+    "- Docker network membership does not prove name resolution or end-to-end connectivity. A resource snapshot does not establish historical trends.\n"
+    "- Negative findings must be scoped to the specific files, services and time periods actually inspected. Do not say 'no errors' "
+    "when logs were missing, truncated, inaccessible or only partially searched. Distinguish 'not found' from 'not checked'.\n"
+    "- Treat stop signals and lifecycle messages carefully: a configured graceful-stop signal does not, by itself, establish why a stop occurred.\n"
+    "- Never claim to have run a command that was not executed. Secrets in output are masked; never ask for credentials.\n"
+    "CONFIDENCE:\n"
+    "- HIGH only when direct evidence establishes the causal chain or independent evidence corroborates it.\n"
+    "- MEDIUM when evidence supports a likely explanation but part of the causal chain is unverified.\n"
+    "- LOW when evidence is indirect, sparse or ambiguous.\n"
+    "- UNDETERMINED when available evidence cannot identify the cause. It is acceptable to finish without a root cause.\n"
+    "RECOMMENDATIONS: suggest changes only when supported by evidence. Clearly label unverified suggestions and give the safest next read-only check first. "
+    "You cannot make changes yourself.\n"
+    "FINAL ANSWER (plain text sections): OBSERVED FACTS, HYPOTHESES (evidence for and against), MISSING EVIDENCE, "
+    "LIKELY ROOT CAUSE (or UNDETERMINED), RECOMMENDED FIX, CONFIDENCE."
 )
 
 def cmd_agent(args, model: str):
@@ -1406,11 +1574,12 @@ def cmd_agent(args, model: str):
     messages = [{"role": "system", "content": system_prompt(AGENT_ROLE, with_env=True)},
                 {"role": "user", "content": question}]
     always: set[tuple[str, ...]] = set()
-    detail = f"agent, up to {max_steps} steps — you approve every command"
+    detail = f"agent, up to {max_steps} command requests — you approve every command"
     if attachment_stats:
         detail += f"; {attachment_stats}"
     banner(model, detail)
-    for step in range(1, max_steps + 1):
+    commands_used = 0
+    while True:
         msg = ask_gemini(messages, model, tools=tools)
         if msg is None:
             sys.exit(1)
@@ -1421,33 +1590,53 @@ def cmd_agent(args, model: str):
             return
         if msg.get("content"):
             print(paint("2", (msg["content"] or "").strip(), sys.stdout))
+
+        budget_exhausted = False
         for i, tc in enumerate(calls):
-            tc["id"] = tc.get("id") or f"call_{step}_{i}"
+            tc["id"] = tc.get("id") or f"agent_call_{commands_used + 1}_{i}"
             fn = tc.get("function", {})
-            try:
-                a = json.loads(fn.get("arguments") or "{}")
-            except ValueError:
-                a = {}
-            command, reason = str(a.get("command", "")).strip(), str(a.get("reason", "")).strip()
-            result = agent_gate(command, reason, always, step, max_steps)
-            if result is None:
-                print(paint("2", "\n[stopped by you]", sys.stdout)); return
-            messages.append({"role": "tool", "tool_call_id": tc["id"], "name": fn.get("name", "run_command"), "content": result})
-    messages.append({"role": "user", "content": "Step limit reached. Give your best final answer now from what you gathered, in the required sections."})
-    final = ask_gemini(messages, model)
-    if final:
-        print((final.get("content") or "").strip())
+            if commands_used >= max_steps:
+                result = f"[not executed: agent command-request limit reached ({max_steps})]"
+                budget_exhausted = True
+            else:
+                commands_used += 1  # Every requested command consumes budget, even if blocked or declined.
+                if fn.get("name") != "run_command":
+                    result = f"[blocked by oracle: unsupported tool name {fn.get('name')!r}]"
+                else:
+                    try:
+                        a = json.loads(fn.get("arguments") or "{}")
+                    except (TypeError, ValueError):
+                        a = {}
+                    command = str(a.get("command", "")).strip()
+                    reason = str(a.get("reason", "")).strip()
+                    result = agent_gate(command, reason, always, commands_used, max_steps)
+                    if result is None:
+                        print(paint("2", "\n[stopped by you]", sys.stdout)); return
+            messages.append({"role": "tool", "tool_call_id": tc["id"],
+                             "name": fn.get("name", "run_command"), "content": result})
+
+        if commands_used >= max_steps or budget_exhausted:
+            messages.append({"role": "user", "content": (
+                f"The investigation command-request budget is exhausted ({commands_used}/{max_steps}). "
+                "Do not request more tools. Give the best evidence-based final report now, clearly identifying "
+                "what is known, what remains a hypothesis, and what evidence is missing."
+            )})
+            final = ask_gemini(messages, model)
+            if final:
+                print((final.get("content") or "").strip())
+            return
 
 def agent_gate(command: str, reason: str, always: set, step: int, max_steps: int):
     """Validate, ask the human, run. Returns the tool-result text, or None if the user quit."""
-    try:
-        argv = shlex.split(command)
-    except ValueError as e:
-        return f"[rejected: could not parse command: {e}]"
-    ok, why, prefix = check_readonly(argv)
     print(paint("1;36", f"\n🔧 step {step}/{max_steps}: {command}", sys.stdout))
     if reason:
         print(paint("2", f"   why: {reason}", sys.stdout))
+    try:
+        argv = parse_agent_command(command)
+    except ValueError as e:
+        print(paint("1;31", f"   blocked: {e}", sys.stdout))
+        return f"[blocked by oracle: {e}]"
+    ok, why, prefix = check_readonly(argv)
     if not ok:
         print(paint("1;31", f"   blocked: {why}", sys.stdout))
         return f"[blocked by oracle: {why}]"
@@ -1924,7 +2113,7 @@ HELP["overview"] = """[[t:oracle]] — terminal AI assistant & diagnostics engin
   [[f:--all]]                 describe staged + unstaged tracked changes  (commit)
   [[f:-n, --tail N]]          log lines to fetch, default 2000            (logs)
   [[f:--since T]]             only logs since T, e.g. 30m, 2h, 2026-11-18 (logs, digest; digest default 24h)
-  [[f:--steps N]]             max agent steps, default 8, max 20          (agent)
+  [[f:--steps N]]             max agent command requests, default 8, max 20 (agent)
   [[f:--disk-warn N]]         disk usage % that counts as a problem, default 85 (digest)
   [[f:--ignore NAME]]         skip a container or systemd unit; repeatable (digest)
   [[f:--no-ai]]               digest without the AI briefing: checks only, no API call (digest)
@@ -1976,7 +2165,7 @@ HELP["overview"] = """[[t:oracle]] — terminal AI assistant & diagnostics engin
   every answer becomes less generic. Never put secrets in it: it is sent with every request.
 
 [[h:FREE-TIER NOTES]]
-  • Quotas are per model and per project. Each `agent` step, each file in `review`, and each regenerate is one request.
+  • Quotas are per model and per project. Each agent investigation round, each file in `review`, and each regenerate is one API request.
   • Google's terms say free-tier requests may be used to improve its products. Redaction helps, but keep that in mind.
   • Start with the default lite model; add --deep only when an answer was shallow.
 """
@@ -2082,16 +2271,19 @@ HELP["agent"] = """[[t:oracle agent]] — the AI investigates, you approve each 
 [[h:USAGE]]
   oracle agent "<what to investigate>" [-a notes.md] [--steps N] [--deep]
 
-  The model may REQUEST commands (tool calling). For each one you see the command and its reason, then choose
+  The model may REQUEST commands (tool calling). --steps limits total command requests, including blocked/declined requests.
+  For each one you see the command and its reason, then choose
   [y]es / [n]o / [a]lways for that command type this session / [q]uit. Output is redacted and size-capped before it goes back.
 
 [[h:HARD LIMITS]] (enforced by oracle, not by the AI's good behavior)
   • read-only allowlist only: docker ps/logs/inspect/stats/..., systemctl status/is-active/list-*, journalctl, dmesg,
     git status/log/diff/show/branch, df, du, free, ss, ip, ps, ls, cat, head, tail, grep, stat, wc, crontab -l, ...
-  • no shell operators, pipes, redirects, sudo or globs; follow flags (-f) and write flags are rejected
+  • unquoted shell operators, pipes and redirects are rejected; quoted regex/format punctuation is allowed
+  • sudo, follow flags (-f) and write flags are rejected
+  • ip permits only address/route/link/neighbour/rule inspection; git branch permits listing/inspection only
   • files that look like secrets (.env, .ssh, *.pem, *.key, shadow, secrets/, ...) are refused
   • 20 second timeout per command; at most --steps commands (default 8); it cannot run fixes, only tell you what to run
-  Each step is one API request: mind the free-tier quota.
+  Each command request consumes one step; each investigation round uses an API request. Mind the free-tier quota.
   Attach notes or expected behavior with -a to provide background for the investigation.
 """
 HELP["digest"] = """[[t:oracle digest]] — host health check for schedulers
