@@ -32,6 +32,7 @@ import tempfile
 import time
 from collections import Counter
 from pathlib import Path
+
 import requests
 
 # Enable shell-style line editing for input():
