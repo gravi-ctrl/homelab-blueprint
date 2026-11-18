@@ -219,8 +219,16 @@ TERMINAL_RULES = (
     "- Use clean unicode bullets ('•') for lists."
 )
 
+VOICE = (
+    "WRITING VOICE: write like a friendly, experienced teammate: plain everyday words, short sentences, "
+    "no corporate or formal phrasing ('use', not 'utilize'). Keep every technical term exactly as it is "
+    "(container, daemon, rebase, idempotent, systemd, OOM...); never swap them for simpler synonyms. "
+    "In PR descriptions and comments, first person is fine ('I changed...', 'This fixes...'). "
+    "Stay accurate: never invent details to sound warm."
+)
+
 def system_prompt(role: str, terminal: bool = True, with_env: bool = False) -> str:
-    parts = [role]
+    parts = [role, VOICE]
     if terminal:
         parts.append(TERMINAL_RULES)
     if with_env:
