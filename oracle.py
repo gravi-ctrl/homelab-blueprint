@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # @DESCRIPTION: Terminal AI assistant powered by Google Gemini for interactive chat, piped input, Git writing, diagnostics, code review, command generation, read-only investigations, and host health checks
 # @FREQUENCY: On Demand
-# @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL
+# @USES_ENV: GEMINI_API_KEY, GEMINI_MODEL, ORACLE_MASK_ENV
 # @CAPABILITIES:
 #   • Streams AI responses; smart log handling deduplicates repeated lines, preserves original line numbers, and prioritizes error windows when trimming.
 #   • Automatically tries fallback models on HTTP 429/404/500/502/503/504 and connection errors, using a configured model cascade.
 #   • Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output.
+#     Secret-named `.env` values are also masked by value; `ORACLE_MASK_ENV` opts in more (e.g. health-check URLs whose path is the secret).
 #   • `commit`, `pr`, `changelog`: drafts commit messages from diffs, PR titles/descriptions from commits and diffs, and changelog entries from Git history.
 #   • `logs`: gathers available Docker/container/host context or systemd status and journal data, then diagnoses with evidence and next steps.
 #   • `review`: runs available, file-type-appropriate linters and checks (ShellCheck, Hadolint, Ruff, ansible-lint...) before AI triage.
 #   • `run`: executes a command and invokes AI diagnosis on failure. `do`: plain English -> one risk-classified command with tiered confirmation.
 #   • `agent`: investigates using allowlisted read-only commands behind an interactive approval gate, with optional session-only approval for command prefixes.
-#   • `digest`: health checks with journal window defaulting to time since last digest (max 24 h) and problem deduplication using message identifiers.
+#   • `digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.
 #   • Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.
 #   • Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled.
 
@@ -45,6 +46,8 @@ except ImportError:
 ENV_PATH = Path("/opt/rabbit-hole/.env")
 
 # ── Load Environment ──────────────────────────────────────────────────────────
+_DOTENV_PAIRS: list = []   # (name, value) of every .env entry; used to mask known secret values by value later
+
 def load_dotenv(path):
     if not path.is_file(): return
     with open(path, "r", encoding="utf-8") as f:
@@ -53,6 +56,7 @@ def load_dotenv(path):
             if not line or line.startswith("#") or "=" not in line: continue
             k, v = line.split("=", 1)
             val = v.split("#")[0].strip().strip('"\'')
+            _DOTENV_PAIRS.append((k.strip(), val))
             os.environ.setdefault(k.strip(), val)
 
 load_dotenv(ENV_PATH)
@@ -106,28 +110,40 @@ def banner(model: str, extra: str = ""):
 # ── Sanitizer (Defense-in-Depth) ──────────────────────────────────────────────
 ANSI_RE = re.compile(r'\x1b\[[0-9;?]*[a-zA-Z]')
 
-_SENS_STRONG = (r'(?:password|passwd|passphrase|secret|token|api[_\-]?key|apikey|credential|'
-                r'jwt|private[_\-]?key|access[_\-]?key|client[_\-]?secret|[_\-]key)')   # [_-]key: ENCRYPTION_KEY, APP_KEY, ssh-key ...
+_SENS_STRONG = (r'(?:password|passwd|passphrase|passcode|secret|token|api[_\-]?key|apikey|credential|'
+                r'jwt|private[_\-]?key|access[_\-]?key|client[_\-]?secret|authkey|session[_\-]?id|webhook[_\-]?url|'
+                r'recovery[_\-]?code|mnemonic|seed[_\-]?phrase|[_\-]pwd|[_\-]key)')   # [_-]key: ENCRYPTION_KEY, APP_KEY ...; [_-]pwd: MYSQL_PWD (plain PWD is the cwd, left alone)
 _SENS_WEAK = r'(?<![A-Za-z0-9])(?:auth|salt|pass)(?![A-Za-z0-9])'
 # Names that end in _key but are not secrets
-_NOT_SECRET_KEYS = re.compile(r'(?i)^(primary|foreign|sort|partition|cache|public|row|map|object|index|lookup|shard|group|order|unique)[_\-]key$')
+_NOT_SECRET_KEYS = re.compile(r'(?i)^(primary|foreign|sort|partition|cache|public|row|map|object|index|lookup|shard|group|order|unique|host|idempotency|routing|dedupe)[_\-]key$')
+# Value forms: "quoted, may contain spaces" | 'quoted' | bare (optionally with a stray opening quote, e.g. cut-off lines)
 _ASSIGN_RE = re.compile(
     r'(?i)([A-Za-z0-9_.\-]*' + _SENS_STRONG + r'[A-Za-z0-9_.\-]*|' + _SENS_WEAK + r')'
-    r'(["\']?\s*[:=]\s*["\']?)'
-    r'([^"\'\s,;&}\]]+)'
+    r'(["\']?\s*[:=]\s*)'
+    r'(?:"([^"\n]*)"|\'([^\'\n]*)\'|(["\']?)([^"\'\s,;&}\]]+))'
 )
 # Words that follow "token:" / "auth:" etc. in ordinary diagnostics. Keep them: they are the clue, not the secret.
 _BENIGN_VALUES = {
     "true", "false", "none", "null", "nil", "yes", "no", "on", "off", "expired", "failed", "invalid",
     "missing", "required", "empty", "denied", "unauthorized", "forbidden", "error", "ok", "success",
     "valid", "revoked", "refreshed", "mismatch", "unset", "disabled", "enabled", "not",
+    # diagnostic words that follow "auth:" / "token:" in ordinary log lines: they are the clue, not the secret
+    "timeout", "rejected", "refused", "unavailable", "unknown", "pending", "skipped", "bad", "wrong", "incorrect",
+    "fail", "failure", "passed", "hidden", "masked", "redacted", "n/a",
 }
 
 def _mask_assignment(m):
-    key, sep, val = m.group(1), m.group(2), m.group(3)
-    if val.lower() in _BENIGN_VALUES or val.startswith("[REDACTED") or _NOT_SECRET_KEYS.match(key):
+    key, sep = m.group(1), m.group(2)
+    if m.group(3) is not None:
+        val, q, closing = m.group(3), '"', '"'
+    elif m.group(4) is not None:
+        val, q, closing = m.group(4), "'", "'"
+    else:
+        val, q, closing = m.group(6), m.group(5), ""    # a closing quote, if any, stays in the text after the match
+    if (not val.strip("*•") or val.lower() in _BENIGN_VALUES or val.startswith("[REDACTED")
+            or _NOT_SECRET_KEYS.match(key)):
         return m.group(0)
-    return f"{key}{sep}[REDACTED]"
+    return f"{key}{sep}{q}[REDACTED]{closing}"
 
 _SECRET_PATTERNS = [
     # 1. Platform-specific high-entropy prefixes (near-zero false positives)
@@ -140,23 +156,89 @@ _SECRET_PATTERNS = [
     (r'(?<![A-Z0-9])AKIA[0-9A-Z]{16}(?![A-Z0-9])', '[REDACTED_AWS_KEY]'),
     (r'xox[abprs]-[a-zA-Z0-9\-]{10,}', '[REDACTED_SLACK_TOKEN]'),
     (r'eyJ[a-zA-Z0-9_\-]{10,}\.[a-zA-Z0-9_\-]{10,}\.[a-zA-Z0-9_\-]{10,}', '[REDACTED_JWT]'),
+    (r'dckr_pat_[A-Za-z0-9_\-]{20,}', '[REDACTED_DOCKER_TOKEN]'),
+    (r'(?<![A-Za-z0-9])npm_[A-Za-z0-9]{36}', '[REDACTED_NPM_TOKEN]'),
+    (r'(?<![A-Za-z0-9])pypi-[A-Za-z0-9_\-]{50,}', '[REDACTED_PYPI_TOKEN]'),
+    (r'(?<![A-Za-z0-9])hf_[A-Za-z0-9]{30,}', '[REDACTED_HF_TOKEN]'),
+    (r'(?<![A-Za-z0-9])[sr]k_(?:live|test)_[A-Za-z0-9]{16,}', '[REDACTED_STRIPE_KEY]'),
+    (r'(?<![A-Za-z0-9])whsec_[A-Za-z0-9]{16,}', '[REDACTED_STRIPE_KEY]'),
+    (r'(?<![A-Za-z0-9])SG\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}', '[REDACTED_SENDGRID_KEY]'),
+    (r'(?<![A-Za-z0-9])ya29\.[A-Za-z0-9_\-]{20,}', '[REDACTED_GOOGLE_TOKEN]'),
+    (r'(?<![A-Za-z0-9])tskey-[A-Za-z0-9\-]{10,}', '[REDACTED_TAILSCALE_KEY]'),
+    (r'AGE-SECRET-KEY-1[0-9A-Z]{40,}', '[REDACTED_AGE_KEY]'),
+    # Telegram bot token (also inside api.telegram.org/bot<TOKEN>/...): 8-10 digit bot id, ':', 35 chars
+    (r'(?<!\d)\d{8,10}:[A-Za-z0-9_\-]{35}(?![A-Za-z0-9_\-])', '[REDACTED_TELEGRAM_TOKEN]'),
+    (r'(?i)discord(?:app)?\.com/api/(?:v\d+/)?webhooks/\d+/[A-Za-z0-9_\-]+', 'discord.com/api/webhooks/[REDACTED]'),
+    (r'hooks\.slack\.com/services/[A-Za-z0-9/]+', 'hooks.slack.com/services/[REDACTED]'),
+    # password hashes (bcrypt, argon2, crypt $1$/$5$/$6$, yescrypt $y$): still worth not shipping out
+    (r'\$2[abxy]?\$\d{2}\$[./A-Za-z0-9]{53}', '[REDACTED_HASH]'),
+    (r'\$argon2[a-z]*\$[^\s\'"]{20,}', '[REDACTED_HASH]'),
+    (r'\$(?:[156]|y)\$[./A-Za-z0-9,=\-]{1,60}\$(?:[./A-Za-z0-9,=\-]{1,60}\$)?[./A-Za-z0-9]{20,}', '[REDACTED_HASH]'),
 
     # 2. Private keys & certificates (also matches PKCS#8 "BEGIN PRIVATE KEY")
     (r'-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----', '[REDACTED_PRIVATE_KEY]'),
+    (r'-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]*?-----END PGP PRIVATE KEY BLOCK-----', '[REDACTED_PRIVATE_KEY]'),
+    # a key cut off by --tail / truncation has no END line: still drop the BEGIN line and the base64 lines that follow
+    (r'-----BEGIN [A-Z ]*PRIVATE KEY-----(?:[ \t]*\n[A-Za-z0-9+/=]{20,}[ \t]*)*', '[REDACTED_PRIVATE_KEY]'),
     (r'-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----', '[REDACTED_CERTIFICATE]'),
 
     # 3. Network & auth headers, credentials embedded in URLs
     (r'(?i)bearer\s+[a-zA-Z0-9_\-\.=]+', 'Bearer [REDACTED]'),
     (r'(?i)authorization:\s*[^\n]+', 'Authorization: [REDACTED]'),
-    (r'(?i)\b([a-z][a-z0-9+.\-]*)://([^:/\s@]+):([^@\s/]+)@', r'\1://\2:[REDACTED]@'),
+    (r'(?i)\b((?:set-)?cookie:)[ \t]*[^\n]+', r'\1 [REDACTED]'),
+    (r'(?i)(x-amz-(?:signature|credential|security-token)=)[^&\s"\']+', r'\1[REDACTED]'),
+    # scheme://user:pass@host. The user may be EMPTY (redis://:pass@host)
+    (r'(?i)\b([a-z][a-z0-9+.\-]*)://([^:/\s@]*):([^@\s/]+)@', r'\1://\2:[REDACTED]@'),
 
     # 4. CLI flags: --password hunter2
-    (r'(?i)(--?(?:password|passwd|token|secret|api-?key)[ ]+)(?!-)(\S+)', r'\1[REDACTED]'),
+    (r'(?i)(--?(?!no-|skip-|disable-|ignore-)[a-z][a-z0-9-]*?(?:password|passwd|pwd|token|secret|api-?key|auth-?key|access-?key)[ ]+)(?!-)(\S+)', r'\1[REDACTED]'),
+    # mysql-style -pPASSWORD (glued). Only on mysql/mariadb command lines, and never for -p3306:3306 port mappings.
+    (r'(?im)((?:^|[\s/;|&])(?:mysql|mysqldump|mysqladmin|mysqlcheck|mariadb|mariadb-dump)(?=\s)[^\n]*?\s)-p(?!\d+:\d+)(?=\S)\S+', r'\1-p[REDACTED]'),
+    (r'(?i)(\bsshpass\s+-p\s*)(?!-)\S+', r'\1[REDACTED]'),
+    (r'(?i)(\b(?:curl|wget)\b[^\n]*?\s(?:-u|--user|--proxy-user)(?:\s+|=))(?!-)\S+', r'\1[REDACTED]'),
 ]
+
+def _value_variants(v: str) -> set:
+    """A listed URL may show up in logs without its query string, as a bare path, or as just its token segment."""
+    out = {v}
+    if "://" in v:
+        base = v.split("#", 1)[0].split("?", 1)[0].rstrip("/")
+        out.add(base)
+        path = "/" + base.split("://", 1)[1].partition("/")[2]
+        if len(path) >= 8:
+            out.add(path)
+        for seg in path.split("/"):
+            if len(seg) >= 10 and re.search(r"\d", seg):      # token-looking path segment (not a word like "dashboard")
+                out.add(seg)
+    return out
+
+def _build_known_secrets() -> list:
+    """Literal values masked by VALUE wherever they show up, whatever the surrounding format (the variable NAME is
+    only used here, at startup, to find the value; it never has to appear in a log).
+    1) every .env entry whose name looks secret, plus the Gemini key;
+    2) every variable named in ORACLE_MASK_ENV (comma-separated) - for values whose NAME gives nothing away,
+       like health-check URLs whose path is the secret.
+    Longest first so a value that contains another is replaced whole."""
+    pairs = list(_DOTENV_PAIRS) + ([("GEMINI_API_KEY", GEMINI_KEY)] if GEMINI_KEY else [])
+    vals = set()
+    for k, v in pairs:
+        v = (v or "").strip()
+        if len(v) >= 8 and v.lower() not in _BENIGN_VALUES and (re.search(_SENS_STRONG, k, re.IGNORECASE) or re.search(_SENS_WEAK, k, re.IGNORECASE)):
+            vals.add(v)
+    lookup = dict(_DOTENV_PAIRS)
+    for name in (n.strip() for n in os.environ.get("ORACLE_MASK_ENV", "").split(",")):
+        v = (os.environ.get(name) or lookup.get(name) or "").strip() if name else ""
+        if len(v) >= 8 and v.lower() not in _BENIGN_VALUES:
+            vals |= {x for x in _value_variants(v) if len(x) >= 8}
+    return sorted(vals, key=len, reverse=True)
+
+_KNOWN_SECRETS = _build_known_secrets()
 
 def clean_piped_text(text: str) -> str:
     """Strips terminal color codes and masks secrets (key=value, env-style, prefixed keys, certs)."""
     cleaned = ANSI_RE.sub('', text)
+    for v in _KNOWN_SECRETS:
+        cleaned = cleaned.replace(v, '[REDACTED_ENV_VALUE]')
     for pattern, repl in _SECRET_PATTERNS:
         cleaned = re.sub(pattern, repl, cleaned)
     # 5. Assignments: PASSWORD=x, "api_key": "x", POSTGRES_PASSWORD=x, token: x ...
@@ -1709,7 +1791,7 @@ def container_evidence(name: str) -> str:
                 "state={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restarts={{.RestartCount}} error={{.State.Error}}", name], timeout=15)
     _, logs = sh(["docker", "logs", "--tail", "60", name], timeout=30)
     view, _ = prepare_log(clean_piped_text(logs), 5000) if logs.strip() else ("(no log output)", None)
-    return f"--- evidence for container {name} ---\n{st.strip()}\nlast log lines (numbered):\n{view}"
+    return f"--- evidence for container {name} ---\n{clean_piped_text(st.strip())}\nlast log lines (numbered):\n{view}"
 
 def digest_docker(ignore: set, state: dict):
     """Returns (findings, summary, skipped_reason, new_restart_counts)."""
@@ -1855,7 +1937,7 @@ def digest_journal(since: str):
             sample.setdefault(key(l), l)
         top = counts.most_common(3)
         worst_n = top[0][1]
-        ev = [f"{n}x  {sample[k][:220]}" for k, n in top]
+        ev = [f"{n}x  {clean_piped_text(sample[k])[:220]}" for k, n in top]   # mask first, THEN cut: a cut can split a secret so no pattern matches it
         if worst_n >= 20:
             spam_ident = "|".join(sorted(k for k, n in top if n >= 20))
             found.append(finding("problem", f"error spam in the journal: one message repeated {worst_n}x", ev,
@@ -1906,7 +1988,9 @@ def cmd_digest(args, model: str) -> int:
     def run_journal():
         nonlocal journal_ok
         f, summary, skip = digest_journal(journal_window)
-        journal_ok = skip is None      # only advance the baseline if the journal was really read
+        # Advance the baseline only if the journal was really read AND the window was the automatic one:
+        # a manual `--since 5m` check must not make the next scheduled run skip everything before it.
+        journal_ok = skip is None and not args.since
         return f, summary, skip
 
     f, summary, skip, counts = digest_docker(ignore, state)
@@ -2189,6 +2273,8 @@ HELP["overview"] = """[[t:oracle]] — terminal AI assistant & diagnostics engin
     GEMINI_MODEL        default model (default: gemini-flash-lite-latest)
     GEMINI_DEEP_MODEL   model used by --deep (default: gemini-flash-latest)
     ORACLE_CONTEXT      path of the context file (default: ~/.oracle/context.md)
+    ORACLE_MASK_ENV     comma-separated names of .env variables to mask BY VALUE in everything sent to the model,
+                        e.g. NEXTDNS_URL,SERVER_HC_URL,KUMA_HC_URL (secret-named variables are masked automatically)
     NO_COLOR            disable colors
   Context file: `oracle context init` then `oracle context edit`. Describe your host, stacks, conventions and rules once;
   every answer becomes less generic. Never put secrets in it: it is sent with every request.
