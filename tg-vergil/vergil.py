@@ -11,6 +11,7 @@
 #   • Startup aborts if critical credentials are missing, preventing mis‑configured deployments.
 #   • Commands are locked per trigger, preventing simultaneous executions of the same script
 #   • Each command has a configurable timeout; exceeding it aborts the process
+#   • Scripts may receive Telegram arguments when enabled per trigger
 
 import asyncio
 import html
