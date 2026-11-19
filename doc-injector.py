@@ -26,15 +26,24 @@
 #   --partial          allow writing a first draft when the model only saw part of a big script
 #   --no-review        skip the second-pass reviewer (saves one model call per script)
 #   --print-prompt F   print the full, untruncated prompt for script F, to paste into a bigger model
+#   --check            no model, no API key: list scripts whose header is stale/missing/unverified.
+#                      Exit 1 if any are stale or missing (cron-guard / pre-commit friendly)
+#   --strict           with --check: also exit 1 for unverified or unreadable headers
+#
+# State: ~/.cache/doc-injector.json remembers, per script, the commit and code fingerprint at which the
+#   header was last verified. "Still accurate" answers are remembered instead of re-asked every run.
 # ==============================================================================
 
+import atexit
 import difflib
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 
 import requests
@@ -59,6 +68,7 @@ UNCOMMITTED = "UNCOMMITTED"
 REASONING_EFFORT = "medium"  # gpt-oss models only: low | medium | high
 TEMPERATURE = 0.2  # 0 can send gpt-oss reasoning into loops that burn the whole token budget
 EXCLUDE_PATTERNS = ["whisper", "guard", "orpheus", "vision"]
+STATE_PATH = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "doc-injector.json"
 
 def load_dotenv(path):
     if not path.is_file(): return
@@ -421,38 +431,154 @@ def apply_ops(bullets: list[str], ops: list[dict], diff_sq: str):
     new = [edits.get(i, b) for i, b in enumerate(bullets, 1) if i not in removes]
     return new + adds, applied, dropped
 
-def update_script(p: Path, content: str, block, model_id: str, dry_run: bool, assume_yes: bool) -> bool:
-    """Update mode for a script that already has a header. Returns True if the header was written."""
-    name = display_name(p)
-    print(f"  → Checking for drift: {name}")
+# ── Verification state ────────────────────────────────────────────────────────
+# Per script: {"commit": HEAD when the header was last verified on a clean file, "code_hash": fingerprint of its code}.
+_state_dirty = False
+
+def load_state() -> dict:
+    try:
+        data = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+def save_state(state: dict):
+    global _state_dirty
+    if not _state_dirty:
+        return
+    try:
+        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = STATE_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
+        tmp.replace(STATE_PATH)
+        _state_dirty = False
+    except OSError as e:
+        print(f"⚠ Could not save state to {STATE_PATH} ({e})", file=sys.stderr)
+
+def code_fingerprint(content: str) -> str:
+    """Hash of the code only: comments (header included), blank lines and trailing whitespace don't count."""
+    norm = "\n".join(ln.rstrip() for ln in code_only(content).splitlines() if ln.strip())
+    return hashlib.sha1(norm.encode("utf-8")).hexdigest()
+
+def clean_head(p: Path):
+    """HEAD's sha if the script is tracked and identical to HEAD, else None (a dirty file can't pin a commit)."""
+    try:
+        if _git(["ls-files", "--error-unmatch", "--", p.name], p.parent).returncode != 0:
+            return None
+        if _git(["diff", "--quiet", "HEAD", "--", p.name], p.parent).returncode != 0:
+            return None
+        r = _git(["rev-parse", "HEAD"], p.parent)
+        return r.stdout.strip() if r.returncode == 0 else None
+    except Exception:
+        return None
+
+def mark_verified(p: Path, content: str, state: dict):
+    """Remember that the header matches the code as it is now."""
+    global _state_dirty
+    key = str(p.resolve())
+    entry = dict(state.get(key, {}))
+    entry["code_hash"] = code_fingerprint(content)
+    head = clean_head(p)
+    if head:
+        entry["commit"] = head
+    if entry != state.get(key):
+        state[key] = entry
+        _state_dirty = True
+
+def newer_commit(a: str, b: str, cwd) -> str:
+    """The descendant of the two commits. Falls back to a if b is unknown (rebased away, other branch)."""
+    if a == b:
+        return a
+    try:
+        if _git(["merge-base", "--is-ancestor", a, b], cwd).returncode == 0:
+            return b
+    except Exception:
+        pass
+    return a
+
+def check_drift(p: Path, content: str, block, state: dict) -> dict:
+    """Model-free drift check shared by update mode and --check.
+    status: ok | stale | unverified | unknown. A stale result also carries base, diff, bullets and too_big."""
     lines = content.splitlines()
     start, end = block
     bullets = parse_bullets(lines, start, end)
     if not bullets:
-        print("    ⚠ Could not read the existing bullets; use --force to regenerate the header.", file=sys.stderr)
-        return False
+        return {"status": "unknown", "msg": "could not read the existing bullets (use --force to regenerate)"}
+    entry = state.get(str(p.resolve()), {})
+    if entry.get("code_hash") == code_fingerprint(content):
+        return {"status": "ok", "msg": "code unchanged since the header was last verified", "bullets": bullets}
     base, err = header_base_commit(p, start + 2, end)
+    verified = entry.get("commit")
     if base is None:
-        print(f"    ⚠ No usable git history for this header ({err}). Use --force to regenerate it.", file=sys.stderr)
-        return False
-    if base == UNCOMMITTED:
-        print("    ✓ Header has uncommitted edits; assuming it is current. Commit it and drift is tracked from that commit.")
-        return False
+        if not verified:
+            return {"status": "unknown", "msg": f"no usable git history ({err}); use --force to regenerate"}
+        base = verified
+    elif base == UNCOMMITTED:
+        if not verified:
+            return {"status": "unverified",
+                    "msg": "header has uncommitted edits and was never verified, so drift can't be tracked; commit it or verify with a run"}
+        base = verified
+    elif verified:
+        base = newer_commit(base, verified, p.parent)
     diff = diff_since(p, base)
     if diff is None:
-        print("    ⚠ Could not diff against the header's commit; use --force to regenerate.", file=sys.stderr)
-        return False
+        return {"status": "unknown", "msg": f"could not diff against {base[:8]}; use --force to regenerate"}
     if not diff.strip():
-        print(f"    ✓ Header up to date (no code changes since {base[:8]})")
-        return False
+        return {"status": "ok", "msg": f"no code changes since {base[:8]}", "bullets": bullets}
     if not has_code_changes(diff):
-        print(f"    ✓ Header up to date (only comments or blank lines changed since {base[:8]})")
+        return {"status": "ok", "msg": f"only comments or blank lines changed since {base[:8]}", "bullets": bullets}
+    changed = sum(1 for ln in diff.splitlines() if ln[:1] in ("+", "-") and not ln.startswith(("+++", "---")))
+    return {"status": "stale", "msg": f"{changed} changed line(s) since {base[:8]}", "base": base, "diff": diff,
+            "bullets": bullets, "changed": changed, "too_big": len(diff) > DIFF_CHAR_LIMIT}
+
+def run_check(scripts, state: dict, strict: bool) -> int:
+    """--check: report header health without touching the model. Returns the process exit code."""
+    counts = Counter()
+    for p in sorted(scripts):
+        try: content = p.read_text(encoding="utf-8", errors="ignore")
+        except Exception: continue
+        if not (content.startswith("#!/bin") or content.startswith("#!/usr")):
+            continue
+        block = find_block(content.splitlines())
+        if block is None:
+            status, msg = "missing", "no @CAPABILITIES header"
+        else:
+            d = check_drift(p, content, block, state)
+            status, msg = d["status"], d["msg"]
+            if status == "stale" and d.get("too_big"):
+                msg += " (too large for update mode; use --force or edit by hand)"
+        counts[status] += 1
+        if status != "ok":
+            icon = {"stale": "✗", "missing": "✗", "unverified": "?", "unknown": "?"}[status]
+            print(f"  {icon} {display_name(p)}: {status}: {msg}")
+    summary = ", ".join(f"{counts[k]} {k}" for k in ("ok", "stale", "missing", "unverified", "unknown") if counts[k])
+    print(f"check: {summary or 'no scripts found'}")
+    bad = counts["stale"] + counts["missing"]
+    if strict:
+        bad += counts["unverified"] + counts["unknown"]
+    return 1 if bad else 0
+
+def update_script(p: Path, content: str, block, model_id: str, dry_run: bool, assume_yes: bool, state: dict) -> bool:
+    """Update mode for a script that already has a header. Returns True if the header was written."""
+    name = display_name(p)
+    print(f"  → Checking for drift: {name}")
+    d = check_drift(p, content, block, state)
+    if d["status"] == "unknown":
+        print(f"    ⚠ {d['msg']}", file=sys.stderr)
         return False
-    if len(diff) > DIFF_CHAR_LIMIT:
+    if d["status"] == "unverified":
+        print(f"    ? Unverified: {d['msg']}.", file=sys.stderr)
+        return False
+    if d["status"] == "ok":
+        print(f"    ✓ Header up to date ({d['msg']})")
+        if not dry_run:
+            mark_verified(p, content, state)
+        return False
+    bullets, base, diff = d["bullets"], d["base"], d["diff"]
+    if d["too_big"]:
         print(f"    ⚠ {len(diff)} chars of changes since {base[:8]}: too large for update mode. Edit the header by hand, or use --force.")
         return False
-    changed = sum(1 for ln in diff.splitlines() if ln[:1] in ("+", "-") and not ln.startswith(("+++", "---")))
-    print(f"    ↻ {changed} changed line(s) since {base[:8]}; asking the model what the header is missing...")
+    print(f"    ↻ {d['msg']}; asking the model what the header is missing...")
     ops = query_header_updates(p.name, bullets, diff, model_id)
     if ops is None:
         print("    ⚠ Model reply unusable; header left as is.", file=sys.stderr)
@@ -462,6 +588,8 @@ def update_script(p: Path, content: str, block, model_id: str, dry_run: bool, as
         print(f"    ✗ Dropped (unverified or malformed): {json.dumps(op, ensure_ascii=False)[:260]}")
     if not applied:
         print("    ✓ Header still looks accurate.")
+        if not dry_run:
+            mark_verified(p, content, state)
         return False
     if len(new_bullets) < MIN_VERIFIED_BULLETS:
         print("    ⚠ Result would leave fewer than 2 bullets; not applying.", file=sys.stderr)
@@ -480,6 +608,7 @@ def update_script(p: Path, content: str, block, model_id: str, dry_run: bool, as
             return False
     if inject_capabilities(p, new_bullets):
         print("    ✓ Header updated")
+        mark_verified(p, p.read_text(encoding="utf-8", errors="ignore"), state)
         return True
     return False
 
@@ -549,13 +678,6 @@ def main():
         print(f"# prompt: {len(prompt)} chars (~{len(prompt) // 4} tokens), nothing truncated", file=sys.stderr)
         sys.exit(0)
 
-    if not GROQ_KEY:
-        print("⏭️  GROQ_API_KEY missing in .env. Skipping capability generation.")
-        sys.exit(0)
-
-    active_model = discover_best_model(GROQ_KEY)
-    print(f"🤖 Connected to Groq using live model: {active_model}")
-
     scripts_to_scan = []
     targets = [SCRIPT_DIR]
     if len([a for a in sys.argv[1:] if not a.startswith("--")]) > 0:
@@ -573,6 +695,18 @@ def main():
                     if p.suffix in {".sh", ".py"}:
                         scripts_to_scan.append(p)
 
+    state = load_state()
+    atexit.register(save_state, state)  # also persists on Ctrl-C or early exit
+    if "--check" in sys.argv:
+        sys.exit(run_check(scripts_to_scan, state, strict="--strict" in sys.argv))
+
+    if not GROQ_KEY:
+        print("⏭️  GROQ_API_KEY missing in .env. Skipping capability generation.")
+        sys.exit(0)
+
+    active_model = discover_best_model(GROQ_KEY)
+    print(f"🤖 Connected to Groq using live model: {active_model}")
+
     updated_count = 0
     print(f"🔍 Checking capabilities for {len(scripts_to_scan)} script(s)...")
 
@@ -587,7 +721,7 @@ def main():
         has_block = block is not None
 
         if has_block and not force:
-            if update_script(p, content, block, active_model, dry_run, assume_yes):
+            if update_script(p, content, block, active_model, dry_run, assume_yes, state):
                 updated_count += 1
             continue
 
@@ -632,8 +766,10 @@ def main():
                 continue
             updated_count += 1
             print(f"    ✓ Injected @CAPABILITIES ({len(bullets)} verified items)")
+            mark_verified(p, p.read_text(encoding="utf-8", errors="ignore"), state)
             time.sleep(2)
 
+    save_state(state)
     print(f"✅ Capabilities check complete. ({updated_count} file(s) updated)")
 
 if __name__ == "__main__":
