@@ -6,7 +6,7 @@
 #   • Streams AI responses; smart log handling deduplicates repeated lines, preserves original line numbers, and prioritizes error windows when trimming.
 #   • Automatically tries fallback models on HTTP 429/404/500/502/503/504 and connection errors, using a configured model cascade.
 #   • Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output.
-#     Secret-named `.env` values are also masked by value; `ORACLE_MASK_ENV` opts in more (e.g. health-check URLs whose path is the secret).
+#   • Secret-named `.env` values are also masked by value; `ORACLE_MASK_ENV` opts in more (e.g. health-check URLs whose path is the secret).
 #   • `commit`, `pr`, `changelog`: drafts commit messages from diffs, PR titles/descriptions from commits and diffs, and changelog entries from Git history.
 #   • `logs`: gathers available Docker/container/host context or systemd status and journal data, then diagnoses with evidence and next steps.
 #   • `review`: runs available, file-type-appropriate linters and checks (ShellCheck, Hadolint, Ruff, ansible-lint...) before AI triage.
