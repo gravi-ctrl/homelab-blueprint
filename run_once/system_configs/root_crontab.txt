@@ -8,6 +8,12 @@ BASH_ENV=/opt/rabbit-hole/.env
 # | | | | .---- day of week (0 - 7) (Sunday=0 or 7)
 # | | | | |
 # * * * * *
+# Oracle Digest: alert only on trouble, remind every 12h, send a "recovered" message when healthy again
+0 */6 * * * cron-guard --mode fail --timeout 300 --repeat-after 12h --recovery "Oracle Digest" "/opt/rabbit-hole/oracle.py digest --ignore migrate"
+
+# Oracle Digest weekly: proof of life (own state, doesn't touch the 6h job's baseline)
+0 9 * * 1 cron-guard --mode all --timeout 300 "Oracle Digest weekly" "/opt/rabbit-hole/oracle.py digest --no-state --ignore migrate"
+
 # Cold backup of Docker Stacks, scripts, ctrl_s_master, mkcert & SSH keys
 25 5 * * 4 cron-guard --mode all "Docker Stacks Backup" "/opt/rabbit-hole/local-opt-backup.sh"
 
