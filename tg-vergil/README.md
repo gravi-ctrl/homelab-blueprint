@@ -7,6 +7,7 @@ A Python bot that runs server commands via Telegram. Commands are defined entire
 1. On startup, the bot reads every `CMD_`-prefixed variable from `.env`
 2. Each one becomes a Telegram `/command` (e.g. `CMD_backup` → `/backup`)
 3. When triggered, it runs the shell command and replies with the output
+   * **Optional Arguments:** If `ARGS_<COMMAND>="true"` is set in `.env`, any text sent after the command in Telegram will be forwarded directly to your script as extra parameters.
    * **Optional Muting:** If `MUTE_<COMMAND>="true"` is set in `.env`, the bot will only show a short success confirmation instead of dumping the raw logs. Useful for scripts that already handle their own notifications.
 4. If output exceeds 4000 characters, it sends a `.txt` log file instead
 5. Only `TELEGRAM_CHAT_ID` can execute commands — all others are silently ignored
@@ -71,7 +72,7 @@ python3 vergil.py
 
 ## Adding New Commands
 
-1. Edit `.env` and add a new `CMD_` line (plus an optional `MUTE_` line to silence success logs, or a `TIMEOUT_` line for long-running commands)
+1. Edit `.env` and add a new `CMD_` line (plus an optional `MUTE_`, `TIMEOUT_`, or `ARGS_` )
 2. Restart: `sudo systemctl restart tg-vergil`
 
 That's it — the new `/command` is live.

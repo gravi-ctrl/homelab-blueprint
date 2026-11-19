@@ -88,8 +88,13 @@ async def execute_script(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             timeout = int(os.getenv(f"TIMEOUT_{trigger}".upper(), DEFAULT_TIMEOUT))
 
+            extra_args = []
+            if os.getenv(f"ARGS_{trigger}".upper(), "").strip().lower() == "true":
+                extra_args = context.args
+
             proc = await asyncio.create_subprocess_exec(
                 *shlex.split(shell_command),
+                *extra_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 env=custom_env,
