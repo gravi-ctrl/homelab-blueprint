@@ -11,7 +11,7 @@
 #   • `review`: runs available, file-type-appropriate linters and checks (ShellCheck, Hadolint, Ruff, ansible-lint...) before AI triage.
 #   • `run`: executes a command and invokes AI diagnosis on failure. `do`: plain English -> one risk-classified command with tiered confirmation.
 #   • `agent`: investigates using allowlisted read-only commands behind an interactive approval gate, with optional session-only approval for command prefixes.
-#   • `digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.
+#   • `digest`: health checks with journal window defaulting to time since last digest (max 24 h) and problem deduplication using message identifiers.
 #   • Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.
 #   • Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled.
 
@@ -1698,10 +1698,11 @@ def save_digest_state(state: dict):
 def journal_since(s: str) -> str:
     return f"-{s}" if re.fullmatch(r'\d+[smhd]', s) else s
 
-def finding(sev: str, title: str, lines=None, extra: str = "", container: str | None = None) -> dict:
+def finding(sev: str, title: str, lines=None, extra: str = "", container: str | None = None, ident: str = "") -> dict:
+    # ident: what the title alone does not say (e.g. WHICH journal message is spamming); only used for cache keys
     return {"sev": sev, "title": clean_piped_text(title),
             "lines": [clean_piped_text(l)[:300] for l in (lines or [])][:12],
-            "extra": clean_piped_text(extra), "container": container}
+            "extra": clean_piped_text(extra), "container": container, "ident": clean_piped_text(ident)}
 
 def container_evidence(name: str) -> str:
     _, st = sh(["docker", "inspect", "--format",
@@ -1856,14 +1857,15 @@ def digest_journal(since: str):
         worst_n = top[0][1]
         ev = [f"{n}x  {sample[k][:220]}" for k, n in top]
         if worst_n >= 20:
+            spam_ident = "|".join(sorted(k for k, n in top if n >= 20))
             found.append(finding("problem", f"error spam in the journal: one message repeated {worst_n}x", ev,
-                                 extra="--- most frequent journal errors ---\n" + "\n".join(ev)))
+                                 extra="--- most frequent journal errors ---\n" + "\n".join(ev), ident=spam_ident))
         else:
             found.append(finding("note", f"{len(lines)} journal error line(s), {len(counts)} distinct", ev))
     return found, f"{len(lines)} journal error lines", None
 
 def digest_briefing(host: str, stamp: str, since: str, problems: list, notes: list, model: str) -> str:
-    parts = [f"Host: {host}\nTime: {stamp}\nWindow: last {since}"]
+    parts = [f"Host: {host}\nTime: {stamp}\nWindow: {since}"]
     for i, f in enumerate(problems, 1):
         parts.append(f"PROBLEM {i}: {f['title']}\n" + "\n".join(f["lines"]) + (f"\n{f['extra']}" if f["extra"] else ""))
     if notes:
@@ -1878,7 +1880,7 @@ BRIEF_TTL = 6 * 3600   # reuse an identical briefing for 6h: stable alert text +
 
 def problem_set_key(problems: list) -> str:
     """Same problems (ignoring numbers like 91% -> 92% or restart counters) = same key."""
-    norm = sorted(re.sub(r'\d+', '#', p["title"]) for p in problems)
+    norm = sorted(re.sub(r'\d+', '#', p["title"] + "|" + p.get("ident", "")) for p in problems)
     return hashlib.sha1("\n".join(norm).encode()).hexdigest()[:16]
 
 def cmd_digest(args, model: str) -> int:
@@ -1887,13 +1889,32 @@ def cmd_digest(args, model: str) -> int:
     ignore = set(args.ignore or [])
     state = {} if args.no_state else load_digest_state()
     findings, parts, skipped, ran = [], [], [], 0
+    run_started = int(time.time())
+
+    # Journal window: an explicit --since always wins. Otherwise look only at what happened since the last run
+    # that actually read the journal (capped at 24h), so a fixed problem stops alerting on the next run instead
+    # of lingering in a 24h window. --no-state has no baseline and keeps the plain 24h window.
+    journal_window, window_label = since, f"last {since}"
+    last_j = state.get("journal_ts")
+    if not args.since and isinstance(last_j, (int, float)):
+        elapsed = run_started - int(last_j)
+        if 0 < elapsed < 24 * 3600:
+            journal_window = f"{elapsed + 5}s"   # small overlap so nothing falls between two runs
+            window_label = f"since the last digest (~{max(1, round(elapsed / 3600))}h)"
+    journal_ok = False
+
+    def run_journal():
+        nonlocal journal_ok
+        f, summary, skip = digest_journal(journal_window)
+        journal_ok = skip is None      # only advance the baseline if the journal was really read
+        return f, summary, skip
 
     f, summary, skip, counts = digest_docker(ignore, state)
     findings += f
     (parts.append(summary) if summary else None)
     (skipped.append(skip) if skip else None)
     ran += 0 if skip else 1
-    for check in (lambda: digest_disk(warn_pct), digest_memory, lambda: digest_systemd(ignore), lambda: digest_journal(since)):
+    for check in (lambda: digest_disk(warn_pct), digest_memory, lambda: digest_systemd(ignore), run_journal):
         f, summary, skip = check()
         findings += f
         (parts.append(summary) if summary else None)
@@ -1901,7 +1922,9 @@ def cmd_digest(args, model: str) -> int:
         ran += 0 if skip else 1
     if counts:
         state["restarts"] = counts
-    state["ts"] = int(time.time())
+    state["ts"] = run_started
+    if journal_ok:
+        state["journal_ts"] = run_started
 
     def finish(code: int) -> int:
         if not args.no_state:
@@ -1934,14 +1957,14 @@ def cmd_digest(args, model: str) -> int:
         if cached.get("key") == key and cached.get("text") and time.time() - cached.get("ts", 0) < BRIEF_TTL:
             brief, written_ts = cached["text"], cached["ts"]
         else:
-            brief, written_ts = digest_briefing(host, stamp, since, problems, notes, model), int(time.time())
+            brief, written_ts = digest_briefing(host, stamp, window_label, problems, notes, model), int(time.time())
             if brief:
                 state["brief"] = {"key": key, "text": brief, "ts": written_ts}
         # Constant wording + only digits differ between a fresh and a reused briefing, so a wrapper that
         # fingerprints the output (cron-guard ignores digits) sees the same text and keeps suppressing repeats.
         written = time.strftime("%Y-%m-%d %H:%M", time.localtime(written_ts))
 
-    print(f"⚠ {len(problems)} problem{'s' if len(problems) != 1 else ''} on {host} ({stamp}, last {since})")
+    print(f"⚠ {len(problems)} problem{'s' if len(problems) != 1 else ''} on {host} ({stamp}, {window_label})")
     print()
     print("--- CHECK RESULTS ---")
     for p in problems:
@@ -2305,7 +2328,8 @@ HELP["digest"] = """[[t:oracle digest]] — host health check for schedulers
     journal      kernel OOM-killer events, one error repeated 20+ times (spam); other errors are notes
 
 [[h:FLAGS]]
-  --since T        journal window, e.g. 6h, 24h, 2d (default 24h)
+  --since T        journal window, e.g. 6h, 24h, 2d (default: since the last digest that read the journal, max 24h;
+                   24h on the first run or with --no-state)
   --disk-warn N    disk % that counts as a problem (default 85)
   --ignore NAME    skip a container or systemd unit; repeatable (one-shot containers that exit on purpose)
   --no-ai          checks only: no API call, no briefing
@@ -2345,6 +2369,7 @@ HELP["digest"] = """[[t:oracle digest]] — host health check for schedulers
 [[h:NOTES]]
   • "Restarted since last digest" needs a baseline: the first run only records restart counts (~/.oracle/digest_state.json).
     Run it as the same user (same HOME) each time; root's cron has HOME=/root, so its state differs from your shell's.
+  • The same file makes the journal check look only at entries since the last digest, so a fixed problem stops alerting.
   • A healthy run clears the saved briefing, so the next incident gets a fresh one.
   • For problem containers (max 3) the last 60 log lines go to the AI, redacted and collapsed like `oracle logs`.
   • Everything printed is secret-masked, since alerts leave the machine.
