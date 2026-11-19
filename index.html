@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-19 04:28 EET</div>
+    <div class="meta-line">Generated 2026-11-19 04:30 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4951,7 +4951,16 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "capabilities": [
         "Streams AI responses; smart log handling deduplicates repeated lines, preserves original line numbers, and prioritizes error windows when trimming.",
         "Automatically tries fallback models on HTTP 429/404/500/502/503/504 and connection errors, using a configured model cascade.",
-        "Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output."
+        "Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output.",
+        "Secret-named `.env` values are also masked by value; `ORACLE_MASK_ENV` opts in more (e.g. health-check URLs whose path is the secret).",
+        "`commit`, `pr`, `changelog`: drafts commit messages from diffs, PR titles/descriptions from commits and diffs, and changelog entries from Git history.",
+        "`logs`: gathers available Docker/container/host context or systemd status and journal data, then diagnoses with evidence and next steps.",
+        "`review`: runs available, file-type-appropriate linters and checks (ShellCheck, Hadolint, Ruff, ansible-lint...) before AI triage.",
+        "`run`: executes a command and invokes AI diagnosis on failure. `do`: plain English -> one risk-classified command with tiered confirmation.",
+        "`agent`: investigates using allowlisted read-only commands behind an interactive approval gate, with optional session-only approval for command prefixes.",
+        "`digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.",
+        "Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.",
+        "Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled."
       ],
       "category": "Core Scripts",
       "cron_ctx": "Root",
