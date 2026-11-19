@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-18 22:49 EET</div>
+    <div class="meta-line">Generated 2026-11-19 04:28 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -4093,6 +4093,154 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 3
     },
     {
+      "command": "cron-guard --mode all --timeout 300 \"Oracle Digest weekly\" \"/opt/rabbit-hole/oracle.py digest --no-state --ignore migrate\"",
+      "day_conditional": null,
+      "env": [],
+      "full_comment": "Oracle Digest weekly: proof of life (own state, doesn't touch the 6h job's baseline)",
+      "has_wrapper": false,
+      "heat_slots": [
+        [
+          1,
+          9
+        ]
+      ],
+      "human_desc": "At 09:00, only on Monday",
+      "is_root": true,
+      "label": "Oracle Digest weekly: proof of...",
+      "owner": "⚡ Root Cron",
+      "raw_schedule": "0 9 * * 1",
+      "tier": "📅 Weekly",
+      "tier_order": 3
+    },
+    {
+      "command": "cron-guard --mode fail --timeout 300 --repeat-after 12h --recovery \"Oracle Digest\" \"/opt/rabbit-hole/oracle.py digest --ignore migrate\"",
+      "day_conditional": null,
+      "env": [],
+      "full_comment": "Oracle Digest: alert only on trouble, remind every 12h, send a \"recovered\" message when healthy again",
+      "has_wrapper": false,
+      "heat_slots": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          12
+        ],
+        [
+          0,
+          18
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          1,
+          18
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          2,
+          18
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          3,
+          18
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          4,
+          12
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          5,
+          12
+        ],
+        [
+          5,
+          18
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          12
+        ],
+        [
+          6,
+          18
+        ]
+      ],
+      "human_desc": "Every 6 hours",
+      "is_root": true,
+      "label": "Oracle Digest: alert only on t...",
+      "owner": "⚡ Root Cron",
+      "raw_schedule": "0 */6 * * *",
+      "tier": "🔀 Other",
+      "tier_order": 99
+    },
+    {
       "command": "[ \"$(date +\\%u)\" = 5 ] && cron-guard --mode mute \"ctrl_s_master\" \"$CTRL_DIR/run.sh\"",
       "day_conditional": 5,
       "env": [
@@ -4292,6 +4440,16 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "OFFSITE_MIN_COPIES",
       "script_used": [
         "local-opt-backup.sh"
+      ]
+    },
+    {
+      "env_used": [
+        "oracle.py"
+      ],
+      "mismatch": false,
+      "name": "ORACLE_MASK_ENV",
+      "script_used": [
+        "oracle.py"
       ]
     },
     {
@@ -4793,27 +4951,31 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "capabilities": [
         "Streams AI responses; smart log handling deduplicates repeated lines, preserves original line numbers, and prioritizes error windows when trimming.",
         "Automatically tries fallback models on HTTP 429/404/500/502/503/504 and connection errors, using a configured model cascade.",
-        "Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output.",
-        "`commit`, `pr`, `changelog`: drafts commit messages from diffs, PR titles/descriptions from commits and diffs, and changelog entries from Git history.",
-        "`logs`: gathers available Docker/container/host context or systemd status and journal data, then diagnoses with evidence and next steps.",
-        "`review`: runs available, file-type-appropriate linters and checks (ShellCheck, Hadolint, Ruff, ansible-lint...) before AI triage.",
-        "`run`: executes a command and invokes AI diagnosis on failure. `do`: plain English -> one risk-classified command with tiered confirmation.",
-        "`agent`: investigates using allowlisted read-only commands behind an interactive approval gate, with optional session-only approval for command prefixes.",
-        "`digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.",
-        "Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.",
-        "Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled."
+        "Best-effort redaction of recognized API keys, tokens, passwords, URL credentials, env-style secrets, private keys and certificates in submitted text and collected output."
       ],
       "category": "Core Scripts",
-      "cron_ctx": "",
-      "cron_entries": [],
+      "cron_ctx": "Root",
+      "cron_entries": [
+        {
+          "desc": "At 09:00, only on Monday",
+          "owner": "Root",
+          "schedule": "0 9 * * 1"
+        },
+        {
+          "desc": "Every 6 hours",
+          "owner": "Root",
+          "schedule": "0 */6 * * *"
+        }
+      ],
       "desc": "Terminal AI assistant powered by Google Gemini for interactive chat, piped input, Git writing, diagnostics, code review, command generation, read-only investigations, and host health checks",
       "dir_path": "Core Scripts",
       "env": [
         "GEMINI_API_KEY",
-        "GEMINI_MODEL"
+        "GEMINI_MODEL",
+        "ORACLE_MASK_ENV"
       ],
-      "freq": "On Demand",
-      "freq_source": "header",
+      "freq": "Varies (2 entries)",
+      "freq_source": "cron",
       "header_freq": "On Demand",
       "name": "oracle.py",
       "path": "oracle.py",
