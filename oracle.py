@@ -223,7 +223,7 @@ def _build_known_secrets() -> list:
     vals = set()
     for k, v in pairs:
         v = (v or "").strip()
-        if len(v) >= 8 and v.lower() not in _BENIGN_VALUES and (re.search(_SENS_STRONG, k, re.I) or re.search(_SENS_WEAK, k, re.I)):
+        if len(v) >= 8 and v.lower() not in _BENIGN_VALUES and (re.search(_SENS_STRONG, k, re.IGNORECASE) or re.search(_SENS_WEAK, k, re.IGNORECASE)):
             vals.add(v)
     lookup = dict(_DOTENV_PAIRS)
     for name in (n.strip() for n in os.environ.get("ORACLE_MASK_ENV", "").split(",")):
