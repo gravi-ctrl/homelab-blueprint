@@ -427,7 +427,7 @@ if [[ ( $TAR_EXIT_CODE -eq 0 || $TAR_EXIT_CODE -eq 1 ) && $AGE_EXIT_CODE -eq 0 ]
 				if rclone listremotes 2>/dev/null | grep -q "^${REMOTE_NAME}:$"; then
 					echo "  → Uploading verified archive to ${REMOTE_NAME} (${OFFSITE_BACKUP_TARGET})..."
 					if rclone copy "$BACKUP_DIR/$DOCKER_FILENAME" "${OFFSITE_BACKUP_TARGET}/" \
-					    --stats 30s --stats-one-line; then
+					    --stats 30s --stats-one-line --stats-log-level NOTICE; then
 						echo "  ✅ Offsite upload successful."
 						prune_offsite "${OFFSITE_BACKUP_TARGET}"
 					else
