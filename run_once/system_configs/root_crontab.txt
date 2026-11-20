@@ -9,7 +9,7 @@ BASH_ENV=/opt/rabbit-hole/.env
 # | | | | |
 # * * * * *
 # Oracle Digest: alert only on trouble, remind every 12h, send a "recovered" message when healthy again
-0 */6 * * * cron-guard --mode fail --timeout 300 --repeat-after 12h --recovery "Oracle Digest" "/opt/rabbit-hole/oracle.py digest --ignore migrate"
+30 */6 * * * cron-guard --mode fail --timeout 300 --repeat-after 12h --recovery "Oracle Digest" "/opt/rabbit-hole/oracle.py digest --ignore migrate"
 
 # Oracle Digest weekly: proof of life (own state, doesn't touch the 6h job's baseline)
 0 9 * * 1 cron-guard --mode all --timeout 300 "Oracle Digest weekly" "/opt/rabbit-hole/oracle.py digest --no-state --ignore migrate"
