@@ -21,7 +21,7 @@ module "stacks" {
   source       = "./modules/github_repo"
   repo_name    = "server-docker-backup"
   visib        = "public"
-  repo_desc    = "A backup of all of my docker container configs in /opt/stacks."
+  repo_desc    = "A backup of all of my docker container configs in /opt/stacks along with Renovate."
   homepage_url = "https://gravi-ctrl.github.io/server-docker-backup/"
 }
 
