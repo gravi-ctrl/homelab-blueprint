@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-19 21:49 EET</div>
+    <div class="meta-line">Generated 2026-11-20 03:10 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3218,10 +3218,10 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 2
     },
     {
-      "command": "cron-guard --mode fail \"Pi-hole Gravity & Regex\" \"/opt/stacks/pihole/scripts/update-pihole-regex.sh\"",
+      "command": "cron-guard --mode fail \"Pi-hole teleporter backup & gravity rebuild\" \"/opt/stacks/pihole/scripts/pihole_teleporter.sh backup\"",
       "day_conditional": null,
       "env": [],
-      "full_comment": "Update Pi-hole Gravity and apply mmotti regex rules",
+      "full_comment": "Creates a backup zip for Pi-hole lists and runs pihole -g to refresh gravity lists.",
       "has_wrapper": true,
       "heat_slots": [
         [
@@ -3255,7 +3255,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       ],
       "human_desc": "At 04:05",
       "is_root": false,
-      "label": "Pi-hole Gravity & Regex",
+      "label": "Pi-hole teleporter backup & gravity rebuild",
       "owner": "👤 User Cron (alice)",
       "raw_schedule": "5 4 * * *",
       "tier": "🌙 Daily",
