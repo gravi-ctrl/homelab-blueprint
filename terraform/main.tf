@@ -23,6 +23,7 @@ module "stacks" {
   visib        = "public"
   repo_desc    = "A backup of all of my docker container configs in /opt/stacks along with Renovate."
   homepage_url = "https://gravi-ctrl.github.io/server-docker-backup/"
+  allow_auto_merge = true
 }
 
 module "ctrl_s_master" {
