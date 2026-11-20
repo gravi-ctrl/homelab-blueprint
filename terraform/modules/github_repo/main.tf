@@ -12,6 +12,7 @@ resource "github_repository" "this" {
   allow_merge_commit     = var.allow_merge_commit
   allow_squash_merge     = var.allow_squash_merge
   allow_rebase_merge     = var.rebase_merge
+  allow_auto_merge       = var.allow_auto_merge
 
   lifecycle {
     prevent_destroy = true
