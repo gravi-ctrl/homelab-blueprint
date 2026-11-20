@@ -85,3 +85,4 @@ variable "allow_auto_merge" {
   description = "Whether you want to allow auto-merge or not"
   type        = bool
   default     = false
+}
