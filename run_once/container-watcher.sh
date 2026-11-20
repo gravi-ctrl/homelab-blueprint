@@ -42,6 +42,16 @@ check_tailscale() {
     docker exec "$1" tailscale status --json >/dev/null 2>&1
 }
 
+check_pihole() {
+    local h
+    h=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$1" 2>/dev/null)
+    if [ -n "$h" ]; then
+        [ "$h" = "healthy" ]
+    else
+        docker exec "$1" pidof pihole-FTL >/dev/null 2>&1
+    fi
+}
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ⚙️  TASK PAYLOADS
 # ══════════════════════════════════════════════════════════════════════════════
@@ -107,9 +117,19 @@ If you need to initialize a new CA and regenerate your local certificates:
 
 # 🔹 TASK: PIHOLE
 task_pihole() {
+    local rc=0 result
+    /opt/stacks/pihole/scripts/pihole_teleporter.sh restore "$container" || rc=$?
+
+    case "$rc" in
+        0) result="✅ Lists, groups and settings restored from the Teleporter zip; gravity rebuilt" ;;
+        2) result="⚠️ No Teleporter zip found in etc-pihole, Pi-hole is on default lists and settings" ;;
+        *) result="🚨 Teleporter restore FAILED (journalctl -u container-watcher). Re-run manually: /opt/stacks/pihole/scripts/pihole_teleporter.sh restore" ;;
+    esac
+
     send_telegram "🔧 setup.sh's Post-Restore Watcher: Pi-hole
 ━━━━━━━━━━━━━━━
 ℹ️ Pi-hole container is now running!
+${result}
 
 ⚠️ **Crucial steps to make it work:**
 1. Reserve this server's IP (e.g., 192.168.1.x) on your router to keep it static.
