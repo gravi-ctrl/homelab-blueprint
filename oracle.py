@@ -684,6 +684,8 @@ COMMIT_ROLE = (
     "- Subject line: imperative mood, at most 72 characters, no trailing period.\n"
     "- If the change has more than one logical part or the 'why' is not obvious, add a blank line and a short body "
     "(wrapped near 72 columns) using '-' bullets.\n"
+    "- If the author gave a hint explaining why, always include a short body that states that reason in plain words "
+    "and names the file(s) it applies to, so a later PR summary can reuse it.\n"
     "- Match the style of the recent commit subjects provided (for example Conventional Commits prefixes like "
     "feat:/fix:/chore: if they use them; otherwise plain sentences).\n"
     "- Describe code changes based on the diff. Author-provided hints and attached files may explain the motivation, "
@@ -796,14 +798,18 @@ def cmd_pr(args, model: str):
     if not in_git_repo():
         die("Not inside a git repository.")
     base = args.rest[1] if len(args.rest) > 1 else default_base_branch()
-    _, log = sh(["git", "log", f"{base}..HEAD", "--no-merges", "--format=%h %s%n%b%n--"], merge=False)
+    # --name-status lists the files each commit touched (paths only, no contents), so the "why" in a
+    # commit body can be tied to the file it belongs to without re-sending anything.
+    _, log = sh(["git", "log", f"{base}..HEAD", "--no-merges", "--name-status", "--format=%n● %h %s%n%b"], merge=False)
     if not log.strip():
         die(f"No commits ahead of {base}.")
     _, stat = sh(["git", "diff", "--no-color", "--stat=160", f"{base}...HEAD"], merge=False)
     _, diff = sh(["git", "diff", "--no-color", f"{base}...HEAD", "--", "."] + NOISE_EXCLUDES, merge=False)
     _, branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], merge=False)
     log, _ = trim_middle(log, 15000)
-    user = (f"Branch: {branch.strip()}  (base: {base})\n\nCommits:\n{log}\n\nChanged files:\n{stat.strip()}\n\n"
+    user = (f"Branch: {branch.strip()}  (base: {base})\n\n"
+            f"Commits (each commit message is followed by the files it touched: M=modified, A=added, D=deleted, R=renamed). "
+            f"Use the commit messages for the reasons and tie each reason to its file(s):\n{log}\n\nChanged files:\n{stat.strip()}\n\n"
             f"Diff (lockfiles and minified files omitted):\n{fence(clean_piped_text(trim_diff(diff)), 'diff')}")
     attachment_text, attachment_stats = compose_attachment_context(
         args.attach,
