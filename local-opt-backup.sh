@@ -130,9 +130,17 @@ start_stacks() {
     [ -f "$RUNNING_STACKS_FILE" ] || { echo "⚠️  No snapshot found. Skipping stack startup."; return 0; }
     while IFS= read -r stack_dir; do
         [ -f "$stack_dir/compose.yml" ] || continue
-        echo "  → $(basename "$stack_dir")"
-        docker compose -f "$stack_dir/compose.yml" up -d \
-            || echo "  ⚠️ Failed to start $(basename "$stack_dir")"
+        name=$(basename "$stack_dir")
+        if out=$(docker compose -f "$stack_dir/compose.yml" up -d 2>&1 </dev/null); then
+            if grep -q 'Pulled' <<< "$out"; then
+                echo "  ✅ $name started (new images pulled)"
+            else
+                echo "  ✅ $name started"
+            fi
+        else
+            echo "  ⚠️ Failed to start $name"
+            sed 's/^/      /' <<< "$out"
+        fi
     done < "$RUNNING_STACKS_FILE"
 }
 
@@ -268,8 +276,13 @@ echo "Stopping stacks gracefully..."
 if [ -f "$RUNNING_STACKS_FILE" ]; then
     while IFS= read -r stack_dir; do
         if [ -f "$stack_dir/compose.yml" ]; then
-            echo "  → Stopping $(basename "$stack_dir")"
-            docker compose -f "$stack_dir/compose.yml" down --timeout 30 || true
+            name=$(basename "$stack_dir")
+            if out=$(docker compose -f "$stack_dir/compose.yml" down --timeout 30 2>&1 </dev/null); then
+                echo "  ⏹️ $name stopped"
+            else
+                echo "  ⚠️ $name did not stop cleanly"
+                sed 's/^/      /' <<< "$out"
+            fi
         fi
     done < "$RUNNING_STACKS_FILE"
 fi
