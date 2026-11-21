@@ -359,7 +359,6 @@ timeout 60m tar --use-compress-program="zstd -9 -T0 --long" -cf - \
     --exclude="${STACKS_DIR}/pihole/etc-pihole/pihole-FTL.db" \
     --exclude="${STACKS_DIR}/pihole/etc-pihole/gravity.db" \
     --exclude="${STACKS_DIR}/pihole/etc-pihole/gravity_old.db" \
-    --exclude="${STACKS_DIR}/pihole/etc-pihole/gravity_backups" \
     --exclude="${STACKS_DIR}/pihole/etc-pihole/listsCache" \
     --exclude="${STACKS_DIR}/qbittorrent/config/qBittorrent/data/logs" \
     --exclude="${STACKS_DIR}/qbittorrent/config/qBittorrent/data/GeoDB" \
