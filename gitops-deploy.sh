@@ -530,8 +530,21 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
     exit 0
 fi
 
+fetch_with_retry() {
+    local attempt
+    for attempt in 1 2 3; do
+        if git fetch -q origin main; then
+            return 0
+        fi
+        echo "⚠️  Fetch attempt ${attempt}/3 failed." >&2
+        if [ "$attempt" -lt 3 ]; then
+            sleep 15
+        fi
+    done
+    return 1
+}
 
-git fetch -q origin main
+fetch_with_retry || { echo "❌ git fetch failed after 3 attempts" >&2; exit 1; }
 
 OLD_HEAD=$(git rev-parse HEAD)
 
