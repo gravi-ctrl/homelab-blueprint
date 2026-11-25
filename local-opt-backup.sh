@@ -296,6 +296,7 @@ echo "Creating backup (ZSTD)..."
 # Strip both the leading and trailing slashes for exact tar matching
 STACKS_DIR="${STACKS_DIR#/}"; STACKS_DIR="${STACKS_DIR%/}"
 CTRL_DIR="${CTRL_DIR#/}"; CTRL_DIR="${CTRL_DIR%/}"
+USER_HOME="${USER_HOME#/}"; USER_HOME="${USER_HOME%/}"
 
 set +e
 
