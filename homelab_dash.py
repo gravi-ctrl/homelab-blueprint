@@ -118,7 +118,7 @@ def parse_scripts(env_used_by, crons=None):
 
     for root, dirs, files in os.walk(SCRIPT_DIR):
         dirs.sort()
-        if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv']):
+        if any(ignore in root for ignore in ['.git', '_archive', 'node_modules', 'venv', 'api-version']):
             continue
         for file in sorted(files):
             p = Path(root) / file
