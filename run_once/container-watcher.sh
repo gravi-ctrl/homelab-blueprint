@@ -9,6 +9,7 @@
 #   • Runs custom readiness checks before executing tasks, preventing race conditions.
 #   • Limits elevated privileges to specific task functions, tightening security posture.
 #   • Sends Telegram alerts with retry logic, keeping operators instantly informed of successes or failures.
+#   • Restores Pi‑hole lists, groups and settings from Teleporter zip, reporting outcome in Telegram.
 
 [[ -f /opt/rabbit-hole/.env ]] || { echo ".env not found at /opt/rabbit-hole" >&2; exit 1; }
 source /opt/rabbit-hole/.env
