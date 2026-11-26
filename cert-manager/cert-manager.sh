@@ -39,8 +39,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
     echo '    NPM_EMAIL="admin@example.com"' >&2
     echo '    NPM_PASS="changeme"' >&2
     echo '    NPM_CERT_NAME="homeserver"' >&2
-    echo '    PIHOLE_URL="https://pihole.domain"' >&2
-    echo '    PIHOLE_PASS="your-app-password"' >&2
+    echo '    PIHOLE_CONTAINER="pihole"   # optional, this is the default' >&2
     echo '    SERVER_IP="192.168.1.x"' >&2
     exit 1
 fi
@@ -391,148 +390,113 @@ cmd_upload() {
     fi
 }
 
-# ── Pihole API ──
+# ── Pihole DNS (via docker exec) ──
+# Uses Pi-hole's own CLI instead of its HTTP API: no API password, no sessions,
+# no published web port, and no dependency on NPM or Pi-hole's web server.
+# Requires this user to be allowed to run `docker exec` (docker group).
+#
+# IMPORTANT: `pihole-FTL --config dns.hosts <json>` REPLACES the whole list.
+# Every change is therefore read-modify-write, and we refuse to write if the
+# read failed or the result looks like it would wipe existing records.
 
-pihole_token=""
+PIHOLE_CONTAINER="${PIHOLE_CONTAINER:-pihole}"
+PIHOLE_HOSTS_BACKUP="${SCRIPT_DIR}/.pihole-hosts.bak"
 
-pihole_auth() {
-    [[ -n "$pihole_token" ]] && return 0
-    [[ -z "${PIHOLE_PASS:-}" ]] && return 1
-
-    local resp
-    resp=$(curl -fsS -X POST "${PIHOLE_URL}/api/auth" \
-        -H "Content-Type: application/json" \
-        -d "{\"password\":\"${PIHOLE_PASS}\"}" 2>/dev/null) || {
-        err "Could not reach Pihole at ${PIHOLE_URL}"; return 1
-    }
-
-    pihole_token=$(echo "$resp" | jq -r '.session.sid // empty')
-    [[ -z "$pihole_token" ]] && { err "Pihole auth failed"; return 1; }
-    log "Pihole authentication successful"
+# Print the current dns.hosts as a compact JSON array of strings.
+# Pi-hole prints the list as `[ 1.2.3.4 a.lan, 1.2.3.4 b.lan ]` (unquoted,
+# comma-separated); a JSON array is accepted too. Returns non-zero and prints
+# nothing on ANY failure or unexpected format, so callers never write blindly.
+pihole_get_hosts() {
+    local raw
+    raw=$(docker exec "$PIHOLE_CONTAINER" pihole-FTL --config dns.hosts 2>/dev/null) || return 1
+    printf '%s' "$raw" | jq -Rsce '
+        def trim: gsub("^\\s+|\\s+$"; "");
+        def unquote: if startswith("\"") and endswith("\"") and length > 1 then .[1:-1] else . end;
+        trim as $t
+        | ( ($t | try fromjson catch null)
+            // ( select($t | startswith("[") and endswith("]"))
+                 | $t[1:-1] | trim
+                 | if . == "" then [] else split(",") | map(trim | unquote) end ) )
+        | select(type == "array" and all(.[]; type == "string" and test("^\\S+\\s+\\S+")))
+    ' 2>/dev/null
 }
 
-pihole_logout() {
-    [[ -z "$pihole_token" ]] && return 0
-    curl -fsS -X DELETE "${PIHOLE_URL}/api/auth" \
-        -H "sid: ${pihole_token}" > /dev/null 2>&1
-    pihole_token=""
+# pihole_set_hosts <old_json> <new_json>
+# Writes the new list, keeping the previous one in $PIHOLE_HOSTS_BACKUP,
+# then reads it back to verify.
+pihole_set_hosts() {
+    local old="$1" new="$2" old_n new_n
+    old_n=$(jq 'length' <<< "$old")
+    new_n=$(jq 'length' <<< "$new")
+
+    # A single add/replace/remove changes the count by at most 1.
+    if (( new_n < old_n - 1 )); then
+        err "Refusing to write Pihole DNS list: would shrink ${old_n} → ${new_n} records"
+        return 1
+    fi
+
+    printf '%s\n' "$old" > "$PIHOLE_HOSTS_BACKUP"
+    docker exec "$PIHOLE_CONTAINER" pihole-FTL --config dns.hosts "$new" >/dev/null 2>&1 || return 1
+
+    local check
+    check=$(pihole_get_hosts) || return 1
+    [[ "$(jq -c 'sort' <<< "$check")" == "$(jq -c 'sort' <<< "$new")" ]]
 }
 
 pihole_add_dns() {
     local domain="$1"
     local ip="${SERVER_IP}"
+    local new_entry="${ip} ${domain}"
 
-    [[ -z "${PIHOLE_PASS:-}" ]] && { warn "PIHOLE_PASS not set — skipping Pihole DNS record"; return 0; }
-
-    pihole_auth || { warn "Pihole auth failed — add DNS record manually"; return 0; }
-
-    # 1. Fetch current DNS hosts
-    local resp
-    resp=$(curl -fsS "${PIHOLE_URL}/api/config/dns/hosts" -H "sid: ${pihole_token}") || {
-        warn "Pihole API fetch failed — add record manually"; pihole_logout; return 0
-    }
-    
-    local hosts_json
-    hosts_json=$(echo "$resp" | jq -c '.config.dns.hosts // []' 2>/dev/null) || {
-        warn "Failed to parse Pi-hole DNS records"
-        pihole_logout
+    local old
+    old=$(pihole_get_hosts) || {
+        warn "Could not read Pihole DNS records via docker exec — add record manually"
         return 0
     }
-    
-    local new_entry="${ip} ${domain}"
-    
-    # 2. Check if the exact record already exists
-    if echo "$hosts_json" | jq -e --arg e "$new_entry" 'index($e) != null' >/dev/null; then
+
+    # Already present exactly as wanted?
+    if jq -e --arg e "$new_entry" 'index($e) != null' <<< "$old" >/dev/null; then
         log "Pihole DNS record already exists: ${domain} → ${ip}"
-        pihole_logout
         return 0
     fi
 
-    # 3. Filter out any old entries for this specific domain, then append the new one
-    local updated_hosts
-    updated_hosts=$(echo "$hosts_json" | jq -c --arg domain "$domain" --arg ip "$ip" '
+    # Drop any old entry for this domain, then append the new one
+    local new
+    new=$(jq -c --arg domain "$domain" --arg ip "$ip" '
         map(select(split(" ")[1:] | index($domain) | not)) + [ $ip + " " + $domain ]
-    ' 2>/dev/null) || {
-        warn "Failed to update Pi-hole DNS records array"
-        pihole_logout
-        return 0
-    }
+    ' <<< "$old") || { warn "Failed to build updated Pihole DNS list — add record manually"; return 0; }
 
-    # 4. Patch the new config back
-    local payload
-    payload=$(jq -n --argjson h "$updated_hosts" '{config: {dns: {hosts: $h}}}')
-
-    local code
-    code=$(curl -s -o /dev/null -w "%{http_code}" \
-        -X PATCH "${PIHOLE_URL}/api/config" \
-        -H "sid: ${pihole_token}" \
-        -H "Content-Type: application/json" \
-        -d "$payload")
-
-    if [[ "$code" == "200" || "$code" == "201" || "$code" == "204" ]]; then
+    if pihole_set_hosts "$old" "$new"; then
         log "Pihole DNS record added: ${domain} → ${ip}"
     else
-        warn "Failed to add Pihole DNS record (HTTP ${code}) — add manually"
+        warn "Failed to add Pihole DNS record — add manually (previous list saved in ${PIHOLE_HOSTS_BACKUP})"
     fi
-
-    pihole_logout
 }
 
 pihole_remove_dns() {
     local domain="$1"
 
-    [[ -z "${PIHOLE_PASS:-}" ]] && { warn "PIHOLE_PASS not set — skipping Pihole DNS removal"; return 0; }
-
-    pihole_auth || { warn "Pihole auth failed — remove DNS record manually"; return 0; }
-
-    # 1. Fetch current DNS hosts
-    local resp
-    resp=$(curl -fsS "${PIHOLE_URL}/api/config/dns/hosts" -H "sid: ${pihole_token}") || {
-        warn "Pihole API fetch failed — remove record manually"; pihole_logout; return 0
-    }
-    
-    local hosts_json
-    hosts_json=$(echo "$resp" | jq -c '.config.dns.hosts // []' 2>/dev/null) || {
-        warn "Failed to parse Pi-hole DNS records"
-        pihole_logout
+    local old
+    old=$(pihole_get_hosts) || {
+        warn "Could not read Pihole DNS records via docker exec — remove record manually"
         return 0
     }
-    
-    # 2. Filter out the domain from the array
-    local updated_hosts
-    updated_hosts=$(echo "$hosts_json" | jq -c --arg domain "$domain" '
+
+    local new
+    new=$(jq -c --arg domain "$domain" '
         map(select(split(" ")[1:] | index($domain) | not))
-    ' 2>/dev/null) || {
-        warn "Failed to update Pi-hole DNS records array"
-        pihole_logout
-        return 0
-    }
+    ' <<< "$old") || { warn "Failed to build updated Pihole DNS list — remove record manually"; return 0; }
 
-    # 3. If nothing changed, it's already gone; return early
-    if [[ "$hosts_json" == "$updated_hosts" ]]; then
+    if [[ "$old" == "$new" ]]; then
         log "Pihole DNS record already removed: ${domain}"
-        pihole_logout
         return 0
     fi
 
-    # 4. Patch the new config back
-    local payload
-    payload=$(jq -n --argjson h "$updated_hosts" '{config: {dns: {hosts: $h}}}')
-
-    local code
-    code=$(curl -s -o /dev/null -w "%{http_code}" \
-        -X PATCH "${PIHOLE_URL}/api/config" \
-        -H "sid: ${pihole_token}" \
-        -H "Content-Type: application/json" \
-        -d "$payload")
-
-    if [[ "$code" == "200" || "$code" == "201" || "$code" == "204" ]]; then
+    if pihole_set_hosts "$old" "$new"; then
         log "Pihole DNS record removed: ${domain}"
     else
-        warn "Could not remove Pihole DNS record (HTTP ${code}) — remove manually"
+        warn "Could not remove Pihole DNS record — remove manually (previous list saved in ${PIHOLE_HOSTS_BACKUP})"
     fi
-
-    pihole_logout
 }
 
 # ════════════════════════════════════════════════════════
