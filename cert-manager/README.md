@@ -4,7 +4,7 @@ A bash script that automates **SSL management** (via `mkcert`), **Local DNS prov
 
 ## Overview
 
-This script eliminates the manual "click-ops" of setting up new services. It manages a `services.list` and communicates with the NPM and Pi-hole APIs to:
+This script eliminates the manual "click-ops" of setting up new services. It manages a `services.list` and communicates with the NPM API and Pi-hole (via `docker exec`) to:
 
 1.  **Manage Identity:** Generate one master certificate covering all your subdomains (e.g., `jellyfin.homeserver`, `nextcloud.homeserver`).
 2.  **Manage Local DNS:** Automatically add or remove DNS records in your local Pi-hole instance pointing to your server's IP.
@@ -15,7 +15,7 @@ This script eliminates the manual "click-ops" of setting up new services. It man
 
 - Debian/Ubuntu-based server
 - Nginx Proxy Manager (accessible via API)
-- Pi-hole (v6+) with API write permissions enabled
+- Pi-hole (v6+) running in Docker, and a user allowed to run `docker exec` (docker group) — see [Pi-hole DNS](#2-pi-hole-dns-no-api-password)
 - A dedicated NPM user for API access (Administrator role, TOTP disabled)
 - `jq`, `curl`, `openssl`, and `mkcert` (installed automatically via `init`)
 
@@ -36,9 +36,8 @@ NPM_EMAIL="api@homeserver.local"
 NPM_PASS="your-password-here"
 NPM_CERT_NAME="homeserver"
 
-# Pi-hole API (v6+)
-PIHOLE_URL="https://pihole.domain"
-PIHOLE_PASS="your-pihole-app-password"
+# Pi-hole (v6+)
+PIHOLE_CONTAINER="pihole"   # optional, this is the default
 SERVER_IP="192.168.1.x"
 ```
 
@@ -99,13 +98,13 @@ You can act on the entire `services.list` file at once. This is highly useful fo
 
 ```bash
 ./cert-manager.sh list     # Show all services with their current target (ip:port/scheme)
-./cert-manager.sh status   # Show cert expiry, SANs, and check if NPM matches the list
+./cert-manager.sh status   # Show cert expiry, SANs, and check the cert covers every entry in services.list
 ./cert-manager.sh regen    # Force a certificate regeneration and upload (alias: renew)
 ```
 
 ---
 
-## API Configuration Setup
+## NPM & Pi-hole Setup
 
 ### 1. NPM API User Setup
 
@@ -120,17 +119,24 @@ For the script to manage both SSL and Routing, the NPM API user needs these spec
     *   **Proxy Hosts**: `Manage`
     *   *Everything else can be set to Hidden.*
 
-### 2. Pi-hole v6 API Permissions (Crucial)
+### 2. Pi-hole DNS (no API password)
 
-Because Pi-hole v6 API restricts configuration changes by default for security, you must permit the script to edit local DNS records:
+The script manages Local DNS records through Pi-hole's own CLI instead of its HTTP API:
 
-*   **Via Web UI:** Go to **Settings > API / Web interface**, look for **Permit destructive actions via API (webserver.api.app_sudo)**, enable it, and save.
-*   **Via Command Line:** (Run inside your Pi-hole container or host):
-    ```bash
-    pihole-FTL --config webserver.api.app_sudo true
-    ```
+```bash
+docker exec pihole pihole-FTL --config dns.hosts            # read the list
+docker exec pihole pihole-FTL --config dns.hosts '["IP name", ...]'   # REPLACE the list
+```
 
-*Note: Alternatively, you can use your primary Pi-hole login password as `PIHOLE_PASS` instead of an App Password to bypass this restriction.*
+*   **No credentials.** There is no Pi-hole password, app password, session or `app_sudo` setting involved, and Pi-hole's web port doesn't need to be published. It also doesn't depend on NPM or Pi-hole's web server being up.
+*   **Access requirement.** The user running the script must be able to run `docker exec` (docker group). That is effectively root on the host, so it's only a good fit if that user already has that access.
+*   **Records show up in the UI** under **Local DNS > DNS Records**, and DNS changes take effect immediately.
+*   **The write replaces the whole list**, so every change is read-modify-write. The script protects your other records (manually added ones included):
+    *   it aborts without writing if the current list can't be read or doesn't parse as a list of `IP name` entries;
+    *   it refuses a write that would remove more than one record;
+    *   it saves the previous list to `.pihole-hosts.bak` before each write and verifies the result by reading it back.
+*   If your Pi-hole container isn't called `pihole`, set `PIHOLE_CONTAINER` in `.env`.
+*   Don't pin `dns.hosts` through an `FTLCONF_dns_hosts` environment variable in Pi-hole's compose. Pi-hole v6 treats env-defined settings as read-only.
 
 ---
 
