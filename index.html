@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-20 06:06 EET</div>
+    <div class="meta-line">Generated 2026-11-26 03:52 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3130,7 +3130,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 2
     },
     {
-      "command": "cron-guard --mode fail \"Nextcloud CalCard Backup\" \"docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s\"",
+      "command": "cron-guard --mode fail \"Nextcloud CalCard Backup\" \"docker compose run --rm -T calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s\"",
       "day_conditional": null,
       "env": [],
       "full_comment": "Export Nextcloud Calendars (.ics) and Contacts (.vcf)",
