@@ -27,7 +27,7 @@ BASH_ENV=/opt/rabbit-hole/.env
 5 4 * * * cron-guard --mode fail "Pi-hole teleporter backup & gravity rebuild" "/opt/stacks/pihole/scripts/pihole_teleporter.sh backup"
 
 # Export Nextcloud Calendars (.ics) and Contacts (.vcf)
-20 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker exec calcardbackup /opt/calcardbackup/calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
+20 4 * * * cron-guard --mode fail "Nextcloud CalCard Backup" "docker compose run --rm -T calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s"
 
 # Apply file renaming rules to Paperless-ngx documents
 35 4 * * * cron-guard --mode fail "Paperless Auto Renamer" "docker exec -i paperless-ngx python3 manage.py document_renamer"
