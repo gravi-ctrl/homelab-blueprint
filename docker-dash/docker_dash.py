@@ -8,6 +8,7 @@
 #   • Detects and flags secret keys in .env.example, enforcing secure defaults before deployment.
 #   • Auto‑prompts missing Python packages, eliminating manual dependency setup and reducing setup friction.
 #   • Implements request timeouts and retry logic, ensuring dashboard generation remains resilient under network hiccups.
+#   • Propagates all .env.example variables to services using env_file, ensuring full configuration visibility.
 
 """
 docker_dash.py  —  Docker Stack Dashboard Generator
@@ -269,6 +270,13 @@ def parse_compose(path, text):
         referenced_vars = set(re.findall(r'\$\{([^}]+)\}', raw_svc_text))
         all_env_keys = sorted(list(set(env_d.keys()) | referenced_vars))
 
+        # env_file: pulls in the whole .env, so every var in .env.example reaches this service
+        ef_raw = cfg.get("env_file") or []
+        if isinstance(ef_raw, (str, dict)):
+            ef_raw = [ef_raw]
+        ef_paths = [str(i.get("path","")) if isinstance(i, dict) else str(i) for i in ef_raw]
+        uses_env_file = any(Path(x).name == ".env" for x in ef_paths)
+
         services.append({
             "name": name,
             "container_name": cfg.get("container_name") or name,
@@ -292,6 +300,7 @@ def parse_compose(path, text):
             "is_privileged": is_privileged,
             "cap_add": cap_add,
             "env_keys": all_env_keys,
+            "uses_env_file": uses_env_file,
             "env_vars": [],
             "description": dash_description,
             "notes": dash_notes,
@@ -770,7 +779,13 @@ def main():
                 all_svc_keys = {k for sv in stack["services"] for k in sv.get("env_keys", [])}
                 for sv in stack["services"]:
                     sv_keys = set(sv.get("env_keys", []))
-                    sv["env_vars"] = [ev for ev in all_env_vars if ev["key"] in sv_keys]
+                    if sv.get("uses_env_file"):
+                        # env_file: .env -> the service gets every var in .env.example
+                        sv["env_vars"] = list(all_env_vars)
+                    else:
+                        sv["env_vars"] = [ev for ev in all_env_vars if ev["key"] in sv_keys]
+                    if sv.get("uses_env_file"):
+                        all_svc_keys |= {ev["key"] for ev in all_env_vars}
 
                 stack["env_vars"] = [ev for ev in all_env_vars if ev["key"] not in all_svc_keys]
 
