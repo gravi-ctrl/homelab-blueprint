@@ -152,12 +152,20 @@ task "Configure APT lock timeout"
 sudo tee /etc/apt/apt.conf.d/99-timeout > /dev/null <<'EOF'
 DPkg::Lock::Timeout "180";
 EOF
-pass "180s wait threshold"
 
 task "Full system upgrade"
 quietly sudo apt-get update
 quietly sudo apt-get upgrade -y
 pass
+
+task "Install neovim"
+NVIM_SCRIPT="/opt/rabbit-hole/run_once/install-neovim.sh"
+if [ -f "$NVIM_SCRIPT" ]; then
+    quietly bash "$NVIM_SCRIPT"
+    pass
+else
+    skip "script not found"
+fi
 
 task "Configure sudoers for backup cron"
 sudo tee /usr/local/bin/read-root-crontab > /dev/null <<'EOF'
@@ -218,6 +226,15 @@ if [ -f "$PACKAGES_FILE" ]; then
     pass
 else
     skip "list not found"
+fi
+
+task "Install neovim"
+NVIM_SCRIPT="/opt/rabbit-hole/run_once/install-neovim.sh"
+if [ -f "$NVIM_SCRIPT" ]; then
+    quietly bash "$NVIM_SCRIPT"
+    pass
+else
+    skip "script not found"
 fi
 
 task "Clean up redundant packages & apt cache"
