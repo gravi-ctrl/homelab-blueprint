@@ -11,8 +11,7 @@
 #   • Enables passwordless root crontab access for automated backup verification.
 #   • Prevents root execution to ensure safe, non-privileged bootstrap workflow.
 #   • Sets APT lock timeout to 180 seconds to avoid stalled package operations.
-#   • Installs npm and globally adds tree-sitter-cli for language parsing.
-#   • Installs Neovim via external script for enhanced editing.
+#   • Installs tree-sitter-cli via prebuilt binary; npm is omitted.
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -107,10 +106,9 @@ task "Set timezone → ${TIMEZONE}"
 quietly sudo timedatectl set-timezone "${TIMEZONE}"
 pass
 
-task "Install base packages (curl, git, rsync, ufw, npm)"
+task "Install base packages (build-essential, curl, git, rsync, ufw)"
 quietly sudo apt-get update
-quietly sudo apt-get install -y software-properties-common curl git rsync ufw npm
-quietly sudo npm install -g tree-sitter-cli
+quietly sudo apt-get install -y build-essential software-properties-common curl git rsync ufw
 pass
 
 task "Restore APT repositories"
@@ -155,10 +153,23 @@ task "Configure APT lock timeout"
 sudo tee /etc/apt/apt.conf.d/99-timeout > /dev/null <<'EOF'
 DPkg::Lock::Timeout "180";
 EOF
+pass
 
 task "Full system upgrade"
 quietly sudo apt-get update
 quietly sudo apt-get upgrade -y
+pass
+
+task "Install tree-sitter-cli (prebuilt binary)"
+case "$(uname -m)" in
+    x86_64)  TS_ARCH="x64"   ;;
+    aarch64) TS_ARCH="arm64" ;;
+    *) echo "Unsupported arch: $(uname -m)" >> "$LOGFILE"; false ;;
+esac
+TS_URL="https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-${TS_ARCH}.gz"
+mkdir -p "$HOME/.local/bin"
+quietly bash -o pipefail -c "curl -fsSL '$TS_URL' | gunzip > '$HOME/.local/bin/tree-sitter'"
+quietly chmod +x "$HOME/.local/bin/tree-sitter"
 pass
 
 task "Install neovim"
@@ -229,15 +240,6 @@ if [ -f "$PACKAGES_FILE" ]; then
     pass
 else
     skip "list not found"
-fi
-
-task "Install neovim"
-NVIM_SCRIPT="/opt/rabbit-hole/run_once/install-neovim.sh"
-if [ -f "$NVIM_SCRIPT" ]; then
-    quietly bash "$NVIM_SCRIPT"
-    pass
-else
-    skip "script not found"
 fi
 
 task "Clean up redundant packages & apt cache"
