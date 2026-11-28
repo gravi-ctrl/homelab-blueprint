@@ -2110,9 +2110,49 @@ def reopen_tty() -> bool:
     except OSError:
         return False
 
+def read_multiline_paste() -> str:
+    """Collect multiline input until the explicit submission marker."""
+    marker = ".oracle-send"
+
+    print("\nPaste your content below.")
+    print(f"Enter {marker} on a separate line to submit everything.\n")
+
+    lines = []
+
+    print(paint("1;32", "paste> ", sys.stdout), end="", flush=True)
+
+    while True:
+        try:
+            line = input()
+
+        except KeyboardInterrupt:
+            print("\n   (paste cancelled)")
+            return ""
+
+        except EOFError:
+            print("\n   (paste cancelled: input closed)")
+            return ""
+
+        # Also handle terminals that deliver the whole paste in one read.
+        parts = line.splitlines() if "\n" in line or "\r" in line else [line]
+
+        if marker in parts:
+            lines.extend(parts[:parts.index(marker)])
+            break
+
+        lines.extend(parts)
+
+    return "\n".join(lines)
+
 def interactive_chat(model: str, history: list[dict] | None = None):
     seeded = history is not None
     print(f"💬 Starting interactive session with {paint('1;36', model, sys.stdout)}")
+    # Enable bracketed paste so multi-line clipboard content is one message.
+    if readline is not None:
+        try:
+            readline.parse_and_bind("set enable-bracketed-paste on")
+        except Exception:
+            pass
     print("   Type 'exit' or Ctrl+C to stop.  /file <path> attaches a file, /clear resets, /help lists commands.\n")
     base = [{"role": "system", "content": system_prompt(CHAT_ROLE)}]
     if history is None:
@@ -2121,14 +2161,29 @@ def interactive_chat(model: str, history: list[dict] | None = None):
     while True:
         try:
             prompt = input(paint("1;32", "oracle> ", sys.stdout)).strip()
-            if not prompt: continue
+            if not prompt:
+                continue
+
             low = prompt.lower()
+
+            if low == "/paste":
+                prompt = read_multiline_paste()
+                if not prompt.strip():
+                    continue
+                low = ""
             if low in {"exit", "quit", "q"}: break
             if low == "/clear":
                 history[:] = list(base); pinned = 1
                 print("   (conversation cleared)"); continue
             if low == "/help":
-                print("   /file <path>   add a file to the conversation (redacted first)\n   /clear         forget everything so far\n   exit           leave"); continue
+                print(
+                    "   /paste         send a multiline message\n"
+                    "   /file <path>   add a file to the conversation (redacted first)\n"
+                    "   /clear         forget everything so far\n"
+                    "   exit           leave"
+                )
+                continue
+
             if low.startswith("/file"):
                 parts = prompt.split(None, 1)
                 txt = read_text_file(parts[1].strip()) if len(parts) > 1 else None
