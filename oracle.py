@@ -15,6 +15,7 @@
 #   • `digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.
 #   • Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.
 #   • Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled.
+#   • `/paste`: send multiline input via explicit marker; enables bracketed paste for single-message pastes.
 
 import argparse
 import difflib
