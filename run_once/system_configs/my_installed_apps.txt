@@ -33,6 +33,7 @@ dos2unix
 e2fsprogs
 fail2ban
 fastfetch
+fd-find
 findutils
 fzf
 git
@@ -61,6 +62,7 @@ ncurses-base
 ncurses-bin
 needrestart
 netbase
+npm
 ntfs-3g
 open-iscsi
 openssh-server
@@ -71,6 +73,7 @@ python3-pip
 python3-requests
 python3-venv
 rclone
+ripgrep
 rsync
 samba
 shellcheck

@@ -60,6 +60,10 @@ export HISTSIZE=10000
 export SAVEHIST=10000
 umask 0022
 
+#make nvim the default editor
+export EDITOR=nvim
+export VISUAL=nvim
+
 # ==============================================================================
 # 3. SMART HISTORY MANAGEMENT
 # ==============================================================================
