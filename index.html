@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-27 03:27 EET</div>
+    <div class="meta-line">Generated 2026-11-28 04:38 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -3130,7 +3130,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "tier_order": 2
     },
     {
-      "command": "cron-guard --mode fail \"Nextcloud CalCard Backup\" \"docker compose run --rm -T calcardbackup /var/www/html -o /backup/syncthing/Backup/self-hosted/contacts-calendars_backup -s\"",
+      "command": "cron-guard --mode fail \"Nextcloud CalCard Backup\" \"/opt/stacks/nextcloud/scripts/calcard-backup.sh\"",
       "day_conditional": null,
       "env": [],
       "full_comment": "Export Nextcloud Calendars (.ics) and Contacts (.vcf)",
@@ -4245,7 +4245,8 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
         "`agent`: investigates using allowlisted read-only commands behind an interactive approval gate, with optional session-only approval for command prefixes.",
         "`digest`: performs deterministic Docker, disk, memory, systemd and journal health checks, with an optional cached AI incident briefing.",
         "Accepts multiple text-file attachments across chat, piped input, Git, logs, review, run, do and agent workflows.",
-        "Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled."
+        "Optional setup context from `~/.oracle/context.md` (overridable with `ORACLE_CONTEXT`), sanitized and included in requests unless disabled.",
+        "`/paste`: send multiline input via explicit marker; enables bracketed paste for single-message pastes."
       ],
       "category": "Core Scripts",
       "cron_ctx": "Root",
