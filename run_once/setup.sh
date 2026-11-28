@@ -11,7 +11,8 @@
 #   • Enables passwordless root crontab access for automated backup verification.
 #   • Prevents root execution to ensure safe, non-privileged bootstrap workflow.
 #   • Sets APT lock timeout to 180 seconds to avoid stalled package operations.
-#   • Installs tree-sitter-cli via prebuilt binary; npm is omitted.
+#   • Installs tree-sitter-cli via prebuilt binary; npm used for Neovim Mason tools
+#   • Bootstraps Neovim plugins, LSP tools, and parsers, requiring npm if available
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -19,8 +20,10 @@
 
 # ── Init ──────────────────────────────────────────────────────
 LOGFILE="/tmp/setup-$(date +%Y%m%d_%H%M%S).log"
-CURRENT="preflight"; IN_TASK=false
-PASS_COUNT=0; SKIP_COUNT=0
+CURRENT="preflight"
+IN_TASK=false
+PASS_COUNT=0
+SKIP_COUNT=0
 START_TIME=$SECONDS
 
 GREEN='\033[0;32m'
@@ -42,26 +45,49 @@ trap '
 ' ERR
 
 # ── Helpers ───────────────────────────────────────────────────
-header()  { printf "\n${CYAN}${BOLD} [%s] %s${NC}\n" "$1" "$2"; }
-task()    { CURRENT="$1"; IN_TASK=true; printf "   %-52s " "$1"; echo -e "\n==> $1" >> "$LOGFILE"; }
-pass()    { IN_TASK=false; PASS_COUNT=$((PASS_COUNT+1)); printf "${GREEN}✓${NC}"; [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"; printf "\n"; }
-skip()    { IN_TASK=false; SKIP_COUNT=$((SKIP_COUNT+1)); printf "${YELLOW}—${NC}"; [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"; printf "\n"; }
-quietly() { "$@" >> "$LOGFILE" 2>&1; }
+header() { printf "\n${CYAN}${BOLD} [%s] %s${NC}\n" "$1" "$2"; }
+task() {
+    CURRENT="$1"
+    IN_TASK=true
+    printf "   %-52s " "$1"
+    echo -e "\n==> $1" >>"$LOGFILE"
+}
+pass() {
+    IN_TASK=false
+    PASS_COUNT=$((PASS_COUNT + 1))
+    printf "${GREEN}✓${NC}"
+    [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"
+    printf "\n"
+}
+skip() {
+    IN_TASK=false
+    SKIP_COUNT=$((SKIP_COUNT + 1))
+    printf "${YELLOW}—${NC}"
+    [ -n "${1:-}" ] && printf " ${DIM}(%s)${NC}" "$1"
+    printf "\n"
+}
+quietly() { "$@" >>"$LOGFILE" 2>&1; }
 
 # ══════════════════════════════════════════════════════════════
 # PREFLIGHT
 # ══════════════════════════════════════════════════════════════
 if [[ $EUID -eq 0 ]]; then
-    echo -e "${RED}ERROR: Do not run this script as root.${NC}"; exit 1
+    echo -e "${RED}ERROR: Do not run this script as root.${NC}"
+    exit 1
 fi
 
 printf "\n${BOLD} 🛡️  SERVER BOOTSTRAP${NC}\n"
 printf "    ${DIM}Log → %s${NC}\n" "$LOGFILE"
 
 if ! sudo -v; then
-    echo -e "${RED}❌ Sudo authentication failed.${NC}"; exit 1
+    echo -e "${RED}❌ Sudo authentication failed.${NC}"
+    exit 1
 fi
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+while true; do
+    sudo -n true
+    sleep 60
+    kill -0 "$$" || exit
+done 2>/dev/null &
 
 # ══════════════════════════════════════════════════════════════
 # [0/10] ESTABLISH SYSTEM PATHS (ONE SOURCE OF TRUTH)
@@ -92,7 +118,10 @@ else
 fi
 
 task "Load and secure environment configuration"
-[[ -f "/opt/rabbit-hole/.env" ]] || { echo -e "${RED}❌ ERROR: .env does not exist at /opt/rabbit-hole.${NC}" >&2; exit 1; }
+[[ -f "/opt/rabbit-hole/.env" ]] || {
+    echo -e "${RED}❌ ERROR: .env does not exist at /opt/rabbit-hole.${NC}" >&2
+    exit 1
+}
 quietly chmod 600 "/opt/rabbit-hole/.env"
 source "/opt/rabbit-hole/.env"
 pass "loaded & secured"
@@ -144,13 +173,13 @@ if [ -f "$REPOS_FILE" ] && [ -s "$REPOS_FILE" ]; then
     while IFS= read -r ppa; do
         quietly sudo add-apt-repository -y --no-update "$ppa"
         _restored=$((_restored + 1))
-    done < "$REPOS_FILE"
+    done <"$REPOS_FILE"
 fi
 
 [ "$_restored" -gt 0 ] || [ "$_keyrings" -gt 0 ] && pass "$_restored source(s), $_keyrings keyring(s) restored" || skip "none found"
 
 task "Configure APT lock timeout"
-sudo tee /etc/apt/apt.conf.d/99-timeout > /dev/null <<'EOF'
+sudo tee /etc/apt/apt.conf.d/99-timeout >/dev/null <<'EOF'
 DPkg::Lock::Timeout "180";
 EOF
 pass
@@ -162,9 +191,12 @@ pass
 
 task "Install tree-sitter-cli (prebuilt binary)"
 case "$(uname -m)" in
-    x86_64)  TS_ARCH="x64"   ;;
-    aarch64) TS_ARCH="arm64" ;;
-    *) echo "Unsupported arch: $(uname -m)" >> "$LOGFILE"; false ;;
+x86_64) TS_ARCH="x64" ;;
+aarch64) TS_ARCH="arm64" ;;
+*)
+    echo "Unsupported arch: $(uname -m)" >>"$LOGFILE"
+    false
+    ;;
 esac
 TS_URL="https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-${TS_ARCH}.gz"
 mkdir -p "$HOME/.local/bin"
@@ -182,12 +214,12 @@ else
 fi
 
 task "Configure sudoers for backup cron"
-sudo tee /usr/local/bin/read-root-crontab > /dev/null <<'EOF'
+sudo tee /usr/local/bin/read-root-crontab >/dev/null <<'EOF'
 #!/bin/bash
 exec /usr/bin/crontab -l
 EOF
 quietly sudo chmod 755 /usr/local/bin/read-root-crontab
-echo "$USER ALL=(root) NOPASSWD: /usr/local/bin/read-root-crontab" | sudo tee "/etc/sudoers.d/backup-cron-$USER" > /dev/null
+echo "$USER ALL=(root) NOPASSWD: /usr/local/bin/read-root-crontab" | sudo tee "/etc/sudoers.d/backup-cron-$USER" >/dev/null
 quietly sudo chmod 0440 "/etc/sudoers.d/backup-cron-$USER"
 pass
 
@@ -197,7 +229,7 @@ pass
 header "2/10" "Docker Installation & Configuration"
 
 task "Install Docker engine"
-if ! command -v docker &> /dev/null; then
+if ! command -v docker &>/dev/null; then
     curl -fsSL https://get.docker.com 2>>"$LOGFILE" | sh >>"$LOGFILE" 2>&1
     quietly sudo usermod -aG docker "$USER"
     pass "installed"
@@ -207,7 +239,7 @@ fi
 
 task "Write Docker daemon.json"
 sudo mkdir -p /etc/docker
-cat <<EOF | sudo tee /etc/docker/daemon.json > /dev/null
+cat <<EOF | sudo tee /etc/docker/daemon.json >/dev/null
 {
     "dns": ["${SERVER_IP}", "8.8.8.8", "1.1.1.1"],
     "max-concurrent-downloads": 2,
@@ -303,9 +335,9 @@ else
 fi
 
 # ══════════════════════════════════════════════════════════════
-# [6/10] SHELL ENVIRONMENT (ZSH + P10K)
+# [6/10] SHELL ENVIRONMENT & EDITOR (ZSH + P10K + Neovim)
 # ══════════════════════════════════════════════════════════════
-header "6/10" "Shell Environment (Zsh + P10k)"
+header "6/10" "Shell & Editor Environment (Zsh + P10k + Neovim)"
 
 task "Install Oh My Zsh"
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -359,6 +391,20 @@ else
     skip "dotfiles dir not found"
 fi
 
+task "Bootstrap Neovim (plugins, LSP tools, parsers)"
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v npm &>/dev/null; then
+    skip "npm missing (Mason needs it for bashls/yamlls/ansiblels)"
+elif command -v nvim &>/dev/null && [ -f "$HOME/.config/nvim/init.lua" ]; then
+    quietly timeout 600 nvim --headless "+qa"
+    quietly timeout 900 nvim --headless "+MasonToolsInstallSync" "+qa"
+    quietly timeout 900 nvim --headless \
+        "+lua require('nvim-treesitter').install({ 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }):wait(300000)" "+qa"
+    pass
+else
+    skip "nvim or config not found"
+fi
+
 task "Set default shell → zsh"
 if [ "$SHELL" != "/usr/bin/zsh" ]; then
     sudo chsh -s "$(which zsh)" "$USER"
@@ -367,7 +413,6 @@ else
     pass "already zsh"
 fi
 
-
 # ══════════════════════════════════════════════════════════════
 # [7/10] UNBOUND DNS RESOLVER
 # ══════════════════════════════════════════════════════════════
@@ -375,12 +420,12 @@ header "7/10" "Unbound DNS Resolver"
 
 task "Download root hints"
 sudo mkdir -p /usr/share/dns
-wget https://www.internic.net/domain/named.root -qO- | sudo tee /usr/share/dns/root.hints > /dev/null
+wget https://www.internic.net/domain/named.root -qO- | sudo tee /usr/share/dns/root.hints >/dev/null
 pass
 
 task "Write Unbound config"
 sudo mkdir -p /etc/unbound/unbound.conf.d
-sudo tee /etc/unbound/unbound.conf.d/pi-hole.conf > /dev/null <<EOF
+sudo tee /etc/unbound/unbound.conf.d/pi-hole.conf >/dev/null <<EOF
 server:
     # BASICS
     verbosity: 0
@@ -450,7 +495,7 @@ fi
 task "Restore custom SSH daemon configs"
 SSHD_SNAPSHOT="/opt/rabbit-hole/run_once/system_configs/sshd_config.d"
 
-if [ -d "$SSHD_SNAPSHOT" ] && compgen -G "$SSHD_SNAPSHOT/*.conf" > /dev/null; then
+if [ -d "$SSHD_SNAPSHOT" ] && compgen -G "$SSHD_SNAPSHOT/*.conf" >/dev/null; then
     sudo mkdir -p /etc/ssh/sshd_config.d
     sudo cp "$SSHD_SNAPSHOT"/*.conf /etc/ssh/sshd_config.d/
     sudo chown root:root /etc/ssh/sshd_config.d/*.conf
@@ -494,7 +539,6 @@ else
     skip "no CA found"
 fi
 
-
 # ══════════════════════════════════════════════════════════════
 # [9/10] FIREWALL
 # ══════════════════════════════════════════════════════════════
@@ -520,7 +564,7 @@ WATCHER_SCRIPT="/opt/rabbit-hole/run_once/container-watcher.sh"
 if [ -f "$WATCHER_SCRIPT" ]; then
     chmod +x "$WATCHER_SCRIPT"
 
-    cat << EOF | sudo tee /etc/systemd/system/container-watcher.service > /dev/null
+    cat <<EOF | sudo tee /etc/systemd/system/container-watcher.service >/dev/null
 [Unit]
 Description=Post-Bootstrap Docker Watcher
 After=docker.service
@@ -555,8 +599,8 @@ fi
 # ══════════════════════════════════════════════════════════════
 # DONE
 # ══════════════════════════════════════════════════════════════
-ELAPSED=$(( SECONDS - START_TIME ))
-printf "\n${GREEN}${BOLD} ✅ BOOTSTRAP COMPLETE${NC} ${DIM}(%dm %ds)${NC}\n" "$((ELAPSED/60))" "$((ELAPSED%60))"
+ELAPSED=$((SECONDS - START_TIME))
+printf "\n${GREEN}${BOLD} ✅ BOOTSTRAP COMPLETE${NC} ${DIM}(%dm %ds)${NC}\n" "$((ELAPSED / 60))" "$((ELAPSED % 60))"
 printf "    ${GREEN}%d passed${NC} · ${YELLOW}%d skipped${NC}\n\n" "$PASS_COUNT" "$SKIP_COUNT"
 printf "    ${DIM}Full log → %s${NC}\n\n" "$LOGFILE"
 printf " ${BOLD}Next steps:${NC}\n"
