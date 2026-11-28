@@ -11,6 +11,8 @@
 #   • Enables passwordless root crontab access for automated backup verification.
 #   • Prevents root execution to ensure safe, non-privileged bootstrap workflow.
 #   • Sets APT lock timeout to 180 seconds to avoid stalled package operations.
+#   • Installs npm and globally adds tree-sitter-cli for language parsing.
+#   • Installs Neovim via external script for enhanced editing.
 # ==============================================================================
 # 🛡️ SERVER BOOTSTRAP PROTOCOL
 # Run this after cloning the repo to ~/scripts on a fresh OS.
@@ -105,9 +107,10 @@ task "Set timezone → ${TIMEZONE}"
 quietly sudo timedatectl set-timezone "${TIMEZONE}"
 pass
 
-task "Install base packages (curl, git, rsync, ufw)"
+task "Install base packages (curl, git, rsync, ufw, npm)"
 quietly sudo apt-get update
-quietly sudo apt-get install -y software-properties-common curl git rsync ufw
+quietly sudo apt-get install -y software-properties-common curl git rsync ufw npm
+quietly sudo npm install -g tree-sitter-cli
 pass
 
 task "Restore APT repositories"
