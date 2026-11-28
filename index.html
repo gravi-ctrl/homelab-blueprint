@@ -252,7 +252,7 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       <span class="brand-mark">Homelab</span>
       <h1>Automation Dashboard</h1>
     </div>
-    <div class="meta-line">Generated 2026-11-28 04:47 EET</div>
+    <div class="meta-line">Generated 2026-11-28 14:06 EET</div>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -5094,6 +5094,29 @@ h1{font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
       "name": "firewall-rules.sh",
       "path": "run_once/firewall-rules.sh",
       "semantic_cat": "🐳 Apps & Containers",
+      "warnings": []
+    },
+    {
+      "capabilities": [
+        "Bypasses the outdated apt package by installing the official prebuilt Neovim release.",
+        "Resolves the latest or a pinned version tag via the GitHub releases API.",
+        "Verifies the download against GitHub's SHA-256 asset digest and aborts if it is missing or mismatched.",
+        "Installs into a self-contained /opt/nvim directory and symlinks it to /usr/local/bin/nvim.",
+        "Replaces any previous install on re-run, making upgrades and version pins repeatable.",
+        "Cleans up temporary files automatically and fails fast on any error (set -euo pipefail)."
+      ],
+      "category": "Run Once",
+      "cron_ctx": "",
+      "cron_entries": [],
+      "desc": "Installs or updates Neovim from the official GitHub release tarball (/opt/nvim)",
+      "dir_path": "run_once",
+      "env": [],
+      "freq": "On Demand (triggered by `setup.sh`, re-run to upgrade or pin a new version)",
+      "freq_source": "header",
+      "header_freq": "On Demand (triggered by `setup.sh`, re-run to upgrade or pin a new version)",
+      "name": "install-neovim.sh",
+      "path": "run_once/install-neovim.sh",
+      "semantic_cat": "💾 Backups & Sync",
       "warnings": []
     },
     {
