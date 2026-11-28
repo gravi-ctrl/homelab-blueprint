@@ -97,7 +97,7 @@ for tool in "${TOOLS_ARRAY[@]}"; do
 
     if [ -d "$SOURCE_PATH" ]; then
         mkdir -p "$DEST_PATH"
-        rsync -a --delete "$SOURCE_PATH/" "$DEST_PATH/"
+        rsync -a --delete --delete-excluded --exclude='.git/' "$SOURCE_PATH/" "$DEST_PATH/"
     fi
 done
 
@@ -146,7 +146,7 @@ publish_snapshots() {
 
     for p in run_once/system_configs run_once/dotfiles; do
         mkdir -p "$wt/$p"
-        rsync -a --delete "$repo/$p/" "$wt/$p/"
+        rsync -a --delete --delete-excluded --exclude='.git/' "$repo/$p/" "$wt/$p/"
     done
 
     printf '%s\n' \
