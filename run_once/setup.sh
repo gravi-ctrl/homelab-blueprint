@@ -105,9 +105,10 @@ task "Set timezone → ${TIMEZONE}"
 quietly sudo timedatectl set-timezone "${TIMEZONE}"
 pass
 
-task "Install base packages (curl, git, rsync, ufw)"
+task "Install base packages (curl, git, rsync, ufw, npm)"
 quietly sudo apt-get update
-quietly sudo apt-get install -y software-properties-common curl git rsync ufw
+quietly sudo apt-get install -y software-properties-common curl git rsync ufw npm
+quietly sudo npm install -g tree-sitter-cli
 pass
 
 task "Restore APT repositories"
